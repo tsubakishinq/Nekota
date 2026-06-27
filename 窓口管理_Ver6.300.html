@@ -903,9 +903,11 @@ function closeBillingModal(){
   renderSummary();
 }
 function getBillingOpts(){
+  var denEl=document.getElementById('billOptDenryo');
+  var onEl=document.getElementById('billOptOnryo');
   return{
-    denryo:document.getElementById('billOptDenryo')?.checked!==false,
-    onryo: document.getElementById('billOptOnryo')?.checked===true,
+    denryo: denEl ? denEl.checked : true,
+    onryo:  onEl  ? onEl.checked  : false,
   };
 }
 function renderBillingModal(){
@@ -993,9 +995,7 @@ function addBillingPatient(){
   saveBilling();
   renderBillingModal();
 }
-document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('billingModal').addEventListener('click',function(e){if(e.target===this)closeBillingModal();});
-});
+document.getElementById('billingModal').addEventListener('click',function(e){if(e.target===this)closeBillingModal();});
 
 function changeYear(d){selectedYear+=d;renderSummary();}
 

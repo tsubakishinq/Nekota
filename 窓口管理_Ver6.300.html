@@ -672,7 +672,7 @@ function calcDayFee(partCount, opts){
 }
 function calcPatientMonthBilling(patientId,ym,opts){
   // recordsから部位ログを集計（1record=1部位）
-  const patRecs=records.filter(r=>r.date.startsWith(ym)&&String(r.patientId)===String(patientId)&&r.parts&&r.parts.length);
+  const patRecs=records.filter(r=>r.date&&r.date.startsWith(ym)&&String(r.patientId)===String(patientId)&&r.parts&&r.parts.length);
   if(!patRecs.length)return{total:0,visits:0,details:[]};
   // 日付ごとにグループ化
   const byDate={};
@@ -892,10 +892,11 @@ function renderToday(){
 let billingModalYm=null;
 function openBillingModal(ym){
   billingModalYm=ym;
-  const[y,m]=ym.split('-');
-  document.getElementById('billingModalTitle').textContent=`${y}年${parseInt(m)}月 保険請求`;
-  renderBillingModal();
+  var parts=ym.split('-');
+  document.getElementById('billingModalTitle').textContent=parts[0]+'年'+parseInt(parts[1])+'月 保険請求';
   document.getElementById('billingModal').classList.add('open');
+  try{renderBillingModal();}
+  catch(err){document.getElementById('billingList').innerHTML='<div style="color:red;padding:12px">エラー: '+err.message+'</div>';}
 }
 function closeBillingModal(){
   document.getElementById('billingModal').classList.remove('open');
@@ -915,7 +916,7 @@ function renderBillingModal(){
   const mb=getMonthBilling(ym);
   const opts=getBillingOpts();
   // 来院記録のある患者ID
-  const visitPids=[...new Set(records.filter(r=>r.date.startsWith(ym)&&r.patientId).map(r=>String(r.patientId)))];
+  const visitPids=[...new Set(records.filter(r=>r.date&&r.date.startsWith(ym)&&r.patientId).map(r=>String(r.patientId)))];
   // 請求データにある患者ID
   const billingPids=Object.keys(mb);
   const allPids=[...new Set([...visitPids,...billingPids])];
@@ -968,7 +969,7 @@ function autoCalcAll(){
   const ym=billingModalYm;
   if(!ym)return;
   const opts=getBillingOpts();
-  const visitPids=[...new Set(records.filter(r=>r.date.startsWith(ym)&&r.patientId).map(r=>String(r.patientId)))];
+  const visitPids=[...new Set(records.filter(r=>r.date&&r.date.startsWith(ym)&&r.patientId).map(r=>String(r.patientId)))];
   visitPids.forEach(pid=>{
     const calc=calcPatientMonthBilling(pid,ym,opts);
     if(calc.visits>0){
@@ -1005,7 +1006,7 @@ function renderSummary(){
   const cm=now.getMonth()+1;
   document.getElementById('monthGrid').innerHTML=Array.from({length:12},(_,i)=>i+1).map(m=>{
     const ms=String(selectedYear)+'-'+String(m).padStart(2,'0');
-    const mr=records.filter(r=>r.date.startsWith(ms)&&r.patientId);
+    const mr=records.filter(r=>r.date&&r.date.startsWith(ms)&&r.patientId);
     const visitPids=[...new Set(mr.map(r=>r.patientId))];
     const bt=getMonthBillingTotal(ms);
     const ic=selectedYear===now.getFullYear()&&m===cm;

@@ -534,13 +534,13 @@
     <h3 id="billingModalTitle">保険請求</h3>
     <!-- 自動計算オプション -->
     <div style="background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;">
-      <div style="font-weight:700;color:var(--ink-light);margin-bottom:8px;">🧮 自動計算オプション（令和6年料金）</div>
+      <div style="font-weight:700;color:var(--ink-light);margin-bottom:8px;">🧮 自動計算オプション（令和8年7月〜料金）</div>
       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="checkbox" id="billOptDenryo" checked onchange="autoCalcAll()"> 電療料(33円/部位)
+          <input type="checkbox" id="billOptDenryo" checked onchange="autoCalcAll()"> 電療料(46円〜/部位)
         </label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="checkbox" id="billOptOnryo" onchange="autoCalcAll()"> 温罨法料(75円/部位)
+          <input type="checkbox" id="billOptOnryo" onchange="autoCalcAll()"> 温罨法料(80円〜/部位)
         </label>
       </div>
       <button class="btn-primary" style="width:100%;padding:9px" onclick="autoCalcAll()">⚡ 全員を来院記録から自動計算</button>
@@ -564,6 +564,10 @@
    窓口管理アプリ - メインスクリプト
 
    【引き継ぎメモ（変更履歴）】
+   - v1.7 (2026-06-27): 自動計算料金を令和8年7月1日施行料金に更新。
+     後療料550円・2部位目×80%=440円・3部位目×60%=330円、
+     電療料46円・2部位目×80%=36円・3部位目×60%=27円、
+     温罨法料80円・2部位目×80%=64円・3部位目×60%=48円、初検料1560円。
    - v1.6 (2026-06-27): 保険請求機能を追加。集計タブの月カードをタップすると
      月別保険請求モーダルが開く。来院記録のある患者が自動表示され、
      各患者の請求金額を入力すると月合計・年合計が集計タブに反映される。
@@ -642,16 +646,17 @@ function getMonthBillingTotal(ym){return Object.values(billing[ym]||{}).reduce((
 function getYearBillingTotal(year){
   return Object.keys(billing).filter(ym=>ym.startsWith(String(year))).reduce((s,ym)=>s+getMonthBillingTotal(ym),0);
 }
-// ===== 令和6年 施術料金計算 =====
-// 後療料（捻挫・打撲・挫傷）: 1部位505円、2部位+505、3部位目×60%=303、4部位〜算定なし
-// 電療料: 1部位33円、2部位+33、3部位目×60%=19
-// 温罨法料: 1部位75円、2部位+75、3部位目×60%=45
+// ===== 令和8年7月1日施行 施術料金計算 =====
+// 後療料（捻挫・打撲・挫傷）: 1部位550円、2部位目×80%=440、3部位目×60%=330、4部位〜算定なし
+// 電療料: 1部位46円、2部位目×80%=36（切捨）、3部位目×60%=27（切捨）
+// 温罨法料: 1部位80円、2部位目×80%=64、3部位目×60%=48
+// 冷罨法料: 80円（初検時）
 const FEE={
-  shoChecryo:1550,   // 初検料
-  koryo:[0,505,505,303],   // 後療料：インデックス=部位番号(1〜3)
-  denryo:[0,33,33,19],     // 電療料
-  onryo:[0,75,75,45],      // 温罨法料
-  reigai:85,               // 冷罨法料(初検時)
+  shoChecryo:1560,          // 初検料
+  koryo:[0, 550, 440, 330], // 後療料：部位番号1〜3
+  denryo:[0, 46,  36,  27], // 電療料（切り捨て）
+  onryo: [0, 80,  64,  48], // 温罨法料
+  reigai:80,                // 冷罨法料(初検時)
 };
 function calcDayFee(partCount, opts){
   // opts: {denryo:bool, onryo:bool}

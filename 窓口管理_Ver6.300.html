@@ -72,7 +72,7 @@
   .year-selector button{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;color:var(--ink);}
   .year-selector span{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;flex:1;text-align:center;}
   .month-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .month-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;}
+  .month-card{display:block;width:100%;text-align:left;font:inherit;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
   .month-card:active{box-shadow:0 0 0 2px var(--accent);}
   .month-card .month-label{font-size:11px;color:var(--ink-light);margin-bottom:4px;}
   .month-card .month-count{font-size:10px;color:var(--ink-light);margin-bottom:4px;}
@@ -1010,12 +1010,12 @@ function renderSummary(){
     const visitPids=[...new Set(mr.map(r=>r.patientId))];
     const bt=getMonthBillingTotal(ms);
     const ic=selectedYear===now.getFullYear()&&m===cm;
-    return`<div class="month-card ${ic?'current':''}" data-ym="${ms}">
+    return`<button type="button" class="month-card ${ic?'current':''}" onclick="openBillingModal('${ms}')">
       <div class="month-label">${m}月</div>
       <div class="month-count">${visitPids.length}名 来院</div>
       <div class="month-amount">${visitPids.length}件</div>
       <div class="month-billing">${bt>0?formatMoney(bt):'請求未入力'}</div>
-    </div>`;
+    </button>`;
   }).join('');
 }
 
@@ -1249,23 +1249,6 @@ document.getElementById('resetModal').addEventListener('click',function(e){if(e.
 document.getElementById('historyModal').addEventListener('click',function(e){if(e.target===this)closeHistoryModal();});
 document.getElementById('partLogModal').addEventListener('click',function(e){if(e.target===this)closePartLogModal();});
 
-// 月グリッドのタップ処理（イベント委譲）—コンテナに一度だけ設定するのでiOSでも確実に動く
-(function(){
-  function findCard(el,grid){while(el&&el!==grid){if(el.classList&&el.classList.contains('month-card'))return el;el=el.parentElement;}return null;}
-  var grid=document.getElementById('monthGrid');
-  var _touchOk=false;
-  grid.addEventListener('touchstart',function(e){_touchOk=true;},{passive:true});
-  grid.addEventListener('touchmove',function(){_touchOk=false;},{passive:true});
-  grid.addEventListener('touchend',function(e){
-    if(!_touchOk)return;
-    var card=findCard(e.target,grid);
-    if(card&&card.dataset.ym){e.preventDefault();openBillingModal(card.dataset.ym);}
-  });
-  grid.addEventListener('click',function(e){
-    var card=findCard(e.target,grid);
-    if(card&&card.dataset.ym)openBillingModal(card.dataset.ym);
-  });
-})();
 
 autoCleanupOldRecords();
 renderToday();

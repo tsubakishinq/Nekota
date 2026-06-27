@@ -267,6 +267,10 @@
 </style>
 </head>
 <body>
+<!-- 診断バナー（JS動作確認用 — 動作確認後に削除） -->
+<div id="jsDiag" style="background:#e53e3e;color:white;padding:10px;text-align:center;font-size:13px;font-weight:bold;">
+  ⚠️ JavaScript未起動（このままでは動きません）
+</div>
 <header>
   <h1>🏥 窓口管理</h1>
   <span class="today" id="headerDate"></span>
@@ -618,6 +622,11 @@
      restoreData）からまだ呼ばれているが、#inputDate要素が存在しない
      ため何もせず終了するガードのままにしている。
    ============================================================ */
+// ===== 診断バナー =====
+(function(){
+  var d=document.getElementById('jsDiag');
+  if(d){d.style.background='#38a169';d.innerHTML='✅ JavaScript動作中 — <button onclick="alert(\'タップ動作OK！\')" style="background:white;color:#38a169;border:none;border-radius:4px;padding:2px 8px;font-weight:bold;cursor:pointer;">タップテスト</button>';}
+})();
 const REC_KEY='sekkotsu_records',PAT_KEY='sekkotsu_patients',RST_KEY='sekkotsu_resets',APPT_KEY='sekkotsu_appts',KARTE_KEY='sekkotsu_karte',BILLING_KEY='sekkotsu_billing';
 let records  =JSON.parse(localStorage.getItem(REC_KEY)||'[]');
 let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');

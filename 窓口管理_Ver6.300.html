@@ -72,7 +72,7 @@
   .year-selector button{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer;color:var(--ink);}
   .year-selector span{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;flex:1;text-align:center;}
   .month-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .month-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:box-shadow .15s;}
+  .month-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;}
   .month-card:active{box-shadow:0 0 0 2px var(--accent);}
   .month-card .month-label{font-size:11px;color:var(--ink-light);margin-bottom:4px;}
   .month-card .month-count{font-size:10px;color:var(--ink-light);margin-bottom:4px;}
@@ -1004,19 +1004,25 @@ function renderSummary(){
   document.getElementById('selectedYear').textContent=selectedYear+'年';
   document.getElementById('yearTotal').textContent=formatMoney(getYearBillingTotal(selectedYear));
   const cm=now.getMonth()+1;
-  document.getElementById('monthGrid').innerHTML=Array.from({length:12},(_,i)=>i+1).map(m=>{
+  const grid=document.getElementById('monthGrid');
+  grid.innerHTML=Array.from({length:12},(_,i)=>i+1).map(m=>{
     const ms=String(selectedYear)+'-'+String(m).padStart(2,'0');
     const mr=records.filter(r=>r.date&&r.date.startsWith(ms)&&r.patientId);
     const visitPids=[...new Set(mr.map(r=>r.patientId))];
     const bt=getMonthBillingTotal(ms);
     const ic=selectedYear===now.getFullYear()&&m===cm;
-    return`<div class="month-card ${ic?'current':''}" onclick="openBillingModal('${ms}')">
+    return`<div class="month-card ${ic?'current':''}" data-ym="${ms}">
       <div class="month-label">${m}月</div>
       <div class="month-count">${visitPids.length}名 来院</div>
       <div class="month-amount">${visitPids.length}件</div>
       <div class="month-billing">${bt>0?formatMoney(bt):'請求未入力'}</div>
     </div>`;
   }).join('');
+  // iOS Safariでdivのonclickが発火しない問題の回避: addEventListener + touchend を使う
+  grid.querySelectorAll('.month-card').forEach(function(card){
+    card.addEventListener('click',function(){openBillingModal(this.dataset.ym);});
+    card.addEventListener('touchend',function(e){e.preventDefault();openBillingModal(this.dataset.ym);});
+  });
 }
 
 function renderHistory(){

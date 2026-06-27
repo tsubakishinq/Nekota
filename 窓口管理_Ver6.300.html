@@ -1004,8 +1004,7 @@ function renderSummary(){
   document.getElementById('selectedYear').textContent=selectedYear+'年';
   document.getElementById('yearTotal').textContent=formatMoney(getYearBillingTotal(selectedYear));
   const cm=now.getMonth()+1;
-  const grid=document.getElementById('monthGrid');
-  grid.innerHTML=Array.from({length:12},(_,i)=>i+1).map(m=>{
+  document.getElementById('monthGrid').innerHTML=Array.from({length:12},(_,i)=>i+1).map(m=>{
     const ms=String(selectedYear)+'-'+String(m).padStart(2,'0');
     const mr=records.filter(r=>r.date&&r.date.startsWith(ms)&&r.patientId);
     const visitPids=[...new Set(mr.map(r=>r.patientId))];
@@ -1018,11 +1017,6 @@ function renderSummary(){
       <div class="month-billing">${bt>0?formatMoney(bt):'請求未入力'}</div>
     </div>`;
   }).join('');
-  // iOS Safariでdivのonclickが発火しない問題の回避: addEventListener + touchend を使う
-  grid.querySelectorAll('.month-card').forEach(function(card){
-    card.addEventListener('click',function(){openBillingModal(this.dataset.ym);});
-    card.addEventListener('touchend',function(e){e.preventDefault();openBillingModal(this.dataset.ym);});
-  });
 }
 
 function renderHistory(){
@@ -1254,6 +1248,24 @@ document.getElementById('patientModal').addEventListener('click',function(e){if(
 document.getElementById('resetModal').addEventListener('click',function(e){if(e.target===this)closeResetModal();});
 document.getElementById('historyModal').addEventListener('click',function(e){if(e.target===this)closeHistoryModal();});
 document.getElementById('partLogModal').addEventListener('click',function(e){if(e.target===this)closePartLogModal();});
+
+// 月グリッドのタップ処理（イベント委譲）—コンテナに一度だけ設定するのでiOSでも確実に動く
+(function(){
+  function findCard(el,grid){while(el&&el!==grid){if(el.classList&&el.classList.contains('month-card'))return el;el=el.parentElement;}return null;}
+  var grid=document.getElementById('monthGrid');
+  var _touchOk=false;
+  grid.addEventListener('touchstart',function(e){_touchOk=true;},{passive:true});
+  grid.addEventListener('touchmove',function(){_touchOk=false;},{passive:true});
+  grid.addEventListener('touchend',function(e){
+    if(!_touchOk)return;
+    var card=findCard(e.target,grid);
+    if(card&&card.dataset.ym){e.preventDefault();openBillingModal(card.dataset.ym);}
+  });
+  grid.addEventListener('click',function(e){
+    var card=findCard(e.target,grid);
+    if(card&&card.dataset.ym)openBillingModal(card.dataset.ym);
+  });
+})();
 
 autoCleanupOldRecords();
 renderToday();

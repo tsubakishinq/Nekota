@@ -309,8 +309,9 @@
     <button onclick="changeYear(1)">▶</button>
   </div>
   <div class="summary-year">
-    <div class="label">年間合計</div>
+    <div class="label">年間合計（概算）</div>
     <div class="amount" id="yearTotal">¥0</div>
+    <button onclick="autoCalcYear()" style="margin-top:12px;width:100%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:10px;font-size:13px;color:white;cursor:pointer;font-family:inherit;">一括自動計算（来院記録から概算）</button>
   </div>
   <div class="month-grid" id="monthGrid"></div>
 </div>
@@ -977,6 +978,24 @@ function autoCalcAll(){
     }
   });
   renderBillingModal();
+}
+function autoCalcYear(){
+  // 電療料デフォルトあり、温罨法料なし で全12ヶ月を一括計算
+  const opts={denryo:true,onryo:false};
+  let totalPatients=0;
+  Array.from({length:12},(_,i)=>i+1).forEach(m=>{
+    const ym=String(selectedYear)+'-'+String(m).padStart(2,'0');
+    const visitPids=[...new Set(records.filter(r=>r.date&&r.date.startsWith(ym)&&r.parts&&r.parts.length&&r.patientId).map(r=>String(r.patientId)))];
+    visitPids.forEach(pid=>{
+      const calc=calcPatientMonthBilling(pid,ym,opts);
+      if(calc.visits>0){
+        setBillingAmount(ym,pid,calc.total);
+        totalPatients++;
+      }
+    });
+  });
+  renderSummary();
+  showToast('概算計算完了: '+selectedYear+'年 '+totalPatients+'件');
 }
 function onBillingInput(pid,val){
   const amount=parseInt(val)||0;

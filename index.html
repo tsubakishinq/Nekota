@@ -729,7 +729,18 @@ const INITIAL_PATIENTS=[
   {id:85,num:'1054',name:'喜納（母）',insurance:'後期',memo:'',freq:''},
 ];
 let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');
-if(patients.length===0){patients=JSON.parse(JSON.stringify(INITIAL_PATIENTS));localStorage.setItem(PAT_KEY,JSON.stringify(patients));}
+(function(){
+  var existingNums=new Set(patients.map(function(p){return String(p.num);}));
+  var maxId=patients.reduce(function(m,p){return Math.max(m,Number(p.id)||0);},100);
+  var changed=false;
+  INITIAL_PATIENTS.forEach(function(ip){
+    if(!existingNums.has(String(ip.num))){
+      patients.push({id:++maxId,num:ip.num,name:ip.name,insurance:ip.insurance,memo:'',freq:''});
+      changed=true;
+    }
+  });
+  if(changed)localStorage.setItem(PAT_KEY,JSON.stringify(patients));
+})();
 let resets   =JSON.parse(localStorage.getItem(RST_KEY)||'{}');
 let appts    =JSON.parse(localStorage.getItem(APPT_KEY)||'[]');
 let karteEntries=JSON.parse(localStorage.getItem(KARTE_KEY)||'[]'); // {id, patientId, date, text}

@@ -190,7 +190,8 @@
   .sch-table th{background:var(--bg);font-family:'DM Mono',monospace;font-weight:700;color:var(--ink-light);padding:6px 2px;position:sticky;top:0;z-index:2;min-width:24px;}
   .sch-table th.sch-th-name{position:sticky;left:0;z-index:3;text-align:left;padding:6px 10px;min-width:90px;background:var(--bg);}
   .sch-table td.sch-td-name{position:sticky;left:0;z-index:1;text-align:left;padding:6px 10px;font-weight:500;white-space:nowrap;}
-  .sch-table td.sch-cell-num{font-family:'DM Mono',monospace;font-weight:700;font-size:11px;}
+  .sch-table td.sch-cell-num{font-family:'DM Mono',monospace;font-weight:700;font-size:13px;background:#e74c3c;color:#fff!important;}
+  .sch-day-ghost{color:rgba(0,0,0,.18);font-size:9px;pointer-events:none;}
   .sch-table th.sch-th-today{color:var(--accent);}
   .sch-table td.sch-td-today{background:rgba(192,57,43,.07);}
   .sch-table-row:nth-child(even) td:not(.sch-td-name){background:rgba(0,0,0,.012);}
@@ -1623,11 +1624,11 @@ function renderInsuranceTable(y, m, sch){
         const ds = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
         const isToday = ds===todayStr;
         const visitIdx = dates.indexOf(d);
-        let cellContent = '';
-        if(visitIdx !== -1){
-          cellContent = String(visitIdx+1);
-        }
-        html += '<td class="'+(cellContent?'sch-cell-num':'sch-cell-empty')+' '+(isToday?'sch-td-today':'')+'" style="'+(cellContent?'color:'+c.text:'')+'" data-pid="'+p.id+'" data-day="'+d+'" onclick="toggleVisitCell(this)">'+cellContent+'</td>';
+        const visited = visitIdx !== -1;
+        const cellInner = visited
+          ? String(visitIdx+1)
+          : '<span class="sch-day-ghost">'+d+'</span>';
+        html += '<td class="'+(visited?'sch-cell-num':'sch-cell-empty')+' '+(isToday?'sch-td-today':'')+'" data-pid="'+p.id+'" data-day="'+d+'" onclick="toggleVisitCell(this)">'+cellInner+'</td>';
       }
       html += '</tr>';
     });

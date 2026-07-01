@@ -94,6 +94,17 @@
   .billing-add-row{display:flex;gap:8px;margin-top:14px;}
   .billing-add-select{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;background:var(--surface);color:var(--ink);outline:none;}
   .billing-remove-btn{background:none;border:none;color:var(--ink-light);font-size:16px;cursor:pointer;padding:4px 6px;}
+  .billing-mcal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+  .billing-mcal-dow-cell{text-align:center;font-size:10px;font-weight:700;color:var(--ink-light);padding:3px 0;}
+  .billing-mcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:6px 0 12px;}
+  .billing-mcal-cell{border:1px solid var(--border);border-radius:6px;padding:3px 2px;min-height:50px;cursor:pointer;background:var(--surface);text-align:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  .billing-mcal-cell:active{background:rgba(192,57,43,.12);}
+  .billing-mcal-cell.has-patients{border-color:rgba(41,128,185,.4);}
+  .billing-mcal-cell.has-amount{border-color:var(--success);}
+  .billing-mcal-empty{border:none!important;background:transparent!important;cursor:default;min-height:50px;}
+  .billing-mcal-num{font-size:12px;font-weight:700;}
+  .billing-mcal-cnt{font-size:8px;color:var(--blue);margin-top:2px;}
+  .billing-mcal-amt{font-size:8px;color:var(--success);font-weight:700;margin-top:1px;}
   /* 履歴 */
   .history-tabs{display:flex;gap:8px;margin-bottom:16px;}
   .htab{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:500;border:1.5px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink-light);cursor:pointer;transition:all .2s;font-family:'Noto Sans JP',sans-serif;}
@@ -533,30 +544,38 @@
 <!-- 保険請求モーダル -->
 <div class="modal-overlay" id="billingModal">
   <div class="modal">
-    <h3 id="billingModalTitle">保険請求</h3>
-    <!-- 自動計算オプション -->
-    <div style="background:var(--bg);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;">
-      <div style="font-weight:700;color:var(--ink-light);margin-bottom:8px;">🧮 自動計算オプション（令和8年7月〜料金）</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="checkbox" id="billOptDenryo" checked onchange="autoCalcAll()"> 電療料(46円〜/部位)
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="checkbox" id="billOptOnryo" onchange="autoCalcAll()"> 温罨法料(80円〜/部位)
-        </label>
+    <!-- カレンダービュー -->
+    <div id="billingCalView">
+      <h3 id="billingModalTitle">保険請求</h3>
+      <div class="billing-total-bar">
+        <span class="billing-total-label">💴 月合計</span>
+        <span class="billing-total-amount" id="billingTotalAmount">¥0</span>
       </div>
-      <button class="btn-primary" style="width:100%;padding:9px" onclick="autoCalcAll()">⚡ 全員を来院記録から自動計算</button>
+      <div class="billing-mcal-dow">
+        <div class="billing-mcal-dow-cell" style="color:#e74c3c">日</div>
+        <div class="billing-mcal-dow-cell">月</div>
+        <div class="billing-mcal-dow-cell">火</div>
+        <div class="billing-mcal-dow-cell">水</div>
+        <div class="billing-mcal-dow-cell">木</div>
+        <div class="billing-mcal-dow-cell">金</div>
+        <div class="billing-mcal-dow-cell" style="color:#2980b9">土</div>
+      </div>
+      <div id="billingMcalGrid" class="billing-mcal-grid"></div>
+      <button class="btn-secondary" style="width:100%;margin-top:4px" onclick="closeBillingModal()">閉じる</button>
     </div>
-    <div class="billing-total-bar">
-      <span class="billing-total-label">💴 月合計</span>
-      <span class="billing-total-amount" id="billingTotalAmount">¥0</span>
+    <!-- 日別患者ビュー -->
+    <div id="billingDayView" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <button type="button" onclick="showBillingCalView()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;touch-action:manipulation">← 戻る</button>
+        <h3 id="billingDayTitle" style="margin:0;flex:1;font-size:16px"></h3>
+      </div>
+      <div class="billing-total-bar" style="padding-top:0">
+        <span class="billing-total-label">💴 日計</span>
+        <span class="billing-total-amount" id="billingDayTotal">¥0</span>
+      </div>
+      <div id="billingDayList" style="max-height:50vh;overflow-y:auto;margin-bottom:4px;"></div>
+      <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="showBillingCalView()">← カレンダーに戻る</button>
     </div>
-    <div id="billingList" style="max-height:44vh;overflow-y:auto;margin-bottom:4px;"></div>
-    <div class="billing-add-row">
-      <select class="billing-add-select" id="billingAddSelect"><option value="">＋ 患者を追加</option></select>
-      <button class="btn-primary" style="white-space:nowrap;padding:10px 14px" onclick="addBillingPatient()">追加</button>
-    </div>
-    <button class="btn-secondary" style="width:100%;margin-top:12px" onclick="closeBillingModal()">閉じる</button>
   </div>
 </div>
 
@@ -714,7 +733,9 @@ if(patients.length===0){patients=JSON.parse(JSON.stringify(INITIAL_PATIENTS));lo
 let resets   =JSON.parse(localStorage.getItem(RST_KEY)||'{}');
 let appts    =JSON.parse(localStorage.getItem(APPT_KEY)||'[]');
 let karteEntries=JSON.parse(localStorage.getItem(KARTE_KEY)||'[]'); // {id, patientId, date, text}
-let billing  =JSON.parse(localStorage.getItem(BILLING_KEY)||'{}'); // {'YYYY-MM': {patientId: amount}}
+let billing  =JSON.parse(localStorage.getItem(BILLING_KEY)||'{}'); // {'YYYY-MM': {patientId: amount}} (旧形式・互換用)
+const DAILY_BILLING_KEY='sekkotsu_daily_billing';
+let dailyBilling=JSON.parse(localStorage.getItem(DAILY_BILLING_KEY)||'{}'); // {'YYYY-MM-DD': {patientId: amount}}
 let selectedYear=new Date().getFullYear(),historyMode='day',editingPatientId=null,resetTargetId=null;
 let apptDate=new Date().toISOString().slice(0,10);
 
@@ -724,17 +745,20 @@ function saveRst(){localStorage.setItem(RST_KEY,JSON.stringify(resets));}
 function saveAppt(){localStorage.setItem(APPT_KEY,JSON.stringify(appts));}
 function saveKarte(){localStorage.setItem(KARTE_KEY,JSON.stringify(karteEntries));}
 function saveBilling(){localStorage.setItem(BILLING_KEY,JSON.stringify(billing));}
-function getMonthBilling(ym){return billing[ym]||{};}
-function getBillingAmount(ym,pid){return(billing[ym]||{})[pid]||0;}
-function setBillingAmount(ym,pid,amount){
-  if(!billing[ym])billing[ym]={};
-  if(!amount||amount<=0){delete billing[ym][pid];if(!Object.keys(billing[ym]).length)delete billing[ym];}
-  else billing[ym][String(pid)]=amount;
-  saveBilling();
+function saveDailyBilling(){localStorage.setItem(DAILY_BILLING_KEY,JSON.stringify(dailyBilling));}
+function getDailyBilling(ds){return dailyBilling[ds]||{};}
+function getDailyTotal(ds){return Object.values(dailyBilling[ds]||{}).reduce(function(s,a){return s+(Number(a)||0);},0);}
+function setDailyBillingAmount(ds,pid,amount){
+  if(!dailyBilling[ds])dailyBilling[ds]={};
+  if(!amount||amount<=0){delete dailyBilling[ds][pid];if(!Object.keys(dailyBilling[ds]).length)delete dailyBilling[ds];}
+  else dailyBilling[ds][String(pid)]=amount;
+  saveDailyBilling();
 }
-function getMonthBillingTotal(ym){return Object.values(billing[ym]||{}).reduce((s,a)=>s+(Number(a)||0),0);}
+function getMonthBillingTotal(ym){
+  return Object.keys(dailyBilling).filter(function(ds){return ds.startsWith(ym);}).reduce(function(s,ds){return s+getDailyTotal(ds);},0);
+}
 function getYearBillingTotal(year){
-  return Object.keys(billing).filter(ym=>ym.startsWith(String(year))).reduce((s,ym)=>s+getMonthBillingTotal(ym),0);
+  return Object.keys(dailyBilling).filter(function(ds){return ds.startsWith(String(year));}).reduce(function(s,ds){return s+getDailyTotal(ds);},0);
 }
 // ===== 令和8年7月1日施行 施術料金計算 =====
 // 後療料（捻挫・打撲・挫傷）: 1部位550円、2部位目×80%=440、3部位目×60%=330、4部位〜算定なし
@@ -980,111 +1004,100 @@ function renderToday(){
 
 // ===== 保険請求モーダル =====
 let billingModalYm=null;
+let billingModalDay=null;
+
 function openBillingModal(ym){
   billingModalYm=ym;
   var parts=ym.split('-');
   document.getElementById('billingModalTitle').textContent=parts[0]+'年'+parseInt(parts[1])+'月 保険請求';
   document.getElementById('billingModal').classList.add('open');
-  try{renderBillingModal();}
-  catch(err){document.getElementById('billingList').innerHTML='<div style="color:red;padding:12px">エラー: '+err.message+'</div>';}
+  showBillingCalView();
 }
 function closeBillingModal(){
   document.getElementById('billingModal').classList.remove('open');
   billingModalYm=null;
+  billingModalDay=null;
   renderSummary();
 }
-function getBillingOpts(){
-  var denEl=document.getElementById('billOptDenryo');
-  var onEl=document.getElementById('billOptOnryo');
-  return{
-    denryo: denEl ? denEl.checked : true,
-    onryo:  onEl  ? onEl.checked  : false,
-  };
+function showBillingCalView(){
+  document.getElementById('billingCalView').style.display='';
+  document.getElementById('billingDayView').style.display='none';
+  renderBillingCal();
 }
-function renderBillingModal(){
-  const ym=billingModalYm;
-  const mb=getMonthBilling(ym);
-  const opts=getBillingOpts();
-  // 来院記録のある患者ID
-  const visitPids=[...new Set(records.filter(r=>r.date&&r.date.startsWith(ym)&&r.patientId).map(r=>String(r.patientId)))];
-  // 請求データにある患者ID
-  const billingPids=Object.keys(mb);
-  const allPids=[...new Set([...visitPids,...billingPids])];
-
-  const listEl=document.getElementById('billingList');
+function renderBillingCal(){
+  var ym=billingModalYm;
+  var parts=ym.split('-');
+  var y=parseInt(parts[0]),m=parseInt(parts[1])-1;
+  var dim=new Date(y,m+1,0).getDate();
+  var firstDay=new Date(y,m,1).getDay();
+  var sch=schedules[schMonthKey(y,m)]||{};
+  // 日→患者リスト
+  var dayPatients={};
+  patients.forEach(function(p){
+    (sch[p.id]||[]).forEach(function(d){
+      if(!dayPatients[d])dayPatients[d]=[];
+      dayPatients[d].push(p);
+    });
+  });
+  var html='';
+  for(var i=0;i<firstDay;i++) html+='<div class="billing-mcal-empty"></div>';
+  for(var d=1;d<=dim;d++){
+    var ds=ym+'-'+String(d).padStart(2,'0');
+    var cnt=(dayPatients[d]||[]).length;
+    var amt=getDailyTotal(ds);
+    var dow=new Date(y,m,d).getDay();
+    var isSun=dow===0,isSat=dow===6;
+    var cls='billing-mcal-cell'+(amt>0?' has-amount':cnt>0?' has-patients':'');
+    html+='<div class="'+cls+'" onclick="openDayBilling('+d+')">';
+    html+='<div class="billing-mcal-num" style="color:'+(isSun?'#e74c3c':isSat?'#2980b9':'var(--ink)')+'">'+d+'</div>';
+    if(cnt>0) html+='<div class="billing-mcal-cnt">'+cnt+'名</div>';
+    if(amt>0) html+='<div class="billing-mcal-amt">'+formatMoney(amt)+'</div>';
+    html+='</div>';
+  }
+  document.getElementById('billingMcalGrid').innerHTML=html;
+  document.getElementById('billingTotalAmount').textContent=formatMoney(getMonthBillingTotal(ym));
+}
+function openDayBilling(day){
+  billingModalDay=day;
+  document.getElementById('billingCalView').style.display='none';
+  document.getElementById('billingDayView').style.display='';
+  var parts=billingModalYm.split('-');
+  document.getElementById('billingDayTitle').textContent=parseInt(parts[1])+'月'+day+'日';
+  renderDayBilling();
+}
+function renderDayBilling(){
+  var ym=billingModalYm,d=billingModalDay;
+  var ds=ym+'-'+String(d).padStart(2,'0');
+  var sch=schedules[schMonthKey(parseInt(ym.split('-')[0]),parseInt(ym.split('-')[1])-1)]||{};
+  // 割振でこの日に来院予定の患者
+  var schPids=[];
+  patients.forEach(function(p){if((sch[p.id]||[]).indexOf(d)!==-1)schPids.push(String(p.id));});
+  // 既に金額が入っている患者
+  var billedPids=Object.keys(getDailyBilling(ds));
+  var allPids=[...new Set([...schPids,...billedPids])];
+  var listEl=document.getElementById('billingDayList');
   if(allPids.length===0){
-    listEl.innerHTML='<div class="empty-state" style="margin-top:20px">来院記録のある患者がいません</div>';
+    listEl.innerHTML='<div class="empty-state" style="margin-top:16px">この日に来院予定の患者がいません<br><small style="color:var(--ink-light)">割振タブでスケジュールを設定してください</small></div>';
   } else {
-    listEl.innerHTML=allPids.map(pid=>{
-      const p=patients.find(x=>String(x.id)===String(pid));
+    listEl.innerHTML=allPids.map(function(pid){
+      var p=patients.find(function(x){return String(x.id)===String(pid);});
       if(!p)return'';
-      const saved=getBillingAmount(ym,pid);
-      const calc=calcPatientMonthBilling(pid,ym,opts);
-      const hint=calc.visits>0
-        ?`<span style="font-size:10px;color:var(--ink-light);margin-right:4px" title="${calc.details.map(d=>formatDate(d.date)+' '+d.partCount+'部位 '+formatMoney(d.fee)).join('\n')}">📋 ${calc.visits}回・概算${formatMoney(calc.total)}</span>`
-        :'';
-      const autoBtn=calc.visits>0
-        ?`<button onclick="applyAutoCalc('${pid}',${calc.total})" style="font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;white-space:nowrap;color:var(--ink-light)">適用</button>`
-        :'';
-      return`<div>
-        <div class="billing-row">
-          <span class="billing-num">No.${p.num}</span>
-          <span class="billing-name">${p.name}</span>
-          <span class="billing-ins">${p.insurance||'—'}</span>
-          <input type="number" class="billing-amount-input" id="binput-${pid}" value="${saved||''}" placeholder="0" min="0" step="10"
-            oninput="onBillingInput('${pid}',this.value)"
-            inputmode="numeric">
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;padding:2px 0 8px 50px;border-bottom:1px solid var(--border);">
-          ${hint}${autoBtn}
-        </div>
-      </div>`;
+      var saved=(getDailyBilling(ds)[pid])||0;
+      return '<div class="billing-row" style="border-bottom:1px solid var(--border)">'+
+        '<span class="billing-num">No.'+p.num+'</span>'+
+        '<span class="billing-name">'+p.name+'</span>'+
+        '<span class="billing-ins">'+(p.insurance||'—')+'</span>'+
+        '<input type="number" class="billing-amount-input" value="'+(saved||'')+'" placeholder="0" min="0" step="10" inputmode="numeric"'+
+        ' oninput="onDayBillingInput(\''+pid+'\',\''+ds+'\',this.value)">'+
+        '</div>';
     }).join('');
   }
-  updateBillingTotalDisplay();
-
-  const addedSet=new Set(allPids.map(String));
-  const available=patients.filter(p=>!addedSet.has(String(p.id))).sort((a,b)=>Number(a.num)-Number(b.num));
-  document.getElementById('billingAddSelect').innerHTML=
-    '<option value="">＋ 患者を追加...</option>'+
-    available.map(p=>`<option value="${p.id}">No.${p.num}　${p.name}　${p.insurance||''}</option>`).join('');
+  document.getElementById('billingDayTotal').textContent=formatMoney(getDailyTotal(ds));
 }
-function applyAutoCalc(pid,amount){
-  setBillingAmount(billingModalYm,pid,amount);
-  const el=document.getElementById('binput-'+pid);
-  if(el)el.value=amount;
-  updateBillingTotalDisplay();
-}
-function autoCalcAll(){
-  const ym=billingModalYm;
-  if(!ym)return;
-  const opts=getBillingOpts();
-  const visitPids=[...new Set(records.filter(r=>r.date&&r.date.startsWith(ym)&&r.patientId).map(r=>String(r.patientId)))];
-  visitPids.forEach(pid=>{
-    const calc=calcPatientMonthBilling(pid,ym,opts);
-    if(calc.visits>0){
-      setBillingAmount(ym,pid,calc.total);
-    }
-  });
-  renderBillingModal();
-}
-function onBillingInput(pid,val){
-  const amount=parseInt(val)||0;
-  setBillingAmount(billingModalYm,pid,amount);
-  updateBillingTotalDisplay();
-}
-function updateBillingTotalDisplay(){
+function onDayBillingInput(pid,ds,val){
+  setDailyBillingAmount(ds,pid,parseInt(val)||0);
+  document.getElementById('billingDayTotal').textContent=formatMoney(getDailyTotal(ds));
   document.getElementById('billingTotalAmount').textContent=formatMoney(getMonthBillingTotal(billingModalYm));
-}
-function addBillingPatient(){
-  const sel=document.getElementById('billingAddSelect');
-  const pid=sel.value;
-  if(!pid)return;
-  // 0で初期化してモーダル再描画
-  if(!billing[billingModalYm])billing[billingModalYm]={};
-  if(!billing[billingModalYm][pid])billing[billingModalYm][pid]=0;
-  saveBilling();
-  renderBillingModal();
 }
 document.getElementById('billingModal').addEventListener('click',function(e){if(e.target===this)closeBillingModal();});
 
@@ -2114,6 +2127,7 @@ function backupData(){
     attendFlags: JSON.parse(localStorage.getItem('sekkotsu_attend_flags') || '{}'),
     karte:     JSON.parse(localStorage.getItem('sekkotsu_karte') || '[]'),
     billing:   JSON.parse(localStorage.getItem('sekkotsu_billing') || '{}'),
+    dailyBilling: JSON.parse(localStorage.getItem('sekkotsu_daily_billing') || '{}'),
   };
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type:'application/json'});
@@ -2145,6 +2159,7 @@ function restoreData(event){
       localStorage.setItem('sekkotsu_attend_flags', JSON.stringify(data.attendFlags || {}));
       localStorage.setItem('sekkotsu_karte',     JSON.stringify(data.karte     || []));
       localStorage.setItem('sekkotsu_billing',   JSON.stringify(data.billing   || {}));
+      localStorage.setItem('sekkotsu_daily_billing', JSON.stringify(data.dailyBilling || {}));
       // メモリ上のデータも更新
       records   = data.records   || [];
       patients  = data.patients  || [];
@@ -2156,6 +2171,7 @@ function restoreData(event){
       attendFlags = data.attendFlags || {};
       karteEntries = data.karte || [];
       billing      = data.billing || {};
+      dailyBilling = data.dailyBilling || {};
       showToast('✓ 復元しました！');
       renderToday();
       renderPatients();

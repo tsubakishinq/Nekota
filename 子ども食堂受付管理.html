@@ -37,10 +37,10 @@
 
   .full-banner{background:#c0392b;color:#fff;font-size:12px;font-weight:700;padding:12px 14px;border-radius:10px;margin-bottom:14px;text-align:center;line-height:1.5;}
 
-  .breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;color:var(--ink-light);margin-bottom:12px;}
-  .breadcrumb b{color:var(--ink);font-weight:700;}
-  .breadcrumb .bc-clear{color:var(--accent);cursor:pointer;text-decoration:underline;margin-left:4px;}
-  .breadcrumb .bc-sep{color:var(--border);}
+  .back-btn{display:inline-flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;padding:8px 0;margin-bottom:8px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+  .screen-header{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;}
+  .screen-loc-name{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+  .screen-loc-sub{font-size:12px;color:var(--ink-light);}
 
   .section-title{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
 
@@ -109,38 +109,44 @@
     <div class="day-summary-sub" id="summaryGroups">0組</div>
   </div>
 
-  <div class="breadcrumb" id="breadcrumb"></div>
-
   <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28組）に達したため終了しました</div>
 
-  <div class="section-title">① 受け取り場所を選択</div>
-  <div class="loc-list" id="locList"></div>
+  <div id="screenLocation">
+    <div class="section-title">受け取り場所を選択</div>
+    <div class="loc-list" id="locList"></div>
 
-  <div id="slotSection" style="display:none">
-    <div class="section-title">② 受け取り時間を選択</div>
+    <div class="section-title" style="margin-top:22px">受付一覧</div>
+    <div id="entryListWrap"></div>
+  </div>
+
+  <div id="screenTime" style="display:none">
+    <button type="button" class="back-btn" onclick="backToLocations()">‹ 場所を選び直す</button>
+    <div class="screen-header" id="timeScreenHeader"></div>
+    <div class="section-title">受け取り時間を選択</div>
     <div id="slotWrap"></div>
   </div>
 
-  <div class="input-card" id="entryForm" style="display:none">
-    <h2 id="formTitle">受付情報を入力</h2>
-    <div class="field-row">
-      <div class="field">
-        <label>お名前</label>
-        <input type="text" id="fName" placeholder="例：山田 太郎">
+  <div id="screenForm" style="display:none">
+    <button type="button" class="back-btn" onclick="backToTime()">‹ 時間を選び直す</button>
+    <div class="screen-header" id="formScreenHeader"></div>
+    <div class="input-card">
+      <h2 id="formTitle">受付情報を入力</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>お名前</label>
+          <input type="text" id="fName" placeholder="例：山田 太郎">
+        </div>
+        <div class="field" style="flex:0 0 90px">
+          <label>人数</label>
+          <input type="number" id="fPeople" min="1" value="1" inputmode="numeric">
+        </div>
       </div>
-      <div class="field" style="flex:0 0 90px">
-        <label>人数</label>
-        <input type="number" id="fPeople" min="1" value="1" inputmode="numeric">
+      <div class="btn-row">
+        <button class="btn-primary" id="submitBtn" onclick="submitEntry()">追加する</button>
+        <button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
       </div>
-    </div>
-    <div class="btn-row">
-      <button class="btn-primary" id="submitBtn" onclick="submitEntry()">追加する</button>
-      <button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
     </div>
   </div>
-
-  <div class="section-title">受付一覧</div>
-  <div id="entryListWrap"></div>
 </main>
 
 <script>
@@ -291,28 +297,31 @@ function renderSummary(){
   document.getElementById('fullBanner').style.display = full ? 'block' : 'none';
 }
 
-function renderBreadcrumb(){
-  const el = document.getElementById('breadcrumb');
-  const {md,dow} = fmtDate(selectedDate);
-  let html = `<b>${md}(${dow})</b>`;
-  if(selectedLocationId){
-    const loc = getLocation(selectedLocationId);
-    html += ` <span class="bc-sep">›</span> <b>${loc.name}</b>`;
-  }
-  if(selectedTime){
-    html += ` <span class="bc-sep">›</span> <b>${selectedTime}</b>`;
-  }
-  if(selectedLocationId){
-    html += ` <span class="bc-clear" onclick="clearSelection()">選択解除</span>`;
-  }
-  el.innerHTML = html;
+function currentScreen(){
+  if(!selectedLocationId) return 'location';
+  if(!selectedTime) return 'time';
+  return 'form';
 }
 
-function clearSelection(){
+function renderScreens(){
+  const screen = currentScreen();
+  document.getElementById('screenLocation').style.display = screen==='location' ? 'block' : 'none';
+  document.getElementById('screenTime').style.display = screen==='time' ? 'block' : 'none';
+  document.getElementById('screenForm').style.display = screen==='form' ? 'block' : 'none';
+}
+
+function backToLocations(){
   selectedLocationId = null;
   selectedTime = null;
   cancelEdit(true);
   renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function backToTime(){
+  selectedTime = null;
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function renderLocations(){
@@ -345,23 +354,26 @@ function selectLocation(locId){
   selectedTime = null;
   cancelEdit(true);
   renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function renderSlots(){
-  const section = document.getElementById('slotSection');
+  const header = document.getElementById('timeScreenHeader');
+  const wrap = document.getElementById('slotWrap');
   if(!selectedLocationId){
-    section.style.display = 'none';
+    header.innerHTML = '';
+    wrap.innerHTML = '';
     return;
   }
   const loc = getLocation(selectedLocationId);
   const dow = getDow(selectedDate);
   const windows = loc.getWindows(dow);
+  const {md,dow:dowLabel} = fmtDate(selectedDate);
+  header.innerHTML = `<div class="screen-loc-name">📍 ${loc.name}</div><div class="screen-loc-sub">${md}(${dowLabel})・${loc.hoursText}</div>`;
   if(!windows){
-    section.style.display = 'none';
+    wrap.innerHTML = '<div class="empty-state">本日は定休日です</div>';
     return;
   }
-  section.style.display = 'block';
-  const wrap = document.getElementById('slotWrap');
   wrap.innerHTML = windows.map(win=>{
     const slots = genSlots(win);
     const label = windows.length>1 ? `<div class="slot-window-label">${win[0]}〜${win[1]}</div>` : '';
@@ -375,18 +387,26 @@ function renderSlots(){
 
 function selectTime(t){
   selectedTime = t;
-  editingId = null;
-  document.getElementById('fName').value = '';
-  document.getElementById('fPeople').value = 1;
-  document.getElementById('formTitle').textContent = '受付情報を入力';
-  document.getElementById('submitBtn').textContent = '追加する';
+  if(!editingId){
+    document.getElementById('fName').value = '';
+    document.getElementById('fPeople').value = 1;
+    document.getElementById('formTitle').textContent = '受付情報を入力';
+    document.getElementById('submitBtn').textContent = '追加する';
+  }
   renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
   document.getElementById('fName').focus();
 }
 
 function renderForm(){
-  const form = document.getElementById('entryForm');
-  form.style.display = selectedTime ? 'block' : 'none';
+  const header = document.getElementById('formScreenHeader');
+  if(!selectedLocationId || !selectedTime){
+    header.innerHTML = '';
+    return;
+  }
+  const loc = getLocation(selectedLocationId);
+  const {md,dow} = fmtDate(selectedDate);
+  header.innerHTML = `<div class="screen-loc-name">📍 ${loc.name}</div><div class="screen-loc-sub">${md}(${dow})・${selectedTime}〜</div>`;
 }
 
 function renderEntryList(){
@@ -424,11 +444,11 @@ function renderEntryList(){
 function renderAll(){
   renderDateTabs();
   renderSummary();
-  renderBreadcrumb();
   renderLocations();
   renderSlots();
   renderForm();
   renderEntryList();
+  renderScreens();
 }
 
 function submitEntry(){

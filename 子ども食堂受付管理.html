@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="食堂受付">
+<title>子ども食堂 受付管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{--bg:#f5f2ee;--surface:#fff;--ink:#1a1714;--ink-light:#6b6560;--accent:#e08a2e;--accent-light:#fdf1e2;--border:#e2ddd8;--success:#27ae60;--blue:#2980b9;--blue-light:#ebf5fb;--closed:#b0a99f;}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:0 0 60px;}
+  header{background:var(--ink);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  header h1{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  header .today{font-family:'DM Mono',monospace;font-size:12px;color:#aaa;}
+  main{max-width:560px;margin:0 auto;padding:16px;}
+
+  .date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;-webkit-overflow-scrolling:touch;}
+  .date-tab{flex:0 0 auto;min-width:78px;text-align:center;padding:10px 6px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;transition:all .15s;}
+  .date-tab .dt-date{display:block;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--ink);}
+  .date-tab .dt-dow{display:block;font-size:10px;color:var(--ink-light);margin-top:1px;}
+  .date-tab .dt-count{display:block;font-size:10px;color:var(--accent);margin-top:3px;font-family:'DM Mono',monospace;}
+  .date-tab.active{background:var(--accent);border-color:var(--accent);}
+  .date-tab.active .dt-date,.date-tab.active .dt-dow,.date-tab.active .dt-count{color:#fff;}
+
+  .day-summary{background:var(--ink);color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+  .day-summary-label{font-size:11px;color:#bbb;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+  .day-summary-value{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;}
+  .day-summary-sub{font-size:11px;color:#bbb;}
+
+  .breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:12px;color:var(--ink-light);margin-bottom:12px;}
+  .breadcrumb b{color:var(--ink);font-weight:700;}
+  .breadcrumb .bc-clear{color:var(--accent);cursor:pointer;text-decoration:underline;margin-left:4px;}
+  .breadcrumb .bc-sep{color:var(--border);}
+
+  .section-title{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+
+  .loc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+  .loc-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s;}
+  .loc-card.selected{border-color:var(--accent);background:var(--accent-light);}
+  .loc-card.closed{opacity:.55;cursor:not-allowed;}
+  .loc-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .loc-name{font-size:14px;font-weight:700;color:var(--ink);}
+  .loc-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--closed);color:#fff;white-space:nowrap;}
+  .loc-badge.open{background:var(--success);}
+  .loc-addr{font-size:11px;color:var(--ink-light);margin-top:3px;}
+  .loc-hours{font-size:11px;color:var(--ink-light);margin-top:2px;}
+  .loc-card-count{font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;margin-top:6px;}
+
+  .slot-window{margin-bottom:10px;}
+  .slot-window-label{font-size:11px;color:var(--ink-light);margin-bottom:6px;}
+  .slot-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .slot-btn{border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 12px;font-size:13px;font-family:'DM Mono',monospace;cursor:pointer;}
+  .slot-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+
+  .input-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin-bottom:16px;}
+  .input-card h2{font-size:12px;font-weight:500;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;}
+  .field-row{display:flex;gap:10px;margin-bottom:12px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:11px;color:var(--ink-light);margin-bottom:6px;letter-spacing:.03em;}
+  .field input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;font-size:15px;font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--bg);outline:none;transition:border-color .2s;}
+  .field input:focus{border-color:var(--accent);background:#fff;}
+  .field input[type="number"]{font-family:'DM Mono',monospace;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-primary{flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;letter-spacing:.03em;}
+  .btn-cancel{flex:0 0 auto;background:var(--bg);color:var(--ink-light);border:1.5px solid var(--border);border-radius:10px;padding:14px 18px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+
+  .loc-group{margin-bottom:14px;}
+  .loc-group-title{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .loc-group-count{font-size:11px;color:var(--ink-light);font-weight:400;font-family:'DM Mono',monospace;}
+  .record-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .record-item{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);gap:12px;}
+  .record-item:last-child{border-bottom:none;}
+  .record-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-light);min-width:44px;}
+  .record-name{font-size:14px;color:var(--ink);flex:1;font-weight:500;}
+  .record-people{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);min-width:36px;text-align:right;}
+  .record-actions{display:flex;gap:6px;}
+  .icon-btn{border:none;background:none;color:var(--ink-light);font-size:15px;cursor:pointer;padding:4px 6px;line-height:1;}
+  .icon-btn:active{opacity:.5;}
+  .icon-btn.del{color:var(--accent);}
+
+  .empty-state{padding:32px 16px;text-align:center;color:var(--ink-light);font-size:13px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍚 子ども食堂 受付管理</h1>
+  <span class="today" id="headerDate"></span>
+</header>
+
+<main>
+  <div class="date-tabs" id="dateTabs"></div>
+
+  <div class="day-summary">
+    <div>
+      <div class="day-summary-label" id="summaryLabel">来場者数</div>
+      <div class="day-summary-value"><span id="summaryPeople">0</span>人</div>
+    </div>
+    <div class="day-summary-sub" id="summaryGroups">0組</div>
+  </div>
+
+  <div class="breadcrumb" id="breadcrumb"></div>
+
+  <div class="section-title">① 受け取り場所を選択</div>
+  <div class="loc-list" id="locList"></div>
+
+  <div id="slotSection" style="display:none">
+    <div class="section-title">② 受け取り時間を選択</div>
+    <div id="slotWrap"></div>
+  </div>
+
+  <div class="input-card" id="entryForm" style="display:none">
+    <h2 id="formTitle">受付情報を入力</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>お名前</label>
+        <input type="text" id="fName" placeholder="例：山田 太郎">
+      </div>
+      <div class="field" style="flex:0 0 90px">
+        <label>人数</label>
+        <input type="number" id="fPeople" min="1" value="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="submitBtn" onclick="submitEntry()">追加する</button>
+      <button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
+    </div>
+  </div>
+
+  <div class="section-title">受付一覧</div>
+  <div id="entryListWrap"></div>
+</main>
+
+<script>
+const DATES = ['2026-08-05','2026-08-07','2026-08-17','2026-08-21','2026-08-24'];
+const DOW = ['日','月','火','水','木','金','土'];
+const STORAGE_KEY = 'kodomoShokudoUketsuke_v2';
+
+// dow: 0=日 1=月 2=火 3=水 4=木 5=金 6=土
+const LOCATIONS = [
+  {
+    id: 'sannasubi', name: 'さんなすび',
+    addr: '住之江区粉浜１丁目２０−１６',
+    hoursText: '15:00〜21:00（水・木休み）／日曜のみ12:00〜18:00',
+    getWindows(dow){
+      if(dow===3 || dow===4) return null;
+      if(dow===0) return [['12:00','18:00']];
+      return [['15:00','21:00']];
+    }
+  },
+  {
+    id: 'waraiya', name: 'わらい家',
+    addr: '住之江区粉浜西１丁目８−４',
+    hoursText: '14:00〜21:00（火曜休み）',
+    getWindows(dow){
+      if(dow===2) return null;
+      return [['14:00','21:00']];
+    }
+  },
+  {
+    id: 'sakegorilla', name: '酒ゴリラ',
+    addr: '西成区玉出中２丁目１６−６',
+    hoursText: '11:00〜12:00、17:00〜21:00（日曜休み）',
+    getWindows(dow){
+      if(dow===0) return null;
+      return [['11:00','12:00'],['17:00','21:00']];
+    }
+  },
+  {
+    id: 'takuto', name: 'たくと',
+    addr: '西成区玉出中2-14-9',
+    hoursText: '18:00〜21:00（日曜休み）',
+    getWindows(dow){
+      if(dow===0) return null;
+      return [['18:00','21:00']];
+    }
+  },
+  {
+    id: 'tsubaki', name: 'つばき鍼灸整骨院',
+    addr: '西成区玉出中2-14-9',
+    hoursText: '9:00〜11:00、13:00〜20:00（日曜休み）',
+    getWindows(dow){
+      if(dow===0) return null;
+      return [['09:00','11:00'],['13:00','20:00']];
+    }
+  }
+];
+
+let data = loadData();
+let selectedDate = DATES[0];
+let selectedLocationId = null;
+let selectedTime = null;
+let editingId = null; // {date, locationId, id}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function entriesFor(date, locId){
+  return (data[date] && data[date][locId]) || [];
+}
+function allEntriesFor(date){
+  const d = data[date] || {};
+  return Object.keys(d).flatMap(locId => d[locId]);
+}
+function getLocation(id){
+  return LOCATIONS.find(l=>l.id===id);
+}
+function getDow(dateStr){
+  const [y,m,day] = dateStr.split('-').map(Number);
+  return new Date(y,m-1,day).getDay();
+}
+
+function timeToMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
+function minToTime(m){ const h=Math.floor(m/60), mm=m%60; return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
+function genSlots(win){
+  const start=timeToMin(win[0]), end=timeToMin(win[1]);
+  const out=[];
+  for(let t=start;t<=end;t+=30) out.push(minToTime(t));
+  return out;
+}
+
+function fmtDate(d){
+  const [y,m,day] = d.split('-').map(Number);
+  return { md: `${m}/${day}`, dow: DOW[getDow(d)] };
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderHeader(){
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+}
+
+function renderDateTabs(){
+  const wrap = document.getElementById('dateTabs');
+  wrap.innerHTML = DATES.map(d=>{
+    const {md,dow} = fmtDate(d);
+    const count = allEntriesFor(d).reduce((s,e)=>s+Number(e.people||0),0);
+    const active = d===selectedDate ? 'active' : '';
+    return `<div class="date-tab ${active}" onclick="selectDate('${d}')">
+      <span class="dt-date">${md}</span>
+      <span class="dt-dow">(${dow})</span>
+      <span class="dt-count">${count}人</span>
+    </div>`;
+  }).join('');
+}
+
+function selectDate(d){
+  if(d===selectedDate) return;
+  selectedDate = d;
+  selectedLocationId = null;
+  selectedTime = null;
+  cancelEdit(true);
+  renderAll();
+}
+
+function renderSummary(){
+  const list = allEntriesFor(selectedDate);
+  const {md,dow} = fmtDate(selectedDate);
+  document.getElementById('summaryLabel').textContent = `${md}(${dow}) 来場者数`;
+  document.getElementById('summaryPeople').textContent = list.reduce((s,e)=>s+Number(e.people||0),0);
+  document.getElementById('summaryGroups').textContent = `${list.length}組`;
+}
+
+function renderBreadcrumb(){
+  const el = document.getElementById('breadcrumb');
+  const {md,dow} = fmtDate(selectedDate);
+  let html = `<b>${md}(${dow})</b>`;
+  if(selectedLocationId){
+    const loc = getLocation(selectedLocationId);
+    html += ` <span class="bc-sep">›</span> <b>${loc.name}</b>`;
+  }
+  if(selectedTime){
+    html += ` <span class="bc-sep">›</span> <b>${selectedTime}</b>`;
+  }
+  if(selectedLocationId){
+    html += ` <span class="bc-clear" onclick="clearSelection()">選択解除</span>`;
+  }
+  el.innerHTML = html;
+}
+
+function clearSelection(){
+  selectedLocationId = null;
+  selectedTime = null;
+  cancelEdit(true);
+  renderAll();
+}
+
+function renderLocations(){
+  const dow = getDow(selectedDate);
+  const wrap = document.getElementById('locList');
+  wrap.innerHTML = LOCATIONS.map(loc=>{
+    const windows = loc.getWindows(dow);
+    const closed = !windows;
+    const selected = loc.id===selectedLocationId ? 'selected' : '';
+    const count = entriesFor(selectedDate, loc.id).reduce((s,e)=>s+Number(e.people||0),0);
+    return `<div class="loc-card ${closed?'closed':''} ${selected}" onclick="${closed?'':`selectLocation('${loc.id}')`}">
+      <div class="loc-card-top">
+        <span class="loc-name">${loc.name}</span>
+        <span class="loc-badge ${closed?'':'open'}">${closed?'定休日':'営業中'}</span>
+      </div>
+      <div class="loc-addr">${loc.addr}</div>
+      <div class="loc-hours">${loc.hoursText}</div>
+      ${count>0 ? `<div class="loc-card-count">受付済み ${count}人</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectLocation(locId){
+  selectedLocationId = locId;
+  selectedTime = null;
+  cancelEdit(true);
+  renderAll();
+}
+
+function renderSlots(){
+  const section = document.getElementById('slotSection');
+  if(!selectedLocationId){
+    section.style.display = 'none';
+    return;
+  }
+  const loc = getLocation(selectedLocationId);
+  const dow = getDow(selectedDate);
+  const windows = loc.getWindows(dow);
+  if(!windows){
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  const wrap = document.getElementById('slotWrap');
+  wrap.innerHTML = windows.map(win=>{
+    const slots = genSlots(win);
+    const label = windows.length>1 ? `<div class="slot-window-label">${win[0]}〜${win[1]}</div>` : '';
+    const btns = slots.map(t=>{
+      const sel = t===selectedTime ? 'selected' : '';
+      return `<button type="button" class="slot-btn ${sel}" onclick="selectTime('${t}')">${t}</button>`;
+    }).join('');
+    return `<div class="slot-window">${label}<div class="slot-grid">${btns}</div></div>`;
+  }).join('');
+}
+
+function selectTime(t){
+  selectedTime = t;
+  editingId = null;
+  document.getElementById('fName').value = '';
+  document.getElementById('fPeople').value = 1;
+  document.getElementById('formTitle').textContent = '受付情報を入力';
+  document.getElementById('submitBtn').textContent = '追加する';
+  renderAll();
+  document.getElementById('fName').focus();
+}
+
+function renderForm(){
+  const form = document.getElementById('entryForm');
+  form.style.display = selectedTime ? 'block' : 'none';
+}
+
+function renderEntryList(){
+  const wrap = document.getElementById('entryListWrap');
+  const groups = LOCATIONS.map(loc=>{
+    const list = entriesFor(selectedDate, loc.id).slice().sort((a,b)=>a.time.localeCompare(b.time));
+    return { loc, list };
+  }).filter(g=>g.list.length>0);
+
+  if(groups.length===0){
+    wrap.innerHTML = '<div class="empty-state">まだ受付がありません</div>';
+    return;
+  }
+
+  wrap.innerHTML = groups.map(({loc,list})=>{
+    const total = list.reduce((s,e)=>s+Number(e.people||0),0);
+    const rows = list.map(e=>`
+      <div class="record-item">
+        <span class="record-time">${e.time}</span>
+        <span class="record-name">${escapeHtml(e.name)}</span>
+        <span class="record-people">${e.people}人</span>
+        <span class="record-actions">
+          <button class="icon-btn" onclick="startEdit('${loc.id}','${e.id}')">✏️</button>
+          <button class="icon-btn del" onclick="deleteEntry('${loc.id}','${e.id}')">🗑</button>
+        </span>
+      </div>
+    `).join('');
+    return `<div class="loc-group">
+      <div class="loc-group-title"><span>📍 ${loc.name}</span><span class="loc-group-count">${total}人・${list.length}組</span></div>
+      <div class="record-list">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  renderDateTabs();
+  renderSummary();
+  renderBreadcrumb();
+  renderLocations();
+  renderSlots();
+  renderForm();
+  renderEntryList();
+}
+
+function submitEntry(){
+  const name = document.getElementById('fName').value.trim();
+  const people = Number(document.getElementById('fPeople').value) || 1;
+
+  if(!name){
+    alert('お名前を入力してください');
+    return;
+  }
+  if(!selectedLocationId || !selectedTime){
+    alert('受け取り場所と時間を選択してください');
+    return;
+  }
+
+  if(!data[selectedDate]) data[selectedDate] = {};
+  if(!data[selectedDate][selectedLocationId]) data[selectedDate][selectedLocationId] = [];
+
+  if(editingId){
+    const entry = data[editingId.date][editingId.locationId].find(e=>e.id===editingId.id);
+    if(entry){ entry.time = selectedTime; entry.name = name; entry.people = people; }
+  }else{
+    data[selectedDate][selectedLocationId].push({ id: String(Date.now()), time: selectedTime, name, people });
+  }
+
+  saveData();
+  const keepLocation = selectedLocationId, keepTime = selectedTime;
+  editingId = null;
+  document.getElementById('fName').value = '';
+  document.getElementById('fPeople').value = 1;
+  selectedLocationId = keepLocation;
+  selectedTime = keepTime;
+  renderAll();
+  document.getElementById('fName').focus();
+}
+
+function startEdit(locId, id){
+  const entry = entriesFor(selectedDate, locId).find(e=>e.id===id);
+  if(!entry) return;
+  editingId = { date: selectedDate, locationId: locId, id };
+  selectedLocationId = locId;
+  selectedTime = entry.time;
+  renderAll();
+  document.getElementById('fName').value = entry.name;
+  document.getElementById('fPeople').value = entry.people;
+  document.getElementById('formTitle').textContent = '受付を編集';
+  document.getElementById('submitBtn').textContent = '更新する';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cancelEdit(skipRender){
+  editingId = null;
+  selectedTime = null;
+  const fName = document.getElementById('fName');
+  const fPeople = document.getElementById('fPeople');
+  if(fName) fName.value = '';
+  if(fPeople) fPeople.value = 1;
+  if(!skipRender) renderAll();
+}
+
+function deleteEntry(locId, id){
+  if(!confirm('この受付を削除しますか？')) return;
+  data[selectedDate][locId] = entriesFor(selectedDate, locId).filter(e=>e.id!==id);
+  saveData();
+  renderAll();
+}
+
+renderHeader();
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="食堂受付">
+<title>子ども食堂 受付管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{--bg:#f5f2ee;--surface:#fff;--ink:#1a1714;--ink-light:#6b6560;--accent:#e08a2e;--accent-light:#fdf1e2;--border:#e2ddd8;--success:#27ae60;--blue:#2980b9;--blue-light:#ebf5fb;}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:0 0 60px;}
+  header{background:var(--ink);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  header h1{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  header .today{font-family:'DM Mono',monospace;font-size:12px;color:#aaa;}
+  main{max-width:520px;margin:0 auto;padding:16px;}
+
+  .date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;-webkit-overflow-scrolling:touch;}
+  .date-tab{flex:0 0 auto;min-width:78px;text-align:center;padding:10px 6px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;transition:all .15s;}
+  .date-tab .dt-date{display:block;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--ink);}
+  .date-tab .dt-dow{display:block;font-size:10px;color:var(--ink-light);margin-top:1px;}
+  .date-tab .dt-count{display:block;font-size:10px;color:var(--accent);margin-top:3px;font-family:'DM Mono',monospace;}
+  .date-tab.active{background:var(--accent);border-color:var(--accent);}
+  .date-tab.active .dt-date,.date-tab.active .dt-dow,.date-tab.active .dt-count{color:#fff;}
+
+  .day-summary{background:var(--ink);color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+  .day-summary-label{font-size:11px;color:#bbb;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+  .day-summary-value{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;}
+  .day-summary-sub{font-size:11px;color:#bbb;}
+
+  .input-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin-bottom:16px;}
+  .input-card h2{font-size:12px;font-weight:500;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;}
+  .field-row{display:flex;gap:10px;margin-bottom:12px;}
+  .field{flex:1;}
+  .field label{display:block;font-size:11px;color:var(--ink-light);margin-bottom:6px;letter-spacing:.03em;}
+  .field input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;font-size:15px;font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--bg);outline:none;transition:border-color .2s;}
+  .field input:focus{border-color:var(--accent);background:#fff;}
+  .field input[type="time"],.field input[type="number"]{font-family:'DM Mono',monospace;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-primary{flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;letter-spacing:.03em;}
+  .btn-cancel{flex:0 0 auto;background:var(--bg);color:var(--ink-light);border:1.5px solid var(--border);border-radius:10px;padding:14px 18px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+
+  .section-title{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+  .record-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .record-item{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);gap:12px;}
+  .record-item:last-child{border-bottom:none;}
+  .record-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-light);min-width:44px;}
+  .record-name{font-size:14px;color:var(--ink);flex:1;font-weight:500;}
+  .record-people{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);min-width:36px;text-align:right;}
+  .record-actions{display:flex;gap:6px;}
+  .icon-btn{border:none;background:none;color:var(--ink-light);font-size:15px;cursor:pointer;padding:4px 6px;line-height:1;}
+  .icon-btn:active{opacity:.5;}
+  .icon-btn.del{color:var(--accent);}
+
+  .empty-state{padding:32px 16px;text-align:center;color:var(--ink-light);font-size:13px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍚 子ども食堂 受付管理</h1>
+  <span class="today" id="headerDate"></span>
+</header>
+
+<main>
+  <div class="date-tabs" id="dateTabs"></div>
+
+  <div class="day-summary">
+    <div>
+      <div class="day-summary-label" id="summaryLabel">来場者数</div>
+      <div class="day-summary-value"><span id="summaryPeople">0</span>人</div>
+    </div>
+    <div class="day-summary-sub" id="summaryGroups">0組</div>
+  </div>
+
+  <div class="input-card">
+    <h2 id="formTitle">受付を追加</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>時間</label>
+        <input type="time" id="fTime">
+      </div>
+      <div class="field">
+        <label>人数</label>
+        <input type="number" id="fPeople" min="1" value="1" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>お名前</label>
+        <input type="text" id="fName" placeholder="例：山田 太郎">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="submitBtn" onclick="submitEntry()">追加する</button>
+      <button class="btn-cancel" id="cancelBtn" style="display:none" onclick="cancelEdit()">キャンセル</button>
+    </div>
+  </div>
+
+  <div class="section-title">受付一覧</div>
+  <div class="record-list" id="recordList"></div>
+</main>
+
+<script>
+const DATES = ['2026-08-05','2026-08-07','2026-08-17','2026-08-21','2026-08-24'];
+const DOW = ['日','月','火','水','木','金','土'];
+const STORAGE_KEY = 'kodomoShokudoUketsuke';
+
+let data = loadData();
+let selectedDate = DATES[0];
+let editingId = null;
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function entriesFor(date){
+  return data[date] || [];
+}
+
+function fmtDate(d){
+  const [y,m,day] = d.split('-').map(Number);
+  return { md: `${m}/${day}`, dow: DOW[new Date(y,m-1,day).getDay()] };
+}
+
+function renderHeader(){
+  const now = new Date();
+  document.getElementById('headerDate').textContent =
+    `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+}
+
+function renderDateTabs(){
+  const wrap = document.getElementById('dateTabs');
+  wrap.innerHTML = DATES.map(d=>{
+    const {md,dow} = fmtDate(d);
+    const count = entriesFor(d).reduce((s,e)=>s+Number(e.people||0),0);
+    const active = d===selectedDate ? 'active' : '';
+    return `<div class="date-tab ${active}" onclick="selectDate('${d}')">
+      <span class="dt-date">${md}</span>
+      <span class="dt-dow">(${dow})</span>
+      <span class="dt-count">${count}人</span>
+    </div>`;
+  }).join('');
+}
+
+function selectDate(d){
+  selectedDate = d;
+  cancelEdit();
+  renderAll();
+}
+
+function renderSummary(){
+  const list = entriesFor(selectedDate);
+  const {md,dow} = fmtDate(selectedDate);
+  document.getElementById('summaryLabel').textContent = `${md}(${dow}) 来場者数`;
+  document.getElementById('summaryPeople').textContent = list.reduce((s,e)=>s+Number(e.people||0),0);
+  document.getElementById('summaryGroups').textContent = `${list.length}組`;
+}
+
+function renderList(){
+  const list = entriesFor(selectedDate).slice().sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  const wrap = document.getElementById('recordList');
+  if(list.length===0){
+    wrap.innerHTML = '<div class="empty-state">まだ受付がありません</div>';
+    return;
+  }
+  wrap.innerHTML = list.map(e=>`
+    <div class="record-item">
+      <span class="record-time">${e.time||'--:--'}</span>
+      <span class="record-name">${escapeHtml(e.name)}</span>
+      <span class="record-people">${e.people}人</span>
+      <span class="record-actions">
+        <button class="icon-btn" onclick="startEdit('${e.id}')">✏️</button>
+        <button class="icon-btn del" onclick="deleteEntry('${e.id}')">🗑</button>
+      </span>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderAll(){
+  renderDateTabs();
+  renderSummary();
+  renderList();
+}
+
+function submitEntry(){
+  const time = document.getElementById('fTime').value;
+  const name = document.getElementById('fName').value.trim();
+  const people = Number(document.getElementById('fPeople').value) || 1;
+
+  if(!name){
+    alert('お名前を入力してください');
+    return;
+  }
+
+  if(!data[selectedDate]) data[selectedDate] = [];
+
+  if(editingId){
+    const entry = data[selectedDate].find(e=>e.id===editingId);
+    if(entry){ entry.time=time; entry.name=name; entry.people=people; }
+  }else{
+    data[selectedDate].push({ id: String(Date.now()), time, name, people });
+  }
+
+  saveData();
+  cancelEdit();
+  renderAll();
+}
+
+function startEdit(id){
+  const entry = entriesFor(selectedDate).find(e=>e.id===id);
+  if(!entry) return;
+  editingId = id;
+  document.getElementById('fTime').value = entry.time||'';
+  document.getElementById('fName').value = entry.name||'';
+  document.getElementById('fPeople').value = entry.people||1;
+  document.getElementById('formTitle').textContent = '受付を編集';
+  document.getElementById('submitBtn').textContent = '更新する';
+  document.getElementById('cancelBtn').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cancelEdit(){
+  editingId = null;
+  document.getElementById('fTime').value = '';
+  document.getElementById('fName').value = '';
+  document.getElementById('fPeople').value = 1;
+  document.getElementById('formTitle').textContent = '受付を追加';
+  document.getElementById('submitBtn').textContent = '追加する';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+function deleteEntry(id){
+  if(!confirm('この受付を削除しますか？')) return;
+  data[selectedDate] = entriesFor(selectedDate).filter(e=>e.id!==id);
+  saveData();
+  renderAll();
+}
+
+renderHeader();
+renderAll();
+</script>
+</body>
+</html>

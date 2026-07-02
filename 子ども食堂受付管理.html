@@ -113,7 +113,7 @@
     <div class="day-summary-sub" id="summaryGroups">0組</div>
   </div>
 
-  <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28組）に達したため終了しました</div>
+  <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28人）に達したため終了しました</div>
 
   <div id="screenLocation">
     <div class="section-title">受け取り場所を選択</div>
@@ -164,7 +164,9 @@
 const DATES = ['2026-08-05','2026-08-07','2026-08-17','2026-08-21','2026-08-24'];
 const DOW = ['日','月','火','水','木','金','土'];
 const STORAGE_KEY = 'kodomoShokudoUketsuke_v2';
-const MAX_GROUPS_PER_DAY = 28;
+const DISPLAY_CAP = 30;
+const ACTUAL_CAP = 28;
+const ADMIN_PIN = '0945';
 
 // dow: 0=日 1=月 2=火 3=水 4=木 5=金 6=土
 const LOCATIONS = [
@@ -243,8 +245,11 @@ function allEntriesFor(date){
 function getLocation(id){
   return LOCATIONS.find(l=>l.id===id);
 }
+function totalPeople(date){
+  return allEntriesFor(date).reduce((s,e)=>s+Number(e.people||0),0);
+}
 function isDayFull(date){
-  return allEntriesFor(date).length >= MAX_GROUPS_PER_DAY;
+  return totalPeople(date) >= ACTUAL_CAP;
 }
 function getDow(dateStr){
   const [y,m,day] = dateStr.split('-').map(Number);
@@ -279,13 +284,13 @@ function renderDateTabs(){
   const wrap = document.getElementById('dateTabs');
   wrap.innerHTML = DATES.map(d=>{
     const {md,dow} = fmtDate(d);
-    const groups = allEntriesFor(d).length;
+    const people = totalPeople(d);
     const active = d===selectedDate ? 'active' : '';
-    const full = groups>=MAX_GROUPS_PER_DAY ? 'full' : '';
+    const full = isDayFull(d) ? 'full' : '';
     return `<div class="date-tab ${active} ${full}" onclick="selectDate('${d}')">
       <span class="dt-date">${md}</span>
       <span class="dt-dow">(${dow})</span>
-      <span class="dt-count">${groups}/${MAX_GROUPS_PER_DAY}組</span>
+      <span class="dt-count">${people}/${DISPLAY_CAP}人</span>
     </div>`;
   }).join('');
 }
@@ -302,10 +307,10 @@ function selectDate(d){
 function renderSummary(){
   const list = allEntriesFor(selectedDate);
   const {md,dow} = fmtDate(selectedDate);
-  const full = list.length >= MAX_GROUPS_PER_DAY;
+  const full = isDayFull(selectedDate);
   document.getElementById('summaryLabel').textContent = full ? `${md}(${dow}) 満員` : `${md}(${dow}) 来場者数`;
-  document.getElementById('summaryPeople').textContent = list.reduce((s,e)=>s+Number(e.people||0),0);
-  document.getElementById('summaryGroups').textContent = `${list.length}/${MAX_GROUPS_PER_DAY}組`;
+  document.getElementById('summaryPeople').textContent = `${totalPeople(selectedDate)}/${DISPLAY_CAP}`;
+  document.getElementById('summaryGroups').textContent = `${list.length}組`;
   document.getElementById('daySummary').classList.toggle('full', full);
   document.getElementById('fullBanner').style.display = full ? 'block' : 'none';
 }
@@ -326,6 +331,12 @@ function renderScreens(){
 }
 
 function showAdmin(){
+  const input = window.prompt('管理画面のPIN（4桁）を入力してください');
+  if(input === null) return;
+  if(input !== ADMIN_PIN){
+    alert('PINが違います');
+    return;
+  }
   adminMode = true;
   cameFromAdmin = false;
   renderAll();
@@ -503,7 +514,7 @@ function submitEntry(){
   }
   const isEdit = !!editingId;
   if(!isEdit && isDayFull(selectedDate)){
-    alert(`本日の受付は定員（${MAX_GROUPS_PER_DAY}組）に達しました`);
+    alert(`本日の受付は定員（${ACTUAL_CAP}人）に達しました`);
     renderAll();
     return;
   }

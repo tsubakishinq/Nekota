@@ -52,6 +52,19 @@
 
   .selected-panel{margin-top:14px;border-top:1px dashed var(--border);padding-top:14px;}
   .selected-label{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px;}
+
+  .field-label{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.04em;margin-bottom:8px;}
+  .symptom-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+  .symptom-btn{flex:1;min-width:74px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:10px;padding:9px 4px;font-size:12.5px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:center;}
+  .symptom-btn.selected{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700;}
+
+  .condition-block{margin-bottom:14px;padding:12px;background:var(--bg);border-radius:10px;}
+  .condition-warn{font-size:11px;color:#9a5b13;background:#fdf1e0;border:1px solid #f3d9ae;border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.6;}
+  .condition-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .condition-chip{border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:20px;padding:7px 11px;font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .condition-chip.selected{background:var(--accent-light);border-color:var(--accent);color:var(--ink);font-weight:700;}
+  .condition-disclaimer{font-size:10.5px;color:var(--ink-light);line-height:1.6;}
+
   .intensity-row{display:flex;gap:6px;margin-bottom:14px;}
   .lvl-btn{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:9px 2px;background:var(--surface);cursor:pointer;text-align:center;}
   .lvl-btn .dot{width:16px;height:16px;border-radius:50%;margin:0 auto 5px;background:var(--dot-color);}
@@ -125,6 +138,13 @@
 
       <div class="selected-panel" id="selectedPanel" style="display:none;">
         <div class="selected-label" id="selectedLabel"></div>
+
+        <div class="field-label">どんな感じですか</div>
+        <div class="symptom-row" id="symptomRow"></div>
+
+        <div id="conditionBlock"></div>
+
+        <div class="field-label">強さ</div>
         <div class="intensity-row" id="intensityRow"></div>
         <textarea id="memoInput" placeholder="メモ（きっかけ・動かした時の感じ など）"></textarea>
         <div class="btn-row">
@@ -177,59 +197,92 @@
      厳密に合わせている。特に手首・足先は図形の端に位置を合わせてタップ判定の空振りを防ぐ。 */
   var ZONES = {
     front: [
-      {key:'head', x:100, y:30, label:'頭'},
-      {key:'neck', x:100, y:56, label:'首'},
-      {key:'shoulder_r', x:74, y:74, label:'肩（右）'},
-      {key:'shoulder_l', x:126, y:74, label:'肩（左）'},
-      {key:'chest', x:100, y:96, label:'胸'},
-      {key:'upperarm_r', x:45, y:104, label:'腕（右）'},
-      {key:'upperarm_l', x:155, y:104, label:'腕（左）'},
-      {key:'abdomen', x:100, y:132, label:'お腹'},
-      {key:'elbow_r', x:45, y:134, label:'肘（右）'},
-      {key:'elbow_l', x:155, y:134, label:'肘（左）'},
-      {key:'wrist_r', x:45, y:164, label:'手首（右）'},
-      {key:'wrist_l', x:155, y:164, label:'手首（左）'},
-      {key:'hip_r', x:82, y:158, label:'股関節（右）'},
-      {key:'hip_l', x:118, y:158, label:'股関節（左）'},
-      {key:'thigh_r', x:82, y:188, label:'太もも（右）'},
-      {key:'thigh_l', x:118, y:188, label:'太もも（左）'},
-      {key:'knee_r', x:82, y:222, label:'膝（右）'},
-      {key:'knee_l', x:118, y:222, label:'膝（左）'},
-      {key:'shin_r', x:82, y:254, label:'すね（右）'},
-      {key:'shin_l', x:118, y:254, label:'すね（左）'},
-      {key:'foot_r', x:82, y:288, label:'足（右）'},
-      {key:'foot_l', x:118, y:288, label:'足（左）'}
+      {key:'head', x:100, y:30, label:'頭', region:'head'},
+      {key:'neck', x:100, y:56, label:'首', region:'neck'},
+      {key:'shoulder_r', x:74, y:74, label:'肩（右）', region:'shoulder'},
+      {key:'shoulder_l', x:126, y:74, label:'肩（左）', region:'shoulder'},
+      {key:'chest', x:100, y:96, label:'胸', region:'chest'},
+      {key:'upperarm_r', x:45, y:104, label:'腕（右）', region:'arm'},
+      {key:'upperarm_l', x:155, y:104, label:'腕（左）', region:'arm'},
+      {key:'abdomen', x:100, y:132, label:'お腹', region:'abdomen'},
+      {key:'elbow_r', x:45, y:134, label:'肘（右）', region:'elbow'},
+      {key:'elbow_l', x:155, y:134, label:'肘（左）', region:'elbow'},
+      {key:'wrist_r', x:45, y:164, label:'手首（右）', region:'wrist'},
+      {key:'wrist_l', x:155, y:164, label:'手首（左）', region:'wrist'},
+      {key:'hip_r', x:82, y:158, label:'股関節（右）', region:'hip'},
+      {key:'hip_l', x:118, y:158, label:'股関節（左）', region:'hip'},
+      {key:'thigh_r', x:82, y:188, label:'太もも（右）', region:'thigh'},
+      {key:'thigh_l', x:118, y:188, label:'太もも（左）', region:'thigh'},
+      {key:'knee_r', x:82, y:222, label:'膝（右）', region:'knee'},
+      {key:'knee_l', x:118, y:222, label:'膝（左）', region:'knee'},
+      {key:'shin_r', x:82, y:254, label:'すね（右）', region:'shin'},
+      {key:'shin_l', x:118, y:254, label:'すね（左）', region:'shin'},
+      {key:'foot_r', x:82, y:288, label:'足（右）', region:'foot'},
+      {key:'foot_l', x:118, y:288, label:'足（左）', region:'foot'}
     ],
     back: [
-      {key:'head_b', x:100, y:30, label:'頭'},
-      {key:'neck_b', x:100, y:56, label:'首の後ろ'},
-      {key:'shoulder_r_b', x:74, y:74, label:'肩（右）'},
-      {key:'shoulder_l_b', x:126, y:74, label:'肩（左）'},
-      {key:'scapula_r', x:78, y:102, label:'肩甲骨（右）'},
-      {key:'scapula_l', x:122, y:102, label:'肩甲骨（左）'},
-      {key:'upperarm_r_b', x:45, y:104, label:'腕（右）'},
-      {key:'upperarm_l_b', x:155, y:104, label:'腕（左）'},
-      {key:'lowerback', x:100, y:132, label:'腰'},
-      {key:'elbow_r_b', x:45, y:134, label:'肘（右）'},
-      {key:'elbow_l_b', x:155, y:134, label:'肘（左）'},
-      {key:'wrist_r_b', x:45, y:164, label:'手首（右）'},
-      {key:'wrist_l_b', x:155, y:164, label:'手首（左）'},
-      {key:'hip_r_b', x:82, y:158, label:'お尻（右）'},
-      {key:'hip_l_b', x:118, y:158, label:'お尻（左）'},
-      {key:'thigh_r_b', x:82, y:188, label:'太もも裏（右）'},
-      {key:'thigh_l_b', x:118, y:188, label:'太もも裏（左）'},
-      {key:'knee_r_b', x:82, y:222, label:'膝裏（右）'},
-      {key:'knee_l_b', x:118, y:222, label:'膝裏（左）'},
-      {key:'calf_r', x:82, y:254, label:'ふくらはぎ（右）'},
-      {key:'calf_l', x:118, y:254, label:'ふくらはぎ（左）'},
-      {key:'foot_r_b', x:82, y:288, label:'足（右）'},
-      {key:'foot_l_b', x:118, y:288, label:'足（左）'}
+      {key:'head_b', x:100, y:30, label:'頭', region:'head'},
+      {key:'neck_b', x:100, y:56, label:'首の後ろ', region:'neck'},
+      {key:'shoulder_r_b', x:74, y:74, label:'肩（右）', region:'shoulder'},
+      {key:'shoulder_l_b', x:126, y:74, label:'肩（左）', region:'shoulder'},
+      {key:'scapula_r', x:78, y:102, label:'肩甲骨（右）', region:'scapula'},
+      {key:'scapula_l', x:122, y:102, label:'肩甲骨（左）', region:'scapula'},
+      {key:'upperarm_r_b', x:45, y:104, label:'腕（右）', region:'arm'},
+      {key:'upperarm_l_b', x:155, y:104, label:'腕（左）', region:'arm'},
+      {key:'lowerback', x:100, y:132, label:'腰', region:'lowerback'},
+      {key:'elbow_r_b', x:45, y:134, label:'肘（右）', region:'elbow'},
+      {key:'elbow_l_b', x:155, y:134, label:'肘（左）', region:'elbow'},
+      {key:'wrist_r_b', x:45, y:164, label:'手首（右）', region:'wrist'},
+      {key:'wrist_l_b', x:155, y:164, label:'手首（左）', region:'wrist'},
+      {key:'hip_r_b', x:82, y:158, label:'お尻（右）', region:'hip'},
+      {key:'hip_l_b', x:118, y:158, label:'お尻（左）', region:'hip'},
+      {key:'thigh_r_b', x:82, y:188, label:'太もも裏（右）', region:'thigh'},
+      {key:'thigh_l_b', x:118, y:188, label:'太もも裏（左）', region:'thigh'},
+      {key:'knee_r_b', x:82, y:222, label:'膝裏（右）', region:'knee'},
+      {key:'knee_l_b', x:118, y:222, label:'膝裏（左）', region:'knee'},
+      {key:'calf_r', x:82, y:254, label:'ふくらはぎ（右）', region:'calf'},
+      {key:'calf_l', x:118, y:254, label:'ふくらはぎ（左）', region:'calf'},
+      {key:'foot_r_b', x:82, y:288, label:'足（右）', region:'foot'},
+      {key:'foot_l_b', x:118, y:288, label:'足（左）', region:'foot'}
     ]
   };
+
+  var SYMPTOM_TYPES = ['痛み', '違和感', '動かしにくい', 'しびれ'];
+
+  /* 部位（region）×症状タイプで考えられる代表的な疾患名を参考情報として提示する。
+     診断ではないため、あくまで受診を検討する目安として案内する。 */
+  var REGION_CONDITIONS = {
+    head:      { default:['緊張型頭痛','片頭痛','眼精疲労からくる頭痛'], 'しびれ':['頸性頭痛','群発頭痛'] },
+    neck:      { default:['寝違え','頸椎症','ストレートネック'], '動かしにくい':['寝違え','頸椎症','筋緊張性斜頸'], 'しびれ':['頸椎椎間板ヘルニア','胸郭出口症候群','頸椎症性神経根症'] },
+    shoulder:  { default:['肩関節周囲炎（四十肩・五十肩）','肩こり（筋緊張性）'], '動かしにくい':['肩関節周囲炎（四十肩・五十肩）','腱板断裂'], 'しびれ':['頸椎症性神経根症','胸郭出口症候群'] },
+    scapula:   { default:['姿勢性の背部痛（肩甲骨まわりの筋緊張）','肋間神経痛'] },
+    chest:     { default:['肋間神経痛','胸郭出口症候群'], warn:'胸の痛みは心臓や肺が原因のこともあります。強い痛みや息苦しさを伴う場合はすぐに医療機関を受診してください。' },
+    arm:       { default:['筋疲労（使いすぎ）','頸椎由来の放散痛'], 'しびれ':['頸椎症性神経根症','胸郭出口症候群'] },
+    elbow:     { default:['上腕骨外側上顆炎（テニス肘）','上腕骨内側上顆炎（ゴルフ肘）'], '動かしにくい':['変形性肘関節症','上腕骨外側上顆炎'] },
+    wrist:     { default:['腱鞘炎（ドケルバン病）','手根管症候群'], 'しびれ':['手根管症候群','頸椎症'] },
+    abdomen:   { default:['腹筋の筋膜性の痛み'], warn:'お腹の痛みは内臓が原因のこともあります。続く場合や強い場合は内科などの受診をおすすめします。' },
+    lowerback: { default:['筋・筋膜性腰痛（ぎっくり腰含む）','腰椎椎間板ヘルニア','腰部脊柱管狭窄症'], '動かしにくい':['ぎっくり腰（急性腰痛症）','腰部脊柱管狭窄症'], 'しびれ':['腰椎椎間板ヘルニア','腰部脊柱管狭窄症'] },
+    hip:       { default:['梨状筋症候群','変形性股関節症'], '動かしにくい':['変形性股関節症','股関節唇損傷'], 'しびれ':['坐骨神経痛','梨状筋症候群'] },
+    thigh:     { default:['坐骨神経痛（放散痛）','筋肉痛・肉離れ'] },
+    knee:      { default:['変形性膝関節症','半月板損傷','靭帯損傷'], '動かしにくい':['変形性膝関節症','半月板損傷'] },
+    shin:      { default:['シンスプリント','肉離れ'] },
+    calf:      { default:['こむら返り（筋痙攣）','肉離れ'] },
+    foot:      { default:['足底筋膜炎','外反母趾'], 'しびれ':['モートン病','足根管症候群'] }
+  };
+
+  function conditionsFor(region, symptom){
+    var entry = REGION_CONDITIONS[region];
+    if(!entry) return {list:[], warn:null};
+    var list = (symptom && entry[symptom]) ? entry[symptom] : entry.default;
+    return {list: list || [], warn: entry.warn || null};
+  }
 
   var state = {
     view: 'front',
     selectedZone: null,
+    selectedRegion: null,
+    selectedSymptom: null,
+    selectedCondition: null,
     selectedLevel: null,
     records: loadRecords()
   };
@@ -300,7 +353,7 @@
         c.style.setProperty('--zone-color', levelColor(lvl));
       }
       if(state.selectedZone === z.key) c.classList.add('selected');
-      c.addEventListener('click', function(){ selectZone(z.key, z.label); });
+      c.addEventListener('click', function(){ selectZone(z.key, z.label, z.region); });
       layer.appendChild(c);
     });
     renderPartChips();
@@ -321,18 +374,23 @@
       chip.type = 'button';
       chip.className = 'part-chip' + (state.selectedZone === z.key ? ' selected' : '');
       chip.textContent = z.label;
-      chip.addEventListener('click', function(){ selectZone(z.key, z.label); });
+      chip.addEventListener('click', function(){ selectZone(z.key, z.label, z.region); });
       wrap.appendChild(chip);
     });
   }
 
-  function selectZone(key, label){
+  function selectZone(key, label, region){
     state.selectedZone = key;
+    state.selectedRegion = region;
+    state.selectedSymptom = null;
+    state.selectedCondition = null;
     state.selectedLevel = null;
     document.getElementById('selectedPanel').style.display = 'block';
     document.getElementById('zoneHint').style.display = 'none';
     document.getElementById('selectedLabel').textContent = label;
     document.getElementById('memoInput').value = '';
+    renderSymptomRow();
+    renderConditionBlock();
     renderIntensityRow();
     renderZones();
     updateSaveState();
@@ -340,9 +398,65 @@
 
   function clearSelection(){
     state.selectedZone = null;
+    state.selectedRegion = null;
+    state.selectedSymptom = null;
+    state.selectedCondition = null;
     state.selectedLevel = null;
     document.getElementById('selectedPanel').style.display = 'none';
     document.getElementById('zoneHint').style.display = 'block';
+  }
+
+  function renderSymptomRow(){
+    var row = document.getElementById('symptomRow');
+    row.innerHTML = '';
+    SYMPTOM_TYPES.forEach(function(s){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'symptom-btn' + (state.selectedSymptom === s ? ' selected' : '');
+      btn.textContent = s;
+      btn.addEventListener('click', function(){
+        state.selectedSymptom = (state.selectedSymptom === s) ? null : s;
+        state.selectedCondition = null;
+        renderSymptomRow();
+        renderConditionBlock();
+      });
+      row.appendChild(btn);
+    });
+  }
+
+  function renderConditionBlock(){
+    var wrap = document.getElementById('conditionBlock');
+    if(!state.selectedSymptom || !state.selectedRegion){
+      wrap.innerHTML = '';
+      return;
+    }
+    var info = conditionsFor(state.selectedRegion, state.selectedSymptom);
+    if(info.list.length === 0){
+      wrap.innerHTML = '';
+      return;
+    }
+    var html = '<div class="condition-block">';
+    if(info.warn){
+      html += '<div class="condition-warn">⚠️ ' + escapeHtml(info.warn) + '</div>';
+    }
+    html += '<div class="field-label">考えられる可能性（参考情報）</div>';
+    html += '<div class="condition-chips" id="conditionChips"></div>';
+    html += '<div class="condition-disclaimer">※医学的な診断ではありません。あくまで参考情報です。気になる場合や長引く場合は医療機関・整骨院にご相談ください。</div>';
+    html += '</div>';
+    wrap.innerHTML = html;
+
+    var chipsWrap = document.getElementById('conditionChips');
+    info.list.forEach(function(cond){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'condition-chip' + (state.selectedCondition === cond ? ' selected' : '');
+      chip.textContent = cond;
+      chip.addEventListener('click', function(){
+        state.selectedCondition = (state.selectedCondition === cond) ? null : cond;
+        renderConditionBlock();
+      });
+      chipsWrap.appendChild(chip);
+    });
   }
 
   function renderIntensityRow(){
@@ -385,6 +499,8 @@
       view: state.view,
       partKey: zoneDef.key,
       partLabel: zoneDef.label,
+      symptom: state.selectedSymptom,
+      condition: state.selectedCondition,
       level: state.selectedLevel,
       memo: document.getElementById('memoInput').value.trim()
     });
@@ -441,7 +557,10 @@
         html += '<div class="record-item">'
           + '<div class="record-time">'+r.time+'</div>'
           + '<div class="record-badge" style="--dot-color:'+levelColor(r.level)+'">'+r.level+'</div>'
-          + '<div class="record-body"><div class="record-part">'+escapeHtml(r.partLabel)+'</div>'
+          + '<div class="record-body"><div class="record-part">'+escapeHtml(r.partLabel)
+          + (r.symptom ? '　<span style="font-weight:400;color:var(--ink-light);">'+escapeHtml(r.symptom)+'</span>' : '')
+          + '</div>'
+          + (r.condition ? '<div class="record-memo">考えられる可能性: '+escapeHtml(r.condition)+'</div>' : '')
           + (r.memo ? '<div class="record-memo">'+escapeHtml(r.memo)+'</div>' : '')
           + '</div>'
           + '<button class="record-del" data-id="'+r.id+'">✕</button>'

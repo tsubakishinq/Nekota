@@ -37,13 +37,18 @@
   .view-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 
   /* --- body diagram --- */
-  .diagram-wrap{position:relative;max-width:280px;margin:0 auto;}
+  .diagram-wrap{position:relative;max-width:300px;margin:0 auto;}
   .diagram-wrap svg{width:100%;height:auto;display:block;}
   .zone{cursor:pointer;fill:#cfe6de;stroke:#fff;stroke-width:1.5;transition:fill .15s;}
   .zone:active{fill:var(--accent);}
   .zone.has-data{fill:var(--zone-color,#cfe6de);}
   .zone.selected{fill:var(--accent) !important;stroke:var(--ink);stroke-width:2;}
   .zone-hint{text-align:center;font-size:11px;color:var(--ink-light);margin-top:8px;}
+  .list-toggle{display:block;margin:8px auto 0;background:none;border:none;color:var(--accent);font-size:11px;text-decoration:underline;text-decoration-color:var(--accent-light);cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+  .part-chips{display:none;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .part-chips.open{display:flex;}
+  .part-chip{border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:20px;padding:8px 12px;font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .part-chip.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
 
   .selected-panel{margin-top:14px;border-top:1px dashed var(--border);padding-top:14px;}
   .selected-label{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px;}
@@ -115,6 +120,8 @@
         </svg>
       </div>
       <div class="zone-hint" id="zoneHint">気になる部位をタップしてください</div>
+      <button class="list-toggle" id="listToggleBtn" type="button">タップしにくい場合はリストから選ぶ</button>
+      <div class="part-chips" id="partChips"></div>
 
       <div class="selected-panel" id="selectedPanel" style="display:none;">
         <div class="selected-label" id="selectedLabel"></div>
@@ -166,6 +173,8 @@
   ];
   function levelColor(n){ return {1:'#4caf82',2:'#8bc34a',3:'#ffc107',4:'#ff9800',5:'#e53935'}[n] || '#cfe6de'; }
 
+  /* 座標はSVGの実描画（頭:y8-52 / 胴:y60-160 / 腕:y66-168 / 脚:y152-282 / 足先:cy288）に
+     厳密に合わせている。特に手首・足先は図形の端に位置を合わせてタップ判定の空振りを防ぐ。 */
   var ZONES = {
     front: [
       {key:'head', x:100, y:30, label:'頭'},
@@ -173,44 +182,48 @@
       {key:'shoulder_r', x:74, y:74, label:'肩（右）'},
       {key:'shoulder_l', x:126, y:74, label:'肩（左）'},
       {key:'chest', x:100, y:96, label:'胸'},
-      {key:'upperarm_r', x:45, y:100, label:'腕（右）'},
-      {key:'upperarm_l', x:155, y:100, label:'腕（左）'},
-      {key:'abdomen', x:100, y:140, label:'お腹'},
-      {key:'elbow_r', x:45, y:140, label:'肘（右）'},
-      {key:'elbow_l', x:155, y:140, label:'肘（左）'},
-      {key:'wrist_r', x:45, y:172, label:'手首（右）'},
-      {key:'wrist_l', x:155, y:172, label:'手首（左）'},
-      {key:'hip_r', x:82, y:165, label:'股関節（右）'},
-      {key:'hip_l', x:118, y:165, label:'股関節（左）'},
-      {key:'thigh_r', x:82, y:205, label:'太もも（右）'},
-      {key:'thigh_l', x:118, y:205, label:'太もも（左）'},
-      {key:'knee_r', x:82, y:250, label:'膝（右）'},
-      {key:'knee_l', x:118, y:250, label:'膝（左）'},
-      {key:'shin_r', x:82, y:280, label:'すね（右）'},
-      {key:'shin_l', x:118, y:280, label:'すね（左）'}
+      {key:'upperarm_r', x:45, y:104, label:'腕（右）'},
+      {key:'upperarm_l', x:155, y:104, label:'腕（左）'},
+      {key:'abdomen', x:100, y:132, label:'お腹'},
+      {key:'elbow_r', x:45, y:134, label:'肘（右）'},
+      {key:'elbow_l', x:155, y:134, label:'肘（左）'},
+      {key:'wrist_r', x:45, y:164, label:'手首（右）'},
+      {key:'wrist_l', x:155, y:164, label:'手首（左）'},
+      {key:'hip_r', x:82, y:158, label:'股関節（右）'},
+      {key:'hip_l', x:118, y:158, label:'股関節（左）'},
+      {key:'thigh_r', x:82, y:188, label:'太もも（右）'},
+      {key:'thigh_l', x:118, y:188, label:'太もも（左）'},
+      {key:'knee_r', x:82, y:222, label:'膝（右）'},
+      {key:'knee_l', x:118, y:222, label:'膝（左）'},
+      {key:'shin_r', x:82, y:254, label:'すね（右）'},
+      {key:'shin_l', x:118, y:254, label:'すね（左）'},
+      {key:'foot_r', x:82, y:288, label:'足（右）'},
+      {key:'foot_l', x:118, y:288, label:'足（左）'}
     ],
     back: [
       {key:'head_b', x:100, y:30, label:'頭'},
       {key:'neck_b', x:100, y:56, label:'首の後ろ'},
       {key:'shoulder_r_b', x:74, y:74, label:'肩（右）'},
       {key:'shoulder_l_b', x:126, y:74, label:'肩（左）'},
-      {key:'scapula_r', x:78, y:96, label:'肩甲骨（右）'},
-      {key:'scapula_l', x:122, y:96, label:'肩甲骨（左）'},
-      {key:'upperarm_r_b', x:45, y:100, label:'腕（右）'},
-      {key:'upperarm_l_b', x:155, y:100, label:'腕（左）'},
-      {key:'lowerback', x:100, y:140, label:'腰'},
-      {key:'elbow_r_b', x:45, y:140, label:'肘（右）'},
-      {key:'elbow_l_b', x:155, y:140, label:'肘（左）'},
-      {key:'wrist_r_b', x:45, y:172, label:'手首（右）'},
-      {key:'wrist_l_b', x:155, y:172, label:'手首（左）'},
-      {key:'hip_r_b', x:82, y:165, label:'お尻（右）'},
-      {key:'hip_l_b', x:118, y:165, label:'お尻（左）'},
-      {key:'thigh_r_b', x:82, y:205, label:'太もも裏（右）'},
-      {key:'thigh_l_b', x:118, y:205, label:'太もも裏（左）'},
-      {key:'knee_r_b', x:82, y:250, label:'膝裏（右）'},
-      {key:'knee_l_b', x:118, y:250, label:'膝裏（左）'},
-      {key:'calf_r', x:82, y:280, label:'ふくらはぎ（右）'},
-      {key:'calf_l', x:118, y:280, label:'ふくらはぎ（左）'}
+      {key:'scapula_r', x:78, y:102, label:'肩甲骨（右）'},
+      {key:'scapula_l', x:122, y:102, label:'肩甲骨（左）'},
+      {key:'upperarm_r_b', x:45, y:104, label:'腕（右）'},
+      {key:'upperarm_l_b', x:155, y:104, label:'腕（左）'},
+      {key:'lowerback', x:100, y:132, label:'腰'},
+      {key:'elbow_r_b', x:45, y:134, label:'肘（右）'},
+      {key:'elbow_l_b', x:155, y:134, label:'肘（左）'},
+      {key:'wrist_r_b', x:45, y:164, label:'手首（右）'},
+      {key:'wrist_l_b', x:155, y:164, label:'手首（左）'},
+      {key:'hip_r_b', x:82, y:158, label:'お尻（右）'},
+      {key:'hip_l_b', x:118, y:158, label:'お尻（左）'},
+      {key:'thigh_r_b', x:82, y:188, label:'太もも裏（右）'},
+      {key:'thigh_l_b', x:118, y:188, label:'太もも裏（左）'},
+      {key:'knee_r_b', x:82, y:222, label:'膝裏（右）'},
+      {key:'knee_l_b', x:118, y:222, label:'膝裏（左）'},
+      {key:'calf_r', x:82, y:254, label:'ふくらはぎ（右）'},
+      {key:'calf_l', x:118, y:254, label:'ふくらはぎ（左）'},
+      {key:'foot_r_b', x:82, y:288, label:'足（右）'},
+      {key:'foot_l_b', x:118, y:288, label:'足（左）'}
     ]
   };
 
@@ -277,7 +290,7 @@
       var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
       c.setAttribute('cx', z.x);
       c.setAttribute('cy', z.y);
-      c.setAttribute('r', 10);
+      c.setAttribute('r', 11);
       c.setAttribute('class','zone');
       c.dataset.key = z.key;
       c.dataset.label = z.label;
@@ -289,6 +302,27 @@
       if(state.selectedZone === z.key) c.classList.add('selected');
       c.addEventListener('click', function(){ selectZone(z.key, z.label); });
       layer.appendChild(c);
+    });
+    renderPartChips();
+  }
+
+  var chipsOpen = false;
+  document.getElementById('listToggleBtn').addEventListener('click', function(){
+    chipsOpen = !chipsOpen;
+    document.getElementById('partChips').classList.toggle('open', chipsOpen);
+    this.textContent = chipsOpen ? 'からだの図に戻す' : 'タップしにくい場合はリストから選ぶ';
+  });
+
+  function renderPartChips(){
+    var wrap = document.getElementById('partChips');
+    wrap.innerHTML = '';
+    ZONES[state.view].forEach(function(z){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'part-chip' + (state.selectedZone === z.key ? ' selected' : '');
+      chip.textContent = z.label;
+      chip.addEventListener('click', function(){ selectZone(z.key, z.label); });
+      wrap.appendChild(chip);
     });
   }
 

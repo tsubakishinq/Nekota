@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="からだメモ">
+<title>からだメモ｜コンディション記録</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --bg:#f3f7f6;--surface:#fff;--ink:#1c2624;--ink-light:#6b7d78;
+    --accent:#2f9e83;--accent-light:#e3f5ef;--border:#dfe8e5;
+    --l1:#4caf82;--l2:#8bc34a;--l3:#ffc107;--l4:#ff9800;--l5:#e53935;
+  }
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:0 0 84px;}
+  header{background:var(--ink);color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  header h1{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  header .today{font-family:'DM Mono',monospace;font-size:12px;color:#9fd8c6;}
+  main{max-width:480px;margin:0 auto;padding:16px;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* --- tabbar --- */
+  .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+  .tab{flex:1;border:none;background:none;padding:11px 4px 9px;font-family:'Noto Sans JP',sans-serif;color:var(--ink-light);font-size:11px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+  .tab .ic{font-size:19px;line-height:1;}
+  .tab.active{color:var(--accent);font-weight:700;}
+
+  .section-title{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;}
+
+  /* --- view toggle --- */
+  .view-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .view-btn{flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink-light);font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .view-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+  /* --- body diagram --- */
+  .diagram-wrap{position:relative;max-width:300px;margin:0 auto;}
+  .diagram-wrap svg{width:100%;height:auto;display:block;}
+  .zone{cursor:pointer;fill:#cfe6de;stroke:#fff;stroke-width:1.5;transition:fill .15s;}
+  .zone:active{fill:var(--accent);}
+  .zone.has-data{fill:var(--zone-color,#cfe6de);}
+  .zone.selected{fill:var(--accent) !important;stroke:var(--ink);stroke-width:2;}
+  .zone-hint{text-align:center;font-size:11px;color:var(--ink-light);margin-top:8px;}
+  .list-toggle{display:block;margin:8px auto 0;background:none;border:none;color:var(--accent);font-size:11px;text-decoration:underline;text-decoration-color:var(--accent-light);cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
+  .part-chips{display:none;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .part-chips.open{display:flex;}
+  .part-chip{border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:20px;padding:8px 12px;font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .part-chip.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+
+  .selected-panel{margin-top:14px;border-top:1px dashed var(--border);padding-top:14px;}
+  .selected-label{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px;}
+  .intensity-row{display:flex;gap:6px;margin-bottom:14px;}
+  .lvl-btn{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:9px 2px;background:var(--surface);cursor:pointer;text-align:center;}
+  .lvl-btn .dot{width:16px;height:16px;border-radius:50%;margin:0 auto 5px;background:var(--dot-color);}
+  .lvl-btn .num{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-light);}
+  .lvl-btn.selected{border-color:var(--ink);background:var(--accent-light);}
+  .lvl-btn.selected .num{color:var(--ink);font-weight:700;}
+  textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;font-size:14px;font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--bg);outline:none;resize:vertical;min-height:64px;margin-bottom:12px;}
+  textarea:focus{border-color:var(--accent);background:#fff;}
+  .btn-row{display:flex;gap:10px;}
+  .btn-primary{flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;letter-spacing:.03em;}
+  .btn-primary:disabled{opacity:.4;}
+  .btn-cancel{flex:0 0 auto;background:var(--bg);color:var(--ink-light);border:1.5px solid var(--border);border-radius:10px;padding:14px 18px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+
+  /* --- history --- */
+  .filter-row{display:flex;gap:8px;margin-bottom:14px;}
+  select{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--surface);outline:none;}
+  .day-group{margin-bottom:14px;}
+  .day-group-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;font-family:'DM Mono',monospace;}
+  .record-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .record-item{display:flex;align-items:flex-start;padding:13px 14px;border-bottom:1px solid var(--border);gap:10px;}
+  .record-item:last-child{border-bottom:none;}
+  .record-time{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-light);min-width:40px;padding-top:2px;}
+  .record-badge{width:26px;height:26px;border-radius:50%;background:var(--dot-color);color:#fff;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .record-body{flex:1;min-width:0;}
+  .record-part{font-size:13px;font-weight:700;color:var(--ink);}
+  .record-memo{font-size:12px;color:var(--ink-light);margin-top:2px;word-break:break-word;}
+  .record-del{border:none;background:none;color:var(--ink-light);font-size:16px;cursor:pointer;padding:2px 4px;}
+  .record-del:active{opacity:.5;}
+  .empty-state{padding:40px 16px;text-align:center;color:var(--ink-light);font-size:13px;line-height:1.7;}
+
+  /* --- trend --- */
+  canvas{width:100%;height:180px;display:block;}
+  .trend-summary{display:flex;gap:10px;margin-top:14px;}
+  .trend-stat{flex:1;background:var(--accent-light);border-radius:10px;padding:12px;text-align:center;}
+  .trend-stat .val{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--accent);}
+  .trend-stat .lbl{font-size:10px;color:var(--ink-light);margin-top:2px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>からだメモ</h1>
+  <div class="today" id="todayLabel"></div>
+</header>
+
+<main>
+  <!-- 記録画面 -->
+  <section class="screen active" id="screen-record">
+    <div class="card">
+      <div class="section-title">どこが気になりますか</div>
+      <div class="view-toggle">
+        <button class="view-btn active" data-view="front">からだの前</button>
+        <button class="view-btn" data-view="back">からだの後ろ</button>
+      </div>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 200 340" id="bodySvg">
+          <ellipse cx="100" cy="30" rx="19" ry="22" fill="#cfe6de"/>
+          <rect x="90" y="48" width="20" height="16" rx="5" fill="#cfe6de"/>
+          <rect x="63" y="60" width="74" height="100" rx="28" fill="#cfe6de"/>
+          <rect x="34" y="66" width="22" height="102" rx="11" fill="#cfe6de"/>
+          <rect x="144" y="66" width="22" height="102" rx="11" fill="#cfe6de"/>
+          <rect x="70" y="152" width="24" height="130" rx="12" fill="#cfe6de"/>
+          <rect x="106" y="152" width="24" height="130" rx="12" fill="#cfe6de"/>
+          <ellipse cx="82" cy="288" rx="14" ry="8" fill="#cfe6de"/>
+          <ellipse cx="118" cy="288" rx="14" ry="8" fill="#cfe6de"/>
+          <g id="zoneLayer"></g>
+        </svg>
+      </div>
+      <div class="zone-hint" id="zoneHint">気になる部位をタップしてください</div>
+      <button class="list-toggle" id="listToggleBtn" type="button">タップしにくい場合はリストから選ぶ</button>
+      <div class="part-chips" id="partChips"></div>
+
+      <div class="selected-panel" id="selectedPanel" style="display:none;">
+        <div class="selected-label" id="selectedLabel"></div>
+        <div class="intensity-row" id="intensityRow"></div>
+        <textarea id="memoInput" placeholder="メモ（きっかけ・動かした時の感じ など）"></textarea>
+        <div class="btn-row">
+          <button class="btn-cancel" id="cancelBtn">やめる</button>
+          <button class="btn-primary" id="saveBtn" disabled>記録する</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 履歴画面 -->
+  <section class="screen" id="screen-history">
+    <div class="filter-row">
+      <select id="filterPart"><option value="">すべての部位</option></select>
+    </div>
+    <div id="historyList"></div>
+  </section>
+
+  <!-- 推移画面 -->
+  <section class="screen" id="screen-trend">
+    <div class="card">
+      <div class="section-title">部位を選ぶ</div>
+      <select id="trendPart" style="width:100%;"></select>
+      <div id="trendBody"></div>
+    </div>
+  </section>
+</main>
+
+<div class="tabbar">
+  <button class="tab active" data-screen="record"><span class="ic">✏️</span>記録</button>
+  <button class="tab" data-screen="history"><span class="ic">📋</span>履歴</button>
+  <button class="tab" data-screen="trend"><span class="ic">📈</span>推移</button>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var STORAGE_KEY = 'karada-memo-records-v1';
+
+  var LEVELS = [
+    {n:1, label:'ほぼ気にならない', color:'var(--l1)'},
+    {n:2, label:'軽い違和感', color:'var(--l2)'},
+    {n:3, label:'そこそこ気になる', color:'var(--l3)'},
+    {n:4, label:'かなり痛い', color:'var(--l4)'},
+    {n:5, label:'耐えられない', color:'var(--l5)'}
+  ];
+  function levelColor(n){ return {1:'#4caf82',2:'#8bc34a',3:'#ffc107',4:'#ff9800',5:'#e53935'}[n] || '#cfe6de'; }
+
+  /* 座標はSVGの実描画（頭:y8-52 / 胴:y60-160 / 腕:y66-168 / 脚:y152-282 / 足先:cy288）に
+     厳密に合わせている。特に手首・足先は図形の端に位置を合わせてタップ判定の空振りを防ぐ。 */
+  var ZONES = {
+    front: [
+      {key:'head', x:100, y:30, label:'頭'},
+      {key:'neck', x:100, y:56, label:'首'},
+      {key:'shoulder_r', x:74, y:74, label:'肩（右）'},
+      {key:'shoulder_l', x:126, y:74, label:'肩（左）'},
+      {key:'chest', x:100, y:96, label:'胸'},
+      {key:'upperarm_r', x:45, y:104, label:'腕（右）'},
+      {key:'upperarm_l', x:155, y:104, label:'腕（左）'},
+      {key:'abdomen', x:100, y:132, label:'お腹'},
+      {key:'elbow_r', x:45, y:134, label:'肘（右）'},
+      {key:'elbow_l', x:155, y:134, label:'肘（左）'},
+      {key:'wrist_r', x:45, y:164, label:'手首（右）'},
+      {key:'wrist_l', x:155, y:164, label:'手首（左）'},
+      {key:'hip_r', x:82, y:158, label:'股関節（右）'},
+      {key:'hip_l', x:118, y:158, label:'股関節（左）'},
+      {key:'thigh_r', x:82, y:188, label:'太もも（右）'},
+      {key:'thigh_l', x:118, y:188, label:'太もも（左）'},
+      {key:'knee_r', x:82, y:222, label:'膝（右）'},
+      {key:'knee_l', x:118, y:222, label:'膝（左）'},
+      {key:'shin_r', x:82, y:254, label:'すね（右）'},
+      {key:'shin_l', x:118, y:254, label:'すね（左）'},
+      {key:'foot_r', x:82, y:288, label:'足（右）'},
+      {key:'foot_l', x:118, y:288, label:'足（左）'}
+    ],
+    back: [
+      {key:'head_b', x:100, y:30, label:'頭'},
+      {key:'neck_b', x:100, y:56, label:'首の後ろ'},
+      {key:'shoulder_r_b', x:74, y:74, label:'肩（右）'},
+      {key:'shoulder_l_b', x:126, y:74, label:'肩（左）'},
+      {key:'scapula_r', x:78, y:102, label:'肩甲骨（右）'},
+      {key:'scapula_l', x:122, y:102, label:'肩甲骨（左）'},
+      {key:'upperarm_r_b', x:45, y:104, label:'腕（右）'},
+      {key:'upperarm_l_b', x:155, y:104, label:'腕（左）'},
+      {key:'lowerback', x:100, y:132, label:'腰'},
+      {key:'elbow_r_b', x:45, y:134, label:'肘（右）'},
+      {key:'elbow_l_b', x:155, y:134, label:'肘（左）'},
+      {key:'wrist_r_b', x:45, y:164, label:'手首（右）'},
+      {key:'wrist_l_b', x:155, y:164, label:'手首（左）'},
+      {key:'hip_r_b', x:82, y:158, label:'お尻（右）'},
+      {key:'hip_l_b', x:118, y:158, label:'お尻（左）'},
+      {key:'thigh_r_b', x:82, y:188, label:'太もも裏（右）'},
+      {key:'thigh_l_b', x:118, y:188, label:'太もも裏（左）'},
+      {key:'knee_r_b', x:82, y:222, label:'膝裏（右）'},
+      {key:'knee_l_b', x:118, y:222, label:'膝裏（左）'},
+      {key:'calf_r', x:82, y:254, label:'ふくらはぎ（右）'},
+      {key:'calf_l', x:118, y:254, label:'ふくらはぎ（左）'},
+      {key:'foot_r_b', x:82, y:288, label:'足（右）'},
+      {key:'foot_l_b', x:118, y:288, label:'足（左）'}
+    ]
+  };
+
+  var state = {
+    view: 'front',
+    selectedZone: null,
+    selectedLevel: null,
+    records: loadRecords()
+  };
+
+  function loadRecords(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveRecords(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.records));
+  }
+
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function fmtDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function fmtTime(d){ return pad(d.getHours())+':'+pad(d.getMinutes()); }
+  function dowLabel(d){ return ['日','月','火','水','木','金','土'][d.getDay()]; }
+
+  document.getElementById('todayLabel').textContent = fmtDate(new Date());
+
+  /* ---- tab / screen switching ---- */
+  var tabs = document.querySelectorAll('.tab');
+  tabs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabs.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+      document.getElementById('screen-'+btn.dataset.screen).classList.add('active');
+      if(btn.dataset.screen === 'history') renderHistory();
+      if(btn.dataset.screen === 'trend') renderTrendOptions();
+    });
+  });
+
+  /* ---- view toggle (front/back) ---- */
+  document.querySelectorAll('.view-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.view-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.view = btn.dataset.view;
+      clearSelection();
+      renderZones();
+    });
+  });
+
+  /* ---- body diagram zones ---- */
+  function latestLevelForKey(key){
+    for(var i=state.records.length-1;i>=0;i--){
+      if(state.records[i].partKey === key) return state.records[i].level;
+    }
+    return null;
+  }
+
+  function renderZones(){
+    var layer = document.getElementById('zoneLayer');
+    layer.innerHTML = '';
+    ZONES[state.view].forEach(function(z){
+      var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', z.x);
+      c.setAttribute('cy', z.y);
+      c.setAttribute('r', 11);
+      c.setAttribute('class','zone');
+      c.dataset.key = z.key;
+      c.dataset.label = z.label;
+      var lvl = latestLevelForKey(z.key);
+      if(lvl){
+        c.classList.add('has-data');
+        c.style.setProperty('--zone-color', levelColor(lvl));
+      }
+      if(state.selectedZone === z.key) c.classList.add('selected');
+      c.addEventListener('click', function(){ selectZone(z.key, z.label); });
+      layer.appendChild(c);
+    });
+    renderPartChips();
+  }
+
+  var chipsOpen = false;
+  document.getElementById('listToggleBtn').addEventListener('click', function(){
+    chipsOpen = !chipsOpen;
+    document.getElementById('partChips').classList.toggle('open', chipsOpen);
+    this.textContent = chipsOpen ? 'からだの図に戻す' : 'タップしにくい場合はリストから選ぶ';
+  });
+
+  function renderPartChips(){
+    var wrap = document.getElementById('partChips');
+    wrap.innerHTML = '';
+    ZONES[state.view].forEach(function(z){
+      var chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'part-chip' + (state.selectedZone === z.key ? ' selected' : '');
+      chip.textContent = z.label;
+      chip.addEventListener('click', function(){ selectZone(z.key, z.label); });
+      wrap.appendChild(chip);
+    });
+  }
+
+  function selectZone(key, label){
+    state.selectedZone = key;
+    state.selectedLevel = null;
+    document.getElementById('selectedPanel').style.display = 'block';
+    document.getElementById('zoneHint').style.display = 'none';
+    document.getElementById('selectedLabel').textContent = label;
+    document.getElementById('memoInput').value = '';
+    renderIntensityRow();
+    renderZones();
+    updateSaveState();
+  }
+
+  function clearSelection(){
+    state.selectedZone = null;
+    state.selectedLevel = null;
+    document.getElementById('selectedPanel').style.display = 'none';
+    document.getElementById('zoneHint').style.display = 'block';
+  }
+
+  function renderIntensityRow(){
+    var row = document.getElementById('intensityRow');
+    row.innerHTML = '';
+    LEVELS.forEach(function(lv){
+      var btn = document.createElement('button');
+      btn.className = 'lvl-btn';
+      btn.type = 'button';
+      if(state.selectedLevel === lv.n) btn.classList.add('selected');
+      btn.innerHTML = '<div class="dot" style="--dot-color:'+levelColor(lv.n)+'"></div><div class="num">'+lv.n+'</div>';
+      btn.title = lv.label;
+      btn.addEventListener('click', function(){
+        state.selectedLevel = lv.n;
+        renderIntensityRow();
+        updateSaveState();
+      });
+      row.appendChild(btn);
+    });
+  }
+
+  function updateSaveState(){
+    document.getElementById('saveBtn').disabled = !(state.selectedZone && state.selectedLevel);
+  }
+
+  document.getElementById('cancelBtn').addEventListener('click', function(){
+    clearSelection();
+    renderZones();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    if(!state.selectedZone || !state.selectedLevel) return;
+    var zoneDef = ZONES[state.view].find(function(z){ return z.key === state.selectedZone; });
+    var now = new Date();
+    state.records.push({
+      id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
+      ts: now.getTime(),
+      date: fmtDate(now),
+      time: fmtTime(now),
+      view: state.view,
+      partKey: zoneDef.key,
+      partLabel: zoneDef.label,
+      level: state.selectedLevel,
+      memo: document.getElementById('memoInput').value.trim()
+    });
+    saveRecords();
+    clearSelection();
+    renderZones();
+  });
+
+  /* ---- history ---- */
+  function uniquePartLabels(){
+    var set = {};
+    state.records.forEach(function(r){ set[r.partLabel] = true; });
+    return Object.keys(set).sort();
+  }
+
+  function renderFilterOptions(){
+    var sel = document.getElementById('filterPart');
+    var current = sel.value;
+    sel.innerHTML = '<option value="">すべての部位</option>';
+    uniquePartLabels().forEach(function(label){
+      var opt = document.createElement('option');
+      opt.value = label; opt.textContent = label;
+      sel.appendChild(opt);
+    });
+    sel.value = current;
+  }
+
+  document.getElementById('filterPart').addEventListener('change', renderHistory);
+
+  function renderHistory(){
+    renderFilterOptions();
+    var filter = document.getElementById('filterPart').value;
+    var list = document.getElementById('historyList');
+    var records = state.records.slice().filter(function(r){ return !filter || r.partLabel === filter; });
+    records.sort(function(a,b){ return b.ts - a.ts; });
+
+    if(records.length === 0){
+      list.innerHTML = '<div class="empty-state">まだ記録がありません。<br>「記録」タブからからだの状態を記録してみましょう。</div>';
+      return;
+    }
+
+    var groups = {};
+    var order = [];
+    records.forEach(function(r){
+      if(!groups[r.date]){ groups[r.date] = []; order.push(r.date); }
+      groups[r.date].push(r);
+    });
+
+    var html = '';
+    order.forEach(function(date){
+      var d = new Date(date+'T00:00:00');
+      html += '<div class="day-group"><div class="day-group-title">'+date+'（'+dowLabel(d)+'）</div><div class="record-list">';
+      groups[date].forEach(function(r){
+        html += '<div class="record-item">'
+          + '<div class="record-time">'+r.time+'</div>'
+          + '<div class="record-badge" style="--dot-color:'+levelColor(r.level)+'">'+r.level+'</div>'
+          + '<div class="record-body"><div class="record-part">'+escapeHtml(r.partLabel)+'</div>'
+          + (r.memo ? '<div class="record-memo">'+escapeHtml(r.memo)+'</div>' : '')
+          + '</div>'
+          + '<button class="record-del" data-id="'+r.id+'">✕</button>'
+          + '</div>';
+      });
+      html += '</div></div>';
+    });
+    list.innerHTML = html;
+
+    list.querySelectorAll('.record-del').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if(!confirm('この記録を削除しますか？')) return;
+        state.records = state.records.filter(function(r){ return r.id !== btn.dataset.id; });
+        saveRecords();
+        renderHistory();
+        renderZones();
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ---- trend ---- */
+  document.getElementById('trendPart').addEventListener('change', function(){ renderTrend(this.value); });
+
+  function renderTrendOptions(){
+    var sel = document.getElementById('trendPart');
+    var current = sel.value;
+    var labels = uniquePartLabels();
+    sel.innerHTML = '';
+    if(labels.length === 0){
+      sel.innerHTML = '<option value="">記録がありません</option>';
+      document.getElementById('trendBody').innerHTML = '';
+      return;
+    }
+    labels.forEach(function(label){
+      var opt = document.createElement('option');
+      opt.value = label; opt.textContent = label;
+      sel.appendChild(opt);
+    });
+    if(labels.indexOf(current) >= 0) sel.value = current;
+    renderTrend(sel.value);
+  }
+
+  function renderTrend(partLabel){
+    var body = document.getElementById('trendBody');
+    if(!partLabel){ body.innerHTML=''; return; }
+    var records = state.records.filter(function(r){ return r.partLabel === partLabel; })
+      .sort(function(a,b){ return a.ts - b.ts; });
+
+    if(records.length === 0){
+      body.innerHTML = '<div class="empty-state">この部位の記録はまだありません。</div>';
+      return;
+    }
+
+    body.innerHTML = '<canvas id="trendCanvas"></canvas>'
+      + '<div class="trend-summary">'
+      + '<div class="trend-stat"><div class="val">'+records.length+'</div><div class="lbl">記録数</div></div>'
+      + '<div class="trend-stat"><div class="val">'+avg(records)+'</div><div class="lbl">平均強度</div></div>'
+      + '<div class="trend-stat"><div class="val">'+records[records.length-1].level+'</div><div class="lbl">直近の強度</div></div>'
+      + '</div>';
+
+    drawChart(records);
+  }
+
+  function avg(records){
+    var sum = records.reduce(function(a,r){ return a+r.level; }, 0);
+    return (sum/records.length).toFixed(1);
+  }
+
+  function drawChart(records){
+    var canvas = document.getElementById('trendCanvas');
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth || 280;
+    var h = 180;
+    canvas.width = w*dpr; canvas.height = h*dpr;
+    var ctx = canvas.getContext('2d');
+    ctx.scale(dpr,dpr);
+    ctx.clearRect(0,0,w,h);
+
+    var padL = 26, padR = 10, padT = 14, padB = 26;
+    var plotW = w - padL - padR;
+    var plotH = h - padT - padB;
+
+    ctx.strokeStyle = '#dfe8e5';
+    ctx.lineWidth = 1;
+    ctx.font = '10px Noto Sans JP, sans-serif';
+    ctx.fillStyle = '#6b7d78';
+    for(var lv=1; lv<=5; lv++){
+      var y = padT + plotH - ((lv-1)/4)*plotH;
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(w-padR, y);
+      ctx.stroke();
+      ctx.fillText(String(lv), 4, y+3);
+    }
+
+    var recent = records.slice(-14);
+    var stepX = recent.length > 1 ? plotW/(recent.length-1) : 0;
+
+    ctx.beginPath();
+    recent.forEach(function(r, i){
+      var x = padL + stepX*i;
+      var y = padT + plotH - ((r.level-1)/4)*plotH;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = '#2f9e83';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    recent.forEach(function(r, i){
+      var x = padL + stepX*i;
+      var y = padT + plotH - ((r.level-1)/4)*plotH;
+      ctx.beginPath();
+      ctx.arc(x,y,4,0,Math.PI*2);
+      ctx.fillStyle = levelColor(r.level);
+      ctx.fill();
+      if(i===0 || i===recent.length-1 || i===Math.floor(recent.length/2)){
+        ctx.fillStyle = '#6b7d78';
+        var label = r.date.slice(5);
+        ctx.fillText(label, Math.max(padL, Math.min(x-14, w-padR-30)), h-8);
+      }
+    });
+  }
+
+  /* ---- init ---- */
+  renderZones();
+})();
+</script>
+</body>
+</html>

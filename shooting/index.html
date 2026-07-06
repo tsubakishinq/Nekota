@@ -209,7 +209,7 @@
       <div class="itemRow"><div class="itemIco" style="color:#ff5ec9">✦</div><div class="itemTxt"><div class="itemName">マグネット</div><div class="itemDesc">アイテムを引き寄せる（約6秒）</div></div></div>
       <div class="grpLabel">■ 回復・その他</div>
       <div class="itemRow"><div class="itemIco" style="color:#5effa0">✚</div><div class="itemTxt"><div class="itemName">回復</div><div class="itemDesc">HPが30回復する</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム</div><div class="itemDesc">ボムのストックが+1。使うと敵弾を全消し＋全体にダメージ（Xキー / FIREダブルタップ）</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム（必殺技）</div><div class="itemDesc">ストック+1。発動＝Xキー / FIREダブルタップ。ネコで技が変化：キジトラ🐾ネコパンチで押しつぶし／黒ネコ🌀ネコキックで敵を吹き飛ばし／白ネコ🐱敵を全部15秒 味方の子猫にする</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">🐾</div><div class="itemTxt"><div class="itemName">肉球エネルギー</div><div class="itemDesc">スコア +120。集めてハイスコアを狙おう</div></div></div>
       <div class="grpLabel">■ ネコごとのメイン武器</div>
       <div class="itemRow"><div class="itemIco" style="color:#c98a3f">🟠</div><div class="itemTxt"><div class="itemName">キジトラ ＝ 拡散ショット</div><div class="itemDesc">前方に広く弾をばらまくバランス型</div></div></div>
@@ -399,7 +399,8 @@ const dist2=(ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
 const TAU=Math.PI*2;
 
 // object pools
-const stars=[], bullets=[], enemies=[], eBullets=[], particles=[], powerups=[], texts=[];
+const stars=[], bullets=[], enemies=[], eBullets=[], particles=[], powerups=[], texts=[], allies=[];
+let bombFx=null; // 猫パンチ/猫キックの演出
 
 // ============================================================
 //  STARFIELD (3 parallax layers + nebula)
@@ -600,6 +601,7 @@ function fireLaserBeam(dt){
   // ビームの通り道(上方向の縦ライン)にいる敵すべてに継続ダメージ＝貫通
   for(let j=enemies.length-1;j>=0;j--){
     const e=enemies[j];
+    if(e.kicked) continue;
     if(e.y<=player.y && Math.abs(e.x-bx) < halfW + e.r){
       e.hp-=dmg; e.hitFlash=1;
       if(Math.random()<0.22) spawnParticles(e.x, e.y+e.r*0.4, '#c9a8ff', 1, 90, 0.25);
@@ -747,6 +749,13 @@ function updateEnemies(dt){
     const e=enemies[i];
     e.hitFlash=Math.max(0,e.hitFlash-dt*6);
     e.angle+=dt*3;
+    // ネコキックで吹き飛び中
+    if(e.kicked){
+      e.x+=e.vx*dt; e.y+=e.vy*dt; e.vy+=700*dt; // 重力で放物線
+      e.spinAngle=(e.spinAngle||0)+e.spin*dt;
+      if(e.y>H+80 || e.y<-120 || e.x<-100 || e.x>W+100){ enemies.splice(i,1); }
+      continue;
+    }
     if(e.t==='boss'){ updateBoss(e,dt); continue; }
 
     switch(e.pattern){
@@ -784,6 +793,7 @@ function enemyShoot(e){
 
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
+  if(e.kicked) ctx.rotate(e.spinAngle||0); // 吹き飛び中はくるくる回る
   const flash=e.hitFlash>0;
   if(e.t==='boss'){ drawBoss(e); ctx.restore(); return; }
   const col=flash?'#ffffff':e.color;
@@ -1082,17 +1092,117 @@ function drawPowerups(){
 // ============================================================
 function useBomb(){
   if(player.bombs<=0 || !player.alive || state!=='play') return;
-  player.bombs--; player.invuln=Math.max(player.invuln,0.6);
-  Audio2.sfx.bigExplode(); screenShake(16,.5); flash('#57f6ff',.5);
-  showToast('☆ NYAN BOMB ☆','#57f6ff');
-  // clear enemy bullets
+  player.bombs--; player.invuln=Math.max(player.invuln,0.9);
+  // clear enemy bullets (共通)
   for(const b of eBullets) spawnParticles(b.x,b.y,'#57f6ff',3,120,0.4);
   eBullets.length=0;
-  // damage all enemies
+  // ネコごとに必殺技を切替
+  if(selectedSkin==='black') bombKick();
+  else if(selectedSkin==='white') bombKittenize();
+  else bombPaw();
+}
+
+// キジトラ: ネコパンチ — 大きな猫の手が敵を押しつぶす
+function bombPaw(){
+  Audio2.sfx.bigExplode(); screenShake(20,.5); flash('#ffd0a0',.4);
+  showToast('🐾 ネコパンチ！','#ffb45e');
+  bombFx={type:'paw', t:0, dur:0.75};
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i];
-    if(e.t==='boss'){ e.hp-=60; e.hitFlash=1; spawnParticles(e.x,e.y,'#57f6ff',20,240,0.6); if(e.hp<=0) killEnemy(e); }
-    else { spawnParticles(e.x,e.y,e.color,10,200,0.5); killEnemy(e); }
+    if(e.t==='boss'){ e.hp-=90; e.hitFlash=1; spawnParticles(e.x,e.y,'#ffb45e',24,240,0.6); if(e.hp<=0) killEnemy(e); }
+    else { spawnParticles(e.x,e.y+e.r,'#ffb45e',12,220,0.5); spawnParticles(e.x,e.y,'#fff',5,140,0.4); killEnemy(e); }
+  }
+}
+
+// 黒ネコ: ネコキック — 敵が画面外へ吹き飛ぶ
+function bombKick(){
+  Audio2.sfx.bigExplode(); screenShake(16,.4); flash('#b46bff',.35);
+  showToast('🌀 ネコキック！','#b46bff');
+  bombFx={type:'kick', t:0, dur:0.55};
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i];
+    if(e.t==='boss'){ e.hp-=90; e.hitFlash=1; spawnParticles(e.x,e.y,'#b46bff',20,240,0.6); if(e.hp<=0) killEnemy(e); continue; }
+    // 画面外へ吹き飛ばす
+    const dir = e.x<W/2 ? -1 : 1;
+    e.kicked=true; e.shoots=false;
+    e.vx = dir*rnd(420,760)+rnd(-80,80);
+    e.vy = -rnd(520,940);
+    e.spin = rnd(-12,12); e.spinAngle=0;
+    addScore(Math.round(e.score*0.6));
+    spawnParticles(e.x,e.y,'#c9a8ff',6,160,0.4);
+  }
+}
+
+// 白ネコ: 敵を全部 味方の子猫にして15秒 援護させる
+function bombKittenize(){
+  Audio2.sfx.levelup(); screenShake(10,.3); flash('#ff9dd0',.35);
+  showToast('🐱 みんな子猫に！15秒 味方','#ff9dd0');
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i];
+    if(e.t==='boss'){ e.hp-=110; e.hitFlash=1; spawnParticles(e.x,e.y,'#ff9dd0',20,240,0.6); if(e.hp<=0) killEnemy(e); continue; }
+    allies.push({x:e.x, y:e.y, vx:rnd(-40,40), vy:rnd(-20,30), fireCd:rnd(0,0.4), life:15, wob:Math.random()*TAU});
+    spawnParticles(e.x,e.y,'#ff9dd0',10,150,0.5);
+    enemies.splice(i,1);
+  }
+}
+
+// 味方子猫（白ネコボム）
+function updateAllies(dt){
+  for(let i=allies.length-1;i>=0;i--){
+    const a=allies[i]; a.life-=dt; a.wob+=dt*3;
+    a.x+=a.vx*dt; a.y+=a.vy*dt;
+    if(a.x<18){a.x=18;a.vx=Math.abs(a.vx);} if(a.x>W-18){a.x=W-18;a.vx=-Math.abs(a.vx);}
+    if(a.y<44){a.y=44;a.vy=Math.abs(a.vy);} if(a.y>H*0.72){a.y=H*0.72;a.vy=-Math.abs(a.vy);}
+    a.vx*=0.995; a.vy*=0.995;
+    a.fireCd-=dt;
+    if(a.fireCd<=0){ a.fireCd=0.45; bullets.push({x:a.x,y:a.y-8,vx:0,vy:-640,dmg:1.6,r:3,color:'#ffd0ee',kitten:true}); }
+    if(a.life<=0){ spawnParticles(a.x,a.y,'#ff9dd0',6,120,0.4); allies.splice(i,1); }
+  }
+}
+function drawAllies(){
+  for(const a of allies){
+    const blink = a.life<3 && Math.floor(a.life*6)%2===0;
+    ctx.save(); ctx.translate(a.x, a.y+Math.sin(a.wob)*2); if(blink) ctx.globalAlpha=0.5;
+    const r=9;
+    ctx.shadowColor='#ff9dd0'; ctx.shadowBlur=10;
+    ctx.fillStyle='#fff6fb'; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-r*0.7,-r*0.4); ctx.lineTo(-r*1.1,-r*1.15); ctx.lineTo(-r*0.2,-r*0.6); ctx.closePath();
+    ctx.moveTo(r*0.7,-r*0.4); ctx.lineTo(r*1.1,-r*1.15); ctx.lineTo(r*0.2,-r*0.6); ctx.closePath();
+    ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle='#ff7ab0'; ctx.beginPath(); ctx.arc(-2.8,-0.5,1.7,0,TAU); ctx.arc(2.8,-0.5,1.7,0,TAU); ctx.fill();
+    ctx.fillStyle='#ff5ec9'; ctx.beginPath(); ctx.moveTo(0,1.6); ctx.lineTo(-1.5,3.2); ctx.lineTo(1.5,3.2); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+
+// 大きな肉球（猫の手）を描く
+function drawPaw(x,y,size,color,squashY){
+  ctx.save(); ctx.translate(x,y); ctx.fillStyle=color;
+  ctx.beginPath(); ctx.ellipse(0,0,size*0.62,size*0.52*(squashY||1),0,0,TAU); ctx.fill();
+  for(const k of [-1.5,-0.5,0.5,1.5]){ ctx.beginPath(); ctx.ellipse(k*size*0.32, -size*0.62*(squashY||1), size*0.17, size*0.22*(squashY||1),0,0,TAU); ctx.fill(); }
+  ctx.restore();
+}
+function drawBombFx(){
+  if(!bombFx) return;
+  const p=clamp(bombFx.t/bombFx.dur,0,1);
+  if(bombFx.type==='paw'){
+    const cx=W/2, ty=H*0.46, size=190;
+    const y = p<0.5 ? -size + (ty+size)*(p/0.5) : ty;
+    const squash = p<0.5 ? 1 : 1 - 0.35*Math.sin((p-0.5)/0.5*Math.PI);
+    ctx.save(); ctx.globalAlpha=clamp((1-p)*1.5+0.35,0,1);
+    drawPaw(cx, y, size, 'rgba(255,180,94,0.9)', squash);
+    // pads highlight
+    ctx.globalAlpha*=0.5; drawPaw(cx, y, size*0.9, 'rgba(255,232,190,0.8)', squash);
+    ctx.restore();
+    if(p>0.5){ const rp=(p-0.5)/0.5; ctx.save(); ctx.strokeStyle=`rgba(255,216,158,${0.7*(1-rp)})`; ctx.lineWidth=7; ctx.beginPath(); ctx.arc(cx,ty+size*0.3,rp*W*0.75,0,TAU); ctx.stroke(); ctx.restore(); }
+  } else if(bombFx.type==='kick'){
+    const cx=W/2, cy=H*0.55;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(180,107,255,${0.75*(1-p)})`; ctx.lineWidth=5;
+    for(let k=0;k<16;k++){ const a=k/16*TAU; const r0=p*W*0.25, r1=p*W*0.85; ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0); ctx.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1); ctx.stroke(); }
+    ctx.restore();
+    ctx.save(); ctx.globalAlpha=(1-p)*0.95; drawPaw(W*(-0.15+p*1.35), H*0.44, 160, 'rgba(180,107,255,0.85)', 1); ctx.restore();
   }
 }
 document.addEventListener('keydown',e=>{ if((e.key==='x'||e.key==='X'||e.key==='Shift') && state==='play'){ useBomb(); }});
@@ -1129,6 +1239,7 @@ function updateBullets(dt){
     let hit=false;
     for(let j=0;j<enemies.length;j++){
       const e=enemies[j];
+      if(e.kicked) continue; // 吹き飛び中は当たらない
       const rr=(b.r+e.r);
       if(dist2(b.x,b.y,e.x,e.y)<rr*rr){
         if(b.pierce){
@@ -1163,6 +1274,7 @@ function updateEBullets(dt){
   // enemy body collision
   if(player.alive && player.invuln<=0){
     for(const e of enemies){
+      if(e.kicked) continue;
       const rr=e.r+player.r*0.7;
       if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(e.t==='boss'?16:11); if(e.t!=='boss'){ e.hp-=3; if(e.hp<=0) killEnemy(e);} break; }
     }
@@ -1489,8 +1601,8 @@ showTitleHigh();
 
 function startGame(){
   score=0; coins=0; combo=0; maxCombo=0; enemiesKilled=0; wave=0;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0;
-  boss=null; bossActive=false; waveQueue.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; allies.length=0;
+  boss=null; bossActive=false; waveQueue.length=0; bombFx=null;
   resetPlayer(); initStars();
   input.usePointer=false;
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden');
@@ -1586,12 +1698,14 @@ function loop(now){
     updatePlayer(dt);
     updateDirector(dt);
     updateEnemies(dt);
+    updateAllies(dt);
     updateBullets(dt);
     updateEBullets(dt);
     updatePowerups(dt);
     updateCombo(dt);
     shootSpeedBoost = clamp(shootSpeedBoost - dt, 0, 1);
   }
+  if(bombFx){ bombFx.t+=dt; if(bombFx.t>=bombFx.dur) bombFx=null; }
 
   // screen shake decay
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0) shakeMag=0; }
@@ -1612,9 +1726,11 @@ function loop(now){
   drawParticles();
   drawBullets();
   for(const e of enemies) drawEnemy(e);
+  drawAllies();
   drawLaserBeam();
   drawKittens();
   drawPlayer();
+  drawBombFx();
   drawTexts();
 
   if(shakeMag>0) ctx.translate(-ox,-oy);
@@ -1660,7 +1776,9 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 
 // optional debug hook (only when URL has ?debug) for testing
 if(location.search.indexOf('debug')>=0){
-  window.__nk={ spawn:(t)=>spawnPowerup(player.x, player.y-160, t), player };
+  window.__nk={ spawn:(t)=>spawnPowerup(player.x, player.y-160, t), player,
+    enemy:(t)=>spawnEnemy(t||'grunt'), bomb:()=>{ player.bombs++; useBomb(); },
+    allies, enemies };
 }
 
 })();

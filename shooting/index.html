@@ -910,12 +910,14 @@ function spawnPowerup(x,y,type){
 function maybeDrop(e){
   const roll=Math.random();
   if(e.t==='tank'||e.t==='turret'){
-    if(roll<0.5) spawnPowerup(e.x,e.y, pick(['power','shield','rapid','bomb','kitten','kitten','matatabi']));
-    else if(roll<0.75) spawnPowerup(e.x,e.y,'coin');
+    // 精鋭敵: 高確率で強化・またたびを落とす（powerとmatatabiを重み付け）
+    if(roll<0.72) spawnPowerup(e.x,e.y, pick(['power','power','power','matatabi','matatabi','shield','rapid','bomb','kitten','magnet']));
+    else if(roll<0.9) spawnPowerup(e.x,e.y,'coin');
   } else {
-    if(roll<0.035) spawnPowerup(e.x,e.y,'matatabi');
-    else if(roll<0.13) spawnPowerup(e.x,e.y, pick(['power','heal','rapid','magnet','kitten']));
-    else if(roll<0.30) spawnPowerup(e.x,e.y,'coin');
+    // 通常敵: またたび・武器強化の出現率を大幅アップ
+    if(roll<0.09) spawnPowerup(e.x,e.y,'matatabi');
+    else if(roll<0.26) spawnPowerup(e.x,e.y, pick(['power','power','power','heal','rapid','magnet','kitten']));
+    else if(roll<0.44) spawnPowerup(e.x,e.y,'coin');
   }
 }
 function pick(a){ return a[rndi(0,a.length-1)]; }

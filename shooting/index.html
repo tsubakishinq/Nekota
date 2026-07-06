@@ -501,14 +501,14 @@ const player={
   bombs:3, magnet:0, rapid:0,
   matatabi:0, // またたび無敵の残り時間
   kittens:[], // 子猫の子機（最大10機）
-  laserOn:false, laserSfxCd:0, // 黒ネコの連続ビーム
+  laserOn:false, laserSfxCd:0, laserPts:[], // 黒ネコの連続ビーム(うねる軌跡)
 };
 function resetPlayer(){
   player.x=W/2; player.y=H*0.8; player.hp=100; player.maxhp=100; player.alive=true;
   player.wpLevel=1; player.fireCd=0; player.invuln=1.2; player.shield=0;
   player.bombs=3; player.magnet=0; player.rapid=0;
   player.matatabi=0; player.kittens=[];
-  player.laserOn=false; player.laserSfxCd=0;
+  player.laserOn=false; player.laserSfxCd=0; player.laserPts=[];
 }
 
 let shootSpeedBoost=0; // subtle world-speed feel
@@ -549,9 +549,9 @@ function updatePlayer(dt){
   const wantFire = input.fire || keys[' ']||keys['z']||keys['j'];
   const wType = SKIN_WEAPON[selectedSkin] || 'spread';
   if(wType==='laser'){
-    // 黒ネコ: 押している間ずっと出る1本の連続ビーム
+    // 黒ネコ: 押している間ずっと出る1本の連続ビーム(うねる)
     player.laserOn = wantFire;
-    if(wantFire) fireLaserBeam(dt);
+    if(wantFire) fireLaserBeam(dt); else player.laserPts.length=0;
   } else {
     player.laserOn = false;
     const rate = (WEAPON_RATE[wType]||player.fireRate) * (player.rapid>0?0.55:1);
@@ -603,50 +603,64 @@ function fireSpread(){
   screenShake(lv>=4?1.6:0.7, 0.05);
 }
 
-// --- 黒ネコ: まっすぐ伸びる1本の連続ビーム ---
-function laserHalfWidth(){ return 5 + player.wpLevel*2.4; }
+// --- 黒ネコ: 自機の動きでうねる連続ビーム ---
+const LASER_SPEED=1750; // ビームが上へ伝わる速さ(うねりの伝播)
+function laserHalfWidth(){ return 4 + player.wpLevel*3.6; } // パワーアップで太くなる
+// 高さ ey におけるビームのx座標（軌跡を補間）
+function beamXAt(ey){
+  const pts=player.laserPts;
+  if(pts.length<2) return null;
+  if(ey>pts[0].y || ey<pts[pts.length-1].y) return null;
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i], b=pts[i+1];
+    if(ey<=a.y && ey>=b.y){ const f=(a.y-ey)/((a.y-b.y)||1); return a.x+(b.x-a.x)*f; }
+  }
+  return null;
+}
 function fireLaserBeam(dt){
   const lv=player.wpLevel;
-  const bx=player.x, top=player.y-player.r-2;
+  const top=player.y-player.r-2;
   const halfW=laserHalfWidth();
-  const dps=13+lv*9;                 // 1秒あたりのダメージ（レベルで増加）
-  const dmg=dps*dt;
-  // ビームの通り道(上方向の縦ライン)にいる敵すべてに継続ダメージ＝貫通
+  const pts=player.laserPts;
+  // 既存の点を上へ流す＝うねりが上に伝わる
+  for(const p of pts) p.y -= LASER_SPEED*dt;
+  while(pts.length && pts[pts.length-1].y < -30) pts.pop();
+  // 銃口(自機の現在位置)を先頭に追加
+  pts.unshift({x:player.x, y:top});
+  if(pts.length>90) pts.length=90;
+
+  // 軌跡に沿って敵にダメージ(貫通)
+  const dps=13+lv*9, dmg=dps*dt;
   for(let j=enemies.length-1;j>=0;j--){
-    const e=enemies[j];
-    if(e.kicked) continue;
-    if(e.y<=player.y && Math.abs(e.x-bx) < halfW + e.r){
+    const e=enemies[j]; if(e.kicked) continue;
+    const bx=beamXAt(e.y);
+    if(bx!==null && Math.abs(e.x-bx) < halfW + e.r){
       e.hp-=dmg; e.hitFlash=1;
       if(Math.random()<0.22) spawnParticles(e.x, e.y+e.r*0.4, '#c9a8ff', 1, 90, 0.25);
       if(e.hp<=0) killEnemy(e);
     }
   }
-  if(Math.random()<0.5) spawnParticles(bx+rnd(-halfW,halfW), top, '#c9a8ff', 1, 70, 0.2);
+  if(Math.random()<0.5) spawnParticles(player.x+rnd(-halfW,halfW), top, '#c9a8ff', 1, 70, 0.2);
   player.laserSfxCd-=dt;
   if(player.laserSfxCd<=0){ player.laserSfxCd=0.10; Audio2.sfx.laser(); }
   screenShake(0.5,0.03);
 }
 function drawLaserBeam(){
   if(!player.alive || !player.laserOn) return;
-  const bx=player.x, top=player.y-player.r-2;
+  const pts=player.laserPts; if(pts.length<2) return;
   const halfW=laserHalfWidth();
   const flick=0.82+Math.random()*0.18;
   ctx.save();
-  ctx.globalCompositeOperation='lighter';
-  // 外側グロー
+  ctx.globalCompositeOperation='lighter'; ctx.lineJoin='round'; ctx.lineCap='round';
+  const path=()=>{ ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); };
   ctx.shadowColor='#b46bff'; ctx.shadowBlur=20;
-  ctx.fillStyle=`rgba(150,90,255,${0.30*flick})`;
-  ctx.fillRect(bx-halfW*1.7, 0, halfW*3.4, top);
-  // 中間
-  ctx.fillStyle=`rgba(201,168,255,${0.6*flick})`;
-  ctx.fillRect(bx-halfW, 0, halfW*2, top);
-  // 白いコア
+  ctx.strokeStyle=`rgba(150,90,255,${0.30*flick})`; ctx.lineWidth=halfW*3.2; path(); ctx.stroke();
+  ctx.strokeStyle=`rgba(201,168,255,${0.6*flick})`; ctx.lineWidth=halfW*2; path(); ctx.stroke();
   ctx.shadowBlur=0;
-  ctx.fillStyle=`rgba(255,255,255,${0.95*flick})`;
-  ctx.fillRect(bx-halfW*0.42, 0, halfW*0.84, top);
+  ctx.strokeStyle=`rgba(255,255,255,${0.95*flick})`; ctx.lineWidth=halfW*0.85; path(); ctx.stroke();
   // 銃口のフラッシュ
-  ctx.fillStyle='#ffffff';
-  ctx.beginPath(); ctx.arc(bx, top, halfW*1.4*flick, 0, TAU); ctx.fill();
+  const m=pts[0];
+  ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(m.x, m.y, halfW*1.4*flick, 0, TAU); ctx.fill();
   ctx.restore();
 }
 

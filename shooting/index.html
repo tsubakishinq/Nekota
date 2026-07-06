@@ -442,11 +442,14 @@ const player={
   invuln:0, thrust:0,
   shield:0, // shield time
   bombs:2, magnet:0, rapid:0,
+  matatabi:0, // またたび無敵の残り時間
+  kittens:[], // 子猫の子機（最大2機）
 };
 function resetPlayer(){
   player.x=W/2; player.y=H*0.8; player.hp=100; player.maxhp=100; player.alive=true;
   player.wpLevel=1; player.fireCd=0; player.invuln=1.2; player.shield=0;
   player.bombs=2; player.magnet=0; player.rapid=0;
+  player.matatabi=0; player.kittens=[];
 }
 
 let shootSpeedBoost=0; // subtle world-speed feel
@@ -480,6 +483,7 @@ function updatePlayer(dt){
   if(player.shield>0) player.shield-=dt;
   if(player.magnet>0) player.magnet-=dt;
   if(player.rapid>0) player.rapid-=dt;
+  if(player.matatabi>0) player.matatabi-=dt;
 
   // firing
   player.fireCd-=dt;
@@ -490,6 +494,7 @@ function updatePlayer(dt){
     fireWeapon(wType);
     player.fireCd=rate;
   }
+  updateKittens(dt, wantFire);
 
   // thruster particles
   if(Math.random()<0.9){
@@ -564,8 +569,51 @@ function fireHoming(){
   screenShake(0.8,0.04);
 }
 
+// --- 子猫の子機（猫マークで最大2機） ---
+function addKitten(){
+  if(player.kittens.length>=2) return false;
+  const side = player.kittens.length===0 ? -1 : 1;
+  player.kittens.push({ side, x:player.x+side*40, y:player.y+12, fireCd:0, wob:Math.random()*TAU });
+  return true;
+}
+function updateKittens(dt, wantFire){
+  const kits=player.kittens;
+  for(const k of kits){
+    k.wob+=dt*4;
+    const tx=player.x + k.side*40, ty=player.y+12+Math.sin(k.wob)*2;
+    k.x += (tx-k.x)*Math.min(1,dt*9);
+    k.y += (ty-k.y)*Math.min(1,dt*9);
+    k.fireCd-=dt;
+    if(wantFire && k.fireCd<=0){
+      k.fireCd=0.22;
+      bullets.push({x:k.x, y:k.y-8, vx:0, vy:-700, dmg:0.8, r:3, color:'#ffd0ee', kitten:true});
+    }
+  }
+}
+function drawKittens(){
+  if(!player.alive) return;
+  for(const k of player.kittens){
+    ctx.save(); ctx.translate(k.x,k.y);
+    const r=8;
+    ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=8;
+    // head
+    ctx.fillStyle='#fff6fb';
+    ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
+    // ears
+    ctx.beginPath();
+    ctx.moveTo(-r*0.7,-r*0.4); ctx.lineTo(-r*1.1,-r*1.1); ctx.lineTo(-r*0.2,-r*0.6); ctx.closePath();
+    ctx.moveTo(r*0.7,-r*0.4); ctx.lineTo(r*1.1,-r*1.1); ctx.lineTo(r*0.2,-r*0.6); ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur=0;
+    // eyes + nose
+    ctx.fillStyle='#57c9ff'; ctx.beginPath(); ctx.arc(-2.6,-0.5,1.5,0,TAU); ctx.arc(2.6,-0.5,1.5,0,TAU); ctx.fill();
+    ctx.fillStyle='#ff7ab0'; ctx.beginPath(); ctx.moveTo(0,1.5); ctx.lineTo(-1.4,3); ctx.lineTo(1.4,3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+
 function damagePlayer(d){
-  if(!player.alive || player.invuln>0) return;
+  if(!player.alive || player.invuln>0 || player.matatabi>0) return;
   if(player.shield>0){ player.shield=0; player.invuln=1; Audio2.sfx.power(); spawnText(player.x,player.y-24,'SHIELD BREAK','#57f6ff',15); screenShake(6,.2); flash('#57f6ff',.3); return; }
   player.hp-=d; player.invuln=1.1;
   Audio2.sfx.hurt(); screenShake(10,.3); flash('#ff2e6e',.4);
@@ -846,7 +894,8 @@ function defeatBoss(e){
   spawnText(e.x,e.y,'BOSS DOWN! +'+bonus,'#ffd85e',22);
   showToast('★ VICTORY ★','#ffd85e');
   // reward
-  for(let k=0;k<4;k++) spawnPowerup(e.x+rnd(-40,40), e.y, ['power','power','shield','heal'][k]);
+  const rewards=['power','power','kitten','matatabi','heal'];
+  for(let k=0;k<rewards.length;k++) spawnPowerup(e.x+rnd(-50,50), e.y+rnd(-10,10), rewards[k]);
   bossActive=false;
   setTimeout(()=>{ startWave(wave+1); }, 2200);
 }
@@ -854,14 +903,20 @@ function defeatBoss(e){
 // ============================================================
 //  POWERUPS
 // ============================================================
-// types: power, heal, shield, rapid, magnet, bomb, coin
+// types: power, heal, shield, rapid, magnet, bomb, coin, matatabi, kitten
 function spawnPowerup(x,y,type){
   powerups.push({x,y,vy:60, type, r:12, seed:Math.random()*TAU});
 }
 function maybeDrop(e){
   const roll=Math.random();
-  if(e.t==='tank'||e.t==='turret'){ if(roll<0.5) spawnPowerup(e.x,e.y, pick(['power','shield','rapid','bomb'])); else if(roll<0.75) spawnPowerup(e.x,e.y,'coin'); }
-  else { if(roll<0.10) spawnPowerup(e.x,e.y, pick(['power','heal','rapid','magnet','coin'])); else if(roll<0.28) spawnPowerup(e.x,e.y,'coin'); }
+  if(e.t==='tank'||e.t==='turret'){
+    if(roll<0.5) spawnPowerup(e.x,e.y, pick(['power','shield','rapid','bomb','kitten','kitten','matatabi']));
+    else if(roll<0.75) spawnPowerup(e.x,e.y,'coin');
+  } else {
+    if(roll<0.035) spawnPowerup(e.x,e.y,'matatabi');
+    else if(roll<0.13) spawnPowerup(e.x,e.y, pick(['power','heal','rapid','magnet','kitten']));
+    else if(roll<0.30) spawnPowerup(e.x,e.y,'coin');
+  }
 }
 function pick(a){ return a[rndi(0,a.length-1)]; }
 
@@ -886,7 +941,9 @@ const PU_INFO={
   rapid:{c:'#ffd85e',icon:'⚡',label:'RAPID'},
   magnet:{c:'#ff5ec9',icon:'✦',label:'MAGNET'},
   bomb:{c:'#ff8a5e',icon:'✹',label:'BOMB +1'},
-  coin:{c:'#ffd85e',icon:'🐾',label:''},
+  coin:{c:'#ffd85e',icon:'🐾',emoji:true,label:''},
+  matatabi:{c:'#8fe36b',icon:'🍃',emoji:true,label:'またたび！15秒無敵'},
+  kitten:{c:'#ffd0ee',icon:'🐱',emoji:true,label:'子猫 合流！'},
 };
 function collectPowerup(p){
   const info=PU_INFO[p.type];
@@ -898,6 +955,15 @@ function collectPowerup(p){
     case 'magnet': player.magnet=6; Audio2.sfx.power(); break;
     case 'bomb': player.bombs++; Audio2.sfx.power(); break;
     case 'coin': addScore(120); coins++; Audio2.sfx.coin(); break;
+    case 'matatabi':
+      player.matatabi=15; Audio2.sfx.levelup();
+      showToast('★ またたびハイ！15秒 無敵 ★','#8fe36b');
+      spawnParticles(player.x,player.y,'#8fe36b',24,220,0.7); screenShake(6,.2);
+      break;
+    case 'kitten':
+      if(addKitten()){ Audio2.sfx.power(); spawnParticles(player.x,player.y,'#ffd0ee',16,180,0.6); }
+      else { addScore(400); spawnText(player.x,player.y-30,'子猫MAX +400','#ffd85e',15); Audio2.sfx.coin(); return; }
+      break;
   }
   if(info.label) spawnText(player.x,player.y-30,info.label,info.c,15);
   spawnParticles(p.x,p.y,info.c,10,150,0.5);
@@ -912,7 +978,7 @@ function drawPowerups(){
     ctx.fillStyle='rgba(6,10,26,.85)'; ctx.strokeStyle=info.c; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); ctx.stroke();
     ctx.shadowBlur=0;
-    if(p.type==='coin'){ ctx.font='16px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐾',0,1); }
+    if(info.emoji){ ctx.font='15px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(info.icon,0,1); }
     else { ctx.fillStyle=info.c; ctx.font='900 15px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(info.icon,0,1); }
     ctx.restore();
   }
@@ -1068,6 +1134,22 @@ function drawPlayer(){
   const blink = player.invuln>0 && Math.floor(player.invuln*16)%2===0;
   ctx.save(); ctx.translate(player.x,player.y);
   if(blink) ctx.globalAlpha=0.4;
+
+  // matatabi invincibility: rotating rainbow aura + sparkles
+  if(player.matatabi>0){
+    const t=performance.now()*0.004;
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    for(let k=0;k<6;k++){
+      const a=t+k/6*TAU, rr=player.r+13+Math.sin(t*3+k)*3;
+      ctx.fillStyle=`hsla(${(k*60+t*120)%360},90%,65%,.6)`;
+      ctx.beginPath(); ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr,3.4,0,TAU); ctx.fill();
+    }
+    ctx.strokeStyle=`hsla(${(t*160)%360},90%,70%,.5)`; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(0,0,player.r+13,0,TAU); ctx.stroke();
+    ctx.restore();
+    // blinking warning in last 3s
+    if(player.matatabi<3 && Math.floor(player.matatabi*6)%2===0) ctx.globalAlpha*=0.5;
+  }
 
   // shield ring
   if(player.shield>0){
@@ -1258,9 +1340,11 @@ function drawHUD(){
   let bx2=hx; const by2=H-46;
   ctx.font='12px "Trebuchet MS"'; ctx.textBaseline='alphabetic';
   const buffs=[];
+  if(player.matatabi>0) buffs.push(['無敵 '+Math.ceil(player.matatabi),'#8fe36b']);
   if(player.shield>0) buffs.push(['❂ '+Math.ceil(player.shield),'#57f6ff']);
   if(player.rapid>0) buffs.push(['⚡ '+Math.ceil(player.rapid),'#ffd85e']);
   if(player.magnet>0) buffs.push(['✦ '+Math.ceil(player.magnet),'#ff5ec9']);
+  if(player.kittens.length>0) buffs.push(['🐱x'+player.kittens.length,'#ffd0ee']);
   for(const [t,c] of buffs){ ctx.fillStyle=c; ctx.fillText(t,bx2,by2); bx2+=ctx.measureText(t).width+12; }
 
   // boss hp bar
@@ -1432,6 +1516,7 @@ function loop(now){
   drawParticles();
   drawBullets();
   for(const e of enemies) drawEnemy(e);
+  drawKittens();
   drawPlayer();
   drawTexts();
 
@@ -1475,6 +1560,11 @@ requestAnimationFrame(loop);
 // prevent context menu / scroll
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('gesturestart',e=>e.preventDefault());
+
+// optional debug hook (only when URL has ?debug) for testing
+if(location.search.indexOf('debug')>=0){
+  window.__nk={ spawn:(t)=>spawnPowerup(player.x, player.y-160, t), player };
+}
 
 })();
 </script>

@@ -685,7 +685,7 @@ function killPlayer(){
 // types: grunt, zipper, tank, weaver, turret, splitter, boss
 function spawnEnemy(type, x, opt){
   opt=opt||{};
-  const base={x:x!==undefined?x:rnd(40,W-40), y:-30, t:type, fireCd:rnd(0.6,1.6),
+  const base={x:x!==undefined?x:rnd(40,W-40), y:-30, t:type, fireCd:rnd(1.1,2.4),
     hitFlash:0, angle:0, seed:Math.random()*TAU};
   let e;
   switch(type){
@@ -721,7 +721,7 @@ function updateEnemies(dt){
     if(e.shoots){
       e.fireCd-=dt;
       if(e.fireCd<=0 && e.y>0 && e.y<H*0.7){
-        e.fireCd=rnd(1.1,2.2);
+        e.fireCd=rnd(1.8,3.2);
         enemyShoot(e);
       }
     }
@@ -732,12 +732,12 @@ function updateEnemies(dt){
 function enemyShoot(e){
   if(e.aim && player.alive){
     const ang=Math.atan2(player.y-e.y, player.x-e.x);
-    const sp=200;
+    const sp=165;
     eBullets.push({x:e.x,y:e.y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,r:6,color:'#ff5e8a'});
   } else if(e.t==='tank'){
-    for(let k=-1;k<=1;k++){ eBullets.push({x:e.x,y:e.y,vx:k*80,vy:180,r:6,color:'#5effa0'}); }
+    for(let k=-1;k<=1;k++){ eBullets.push({x:e.x,y:e.y,vx:k*65,vy:150,r:6,color:'#5effa0'}); }
   } else {
-    eBullets.push({x:e.x,y:e.y,vx:0,vy:210,r:6,color:e.color});
+    eBullets.push({x:e.x,y:e.y,vx:0,vy:175,r:6,color:e.color});
   }
   Audio2.sfx.hit();
 }
@@ -843,7 +843,7 @@ const BOSS_PHASES=['sweep','burst','laser','desperate'];
 function spawnBoss(){
   Audio2.sfx.bossWarn();
   showToast('⚠ WARNING ⚠','#ff5ec9');
-  const hp = 220 + wave*70;
+  const hp = 180 + wave*55;
   boss={ t:'boss', x:W/2, y:-120, tx:W/2, ty:130, r:60, hp, maxhp:hp,
     phase:0, phaseTimer:0, fireCd:1.5, hitFlash:0, angle:0, entered:false, seed:0,
     color:'#ff5ec9', sweepDir:1 };
@@ -960,14 +960,15 @@ function spawnPowerup(x,y,type){
 function maybeDrop(e){
   const roll=Math.random();
   if(e.t==='tank'||e.t==='turret'){
-    // 精鋭敵: 高確率で強化・またたびを落とす（powerとmatatabiを重み付け）
-    if(roll<0.72) spawnPowerup(e.x,e.y, pick(['power','power','power','matatabi','matatabi','shield','rapid','bomb','kitten','magnet']));
+    // 精鋭敵: 高確率で強化・またたび・子猫を落とす
+    if(roll<0.75) spawnPowerup(e.x,e.y, pick(['power','power','matatabi','matatabi','kitten','kitten','kitten','shield','rapid','bomb','magnet']));
     else if(roll<0.9) spawnPowerup(e.x,e.y,'coin');
   } else {
-    // 通常敵: またたび・武器強化の出現率を大幅アップ
+    // 通常敵: またたび・武器強化・子猫の出現率を大幅アップ
     if(roll<0.09) spawnPowerup(e.x,e.y,'matatabi');
-    else if(roll<0.26) spawnPowerup(e.x,e.y, pick(['power','power','power','heal','rapid','magnet','kitten']));
-    else if(roll<0.44) spawnPowerup(e.x,e.y,'coin');
+    else if(roll<0.22) spawnPowerup(e.x,e.y,'kitten');   // 子猫の専用枠(約13%)
+    else if(roll<0.38) spawnPowerup(e.x,e.y, pick(['power','power','power','heal','rapid','magnet','kitten']));
+    else if(roll<0.54) spawnPowerup(e.x,e.y,'coin');
   }
 }
 function pick(a){ return a[rndi(0,a.length-1)]; }
@@ -1115,7 +1116,7 @@ function updateEBullets(dt){
     if(player.alive && player.invuln<=0){
       const rr=b.r+player.r*0.7;
       if(dist2(b.x,b.y,player.x,player.y)<rr*rr){
-        eBullets.splice(i,1); damagePlayer(10); continue;
+        eBullets.splice(i,1); damagePlayer(7); continue;
       }
     }
   }
@@ -1123,7 +1124,7 @@ function updateEBullets(dt){
   if(player.alive && player.invuln<=0){
     for(const e of enemies){
       const rr=e.r+player.r*0.7;
-      if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(e.t==='boss'?24:16); if(e.t!=='boss'){ e.hp-=3; if(e.hp<=0) killEnemy(e);} break; }
+      if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(e.t==='boss'?16:11); if(e.t!=='boss'){ e.hp-=3; if(e.hp<=0) killEnemy(e);} break; }
     }
   }
 }
@@ -1289,8 +1290,8 @@ function startWave(n){
     return;
   }
   showToast('WAVE '+n,'#57f6ff');
-  // build queue based on difficulty
-  const count = 6 + n*2;
+  // build queue based on difficulty（ゆるやかな増加に調整）
+  const count = 5 + Math.round(n*1.4);
   const pool = [];
   pool.push('grunt','grunt','grunt','zipper');
   if(n>=2) pool.push('weaver','zipper');
@@ -1298,7 +1299,7 @@ function startWave(n){
   if(n>=4) pool.push('splitter','weaver');
   if(n>=6) pool.push('tank','turret','splitter');
   for(let i=0;i<count;i++){
-    waveQueue.push({type: pool[rndi(0,pool.length-1)], delay: rnd(0.35,0.95)*Math.max(0.5,1-n*0.03)});
+    waveQueue.push({type: pool[rndi(0,pool.length-1)], delay: rnd(0.45,1.05)*Math.max(0.62,1-n*0.022)});
   }
   // occasional formation
   if(n>=3 && Math.random()<0.6){

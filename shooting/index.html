@@ -67,9 +67,10 @@
   .hint{font-size:11px; letter-spacing:2px; color:#5f74a8;}
 
   /* ===== Touch controls ===== */
-  #touch{position:absolute; inset:0; z-index:10; display:none;}
+  #touch{position:absolute; inset:0; z-index:10; display:none; pointer-events:none;}
   body.touch #touch{display:block;}
   #fireBtn{
+    pointer-events:auto;
     position:absolute; right:20px; bottom:28px; width:88px; height:88px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%, #ffd0ee, var(--neon2) 70%);
     box-shadow:0 0 24px rgba(255,94,201,.6), inset 0 0 20px rgba(255,255,255,.35);

@@ -120,6 +120,18 @@
     letter-spacing:1px; font-size:15px; border:2px solid rgba(255,255,255,.35);
   }
   #fireBtn:active{transform:scale(.92);}
+  #bombBtn{
+    pointer-events:auto;
+    position:absolute; left:20px; bottom:34px; width:74px; height:74px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #ffe0b0, #ff8a3c 70%);
+    box-shadow:0 0 22px rgba(255,138,60,.6), inset 0 0 18px rgba(255,255,255,.3);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#3a1c00; border:2px solid rgba(255,255,255,.4); line-height:1;
+  }
+  #bombBtn span{font-weight:900; font-size:18px; margin-top:1px;}
+  #bombBtn small{font-size:8px; letter-spacing:1px; font-weight:800; opacity:.8;}
+  #bombBtn:active{transform:scale(.92);}
+  #bombBtn.empty{opacity:.38; filter:grayscale(.6);}
   .pauseBtn{position:absolute; top:10px; right:12px; z-index:16; width:40px; height:40px; border-radius:10px;
     background:rgba(9,12,34,.55); border:1px solid rgba(87,246,255,.3); color:var(--neon); font-size:18px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;}
@@ -139,6 +151,7 @@
 
   <div id="touch">
     <div id="fireBtn">FIRE</div>
+    <div id="bombBtn">🐾<span id="bombCount">3</span><small>BOMB</small></div>
   </div>
 
   <!-- Title -->
@@ -209,7 +222,7 @@
       <div class="itemRow"><div class="itemIco" style="color:#ff5ec9">✦</div><div class="itemTxt"><div class="itemName">マグネット</div><div class="itemDesc">アイテムを引き寄せる（約6秒）</div></div></div>
       <div class="grpLabel">■ 回復・その他</div>
       <div class="itemRow"><div class="itemIco" style="color:#5effa0">✚</div><div class="itemTxt"><div class="itemName">回復</div><div class="itemDesc">HPが30回復する</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム（必殺技）</div><div class="itemDesc">ストック+1。発動＝Xキー / FIREダブルタップ。ネコで技が変化：キジトラ🐾ネコパンチで押しつぶし／黒ネコ🌀ネコキックで敵を吹き飛ばし／白ネコ🐱敵を全部15秒 味方の子猫にする</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム（必殺技）</div><div class="itemDesc">ストック+1（最初は3個）。発動＝左下のBOMBボタン / Xキー。ネコで技が変化：キジトラ🐾ネコパンチで押しつぶし／黒ネコ🌀ネコキックで敵を吹き飛ばし／白ネコ🐱敵を全部15秒 味方の子猫にする</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">🐾</div><div class="itemTxt"><div class="itemName">肉球エネルギー</div><div class="itemDesc">スコア +120。集めてハイスコアを狙おう</div></div></div>
       <div class="grpLabel">■ ネコごとのメイン武器</div>
       <div class="itemRow"><div class="itemIco" style="color:#c98a3f">🟠</div><div class="itemTxt"><div class="itemName">キジトラ ＝ 拡散ショット</div><div class="itemDesc">前方に広く弾をばらまくバランス型</div></div></div>
@@ -485,7 +498,7 @@ const player={
   fireCd:0, fireRate:0.14,
   invuln:0, thrust:0,
   shield:0, // shield time
-  bombs:2, magnet:0, rapid:0,
+  bombs:3, magnet:0, rapid:0,
   matatabi:0, // またたび無敵の残り時間
   kittens:[], // 子猫の子機（最大10機）
   laserOn:false, laserSfxCd:0, // 黒ネコの連続ビーム
@@ -493,7 +506,7 @@ const player={
 function resetPlayer(){
   player.x=W/2; player.y=H*0.8; player.hp=100; player.maxhp=100; player.alive=true;
   player.wpLevel=1; player.fireCd=0; player.invuln=1.2; player.shield=0;
-  player.bombs=2; player.magnet=0; player.rapid=0;
+  player.bombs=3; player.magnet=0; player.rapid=0;
   player.matatabi=0; player.kittens=[];
   player.laserOn=false; player.laserSfxCd=0;
 }
@@ -1206,9 +1219,19 @@ function drawBombFx(){
   }
 }
 document.addEventListener('keydown',e=>{ if((e.key==='x'||e.key==='X'||e.key==='Shift') && state==='play'){ useBomb(); }});
-// double-tap fire button = bomb
-let lastFireTap=0;
-fireBtn.addEventListener('touchstart',()=>{ const now=performance.now(); if(now-lastFireTap<280){ useBomb(); } lastFireTap=now; });
+// dedicated bomb button (bottom-left)
+const bombBtn=document.getElementById('bombBtn');
+const bombCountEl=document.getElementById('bombCount');
+let lastBombShown=-1;
+function refreshBombBtn(){
+  if(player.bombs!==lastBombShown){
+    lastBombShown=player.bombs;
+    bombCountEl.textContent=player.bombs;
+    bombBtn.classList.toggle('empty', player.bombs<=0);
+  }
+}
+bombBtn.addEventListener('touchstart',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); useBomb(); },{passive:false});
+bombBtn.addEventListener('mousedown',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); useBomb(); });
 
 // ============================================================
 //  BULLETS UPDATE / COLLISIONS
@@ -1736,6 +1759,7 @@ function loop(now){
   if(shakeMag>0) ctx.translate(-ox,-oy);
 
   if(state==='play'||state==='pause') drawHUD();
+  refreshBombBtn();
 
   // flash overlay
   if(flashA>0){ ctx.fillStyle=flashColor; ctx.globalAlpha=flashA*0.5; ctx.fillRect(-20,-20,W+40,H+40); ctx.globalAlpha=1; }

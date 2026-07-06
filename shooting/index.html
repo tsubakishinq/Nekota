@@ -202,7 +202,7 @@
       <div class="grpLabel">■ 強化・パワーアップ</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">⬆</div><div class="itemTxt"><div class="itemName">パワーアップ</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を左右に追加（最大2機）。一緒に子猫弾を撃ってくれる</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を追加（左右に各5体・最大10機）。一緒に子猫弾を撃ってくれる</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">⚡</div><div class="itemTxt"><div class="itemName">ラピッド</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
@@ -547,7 +547,7 @@ function updatePlayer(dt){
 
 // weapon type per selected cat + base fire cadence
 const SKIN_WEAPON={ kijitora:'spread', black:'laser', white:'homing' };
-const WEAPON_RATE={ spread:0.14, laser:0.085, homing:0.34 };
+const WEAPON_RATE={ spread:0.10, laser:0.085, homing:0.34 };
 
 function fireWeapon(type){
   if(type==='laser') return fireLaser();
@@ -561,23 +561,23 @@ function fireSpread(){
   const bx=player.x, by=player.y-player.r-2;
   const mk=(x,y,vx,vy,dmg,r,color,big)=>bullets.push({x,y,vx,vy,dmg,r:r||4,color:color||'#ffd85e',big});
   if(lv===1){
-    mk(bx,by,0,-720,1,4);
+    mk(bx,by,0,-760,2.4,5);
   } else if(lv===2){
-    mk(bx-6,by,0,-740,1,4); mk(bx+6,by,0,-740,1,4);
+    mk(bx-7,by,0,-780,2.2,5); mk(bx+7,by,0,-780,2.2,5);
   } else if(lv===3){
-    mk(bx,by,0,-780,1.4,5,'#ffb45e'); mk(bx-11,by+4,-90,-720,1,4); mk(bx+11,by+4,90,-720,1,4);
+    mk(bx,by,0,-820,3.2,6,'#ffb45e',true); mk(bx-13,by+4,-100,-760,2.2,5); mk(bx+13,by+4,100,-760,2.2,5);
   } else if(lv===4){
-    mk(bx,by,0,-800,1.6,6,'#ffb45e',true);
-    mk(bx-12,by+4,-70,-760,1,4); mk(bx+12,by+4,70,-760,1,4);
-    mk(bx-20,by+8,-200,-680,1,4); mk(bx+20,by+8,200,-680,1,4);
+    mk(bx,by,0,-840,3.8,7,'#ffb45e',true);
+    mk(bx-13,by+3,-80,-800,2.6,6,'#ffb45e',true); mk(bx+13,by+3,80,-800,2.6,6,'#ffb45e',true);
+    mk(bx-25,by+8,-240,-720,2.0,5); mk(bx+25,by+8,240,-720,2.0,5);
   } else {
-    mk(bx,by,0,-820,2.2,7,'#ff8a5e',true);
-    mk(bx-10,by,-40,-800,1.4,5,'#ffb45e'); mk(bx+10,by,40,-800,1.4,5,'#ffb45e');
-    mk(bx-22,by+6,-220,-720,1,4); mk(bx+22,by+6,220,-720,1,4);
-    mk(bx-30,by+10,-380,-640,1,4); mk(bx+30,by+10,380,-640,1,4);
+    mk(bx,by,0,-860,5.0,8,'#ff8a5e',true);
+    mk(bx-11,by,-40,-840,3.4,6,'#ffb45e',true); mk(bx+11,by,40,-840,3.4,6,'#ffb45e',true);
+    mk(bx-25,by+6,-250,-760,2.6,5,'#ffb45e',true); mk(bx+25,by+6,250,-760,2.6,5,'#ffb45e',true);
+    mk(bx-36,by+10,-440,-680,2.2,5); mk(bx+36,by+10,440,-680,2.2,5);
   }
   Audio2.sfx[lv>=4?'shootBig':'shoot']();
-  screenShake(lv>=4?1.4:0.6, 0.05);
+  screenShake(lv>=4?1.6:0.7, 0.05);
 }
 
 // --- 黒ネコ: 貫通レーザー ---
@@ -612,23 +612,30 @@ function fireHoming(){
   screenShake(0.8,0.04);
 }
 
-// --- 子猫の子機（猫マークで最大2機） ---
+// --- 子猫の子機（猫マークで最大10機・左右5体ずつ） ---
+const KITTEN_MAX=10;
 function addKitten(){
-  if(player.kittens.length>=2) return false;
-  const side = player.kittens.length===0 ? -1 : 1;
-  player.kittens.push({ side, x:player.x+side*40, y:player.y+12, fireCd:0, wob:Math.random()*TAU });
+  const kits=player.kittens;
+  if(kits.length>=KITTEN_MAX) return false;
+  const left=kits.filter(k=>k.side<0).length;
+  const right=kits.filter(k=>k.side>0).length;
+  const side = left<=right ? -1 : 1;       // 左右バランスよく配置
+  const rank = side<0 ? left : right;       // その側で何体目か(0..4)
+  kits.push({ side, rank, x:player.x+side*40, y:player.y+12, fireCd:0, wob:Math.random()*TAU });
   return true;
 }
 function updateKittens(dt, wantFire){
   const kits=player.kittens;
   for(const k of kits){
     k.wob+=dt*4;
-    const tx=player.x + k.side*40, ty=player.y+12+Math.sin(k.wob)*2;
+    const off = 30 + k.rank*20;                      // 外側へ広がるV字隊形
+    let tx = clamp(player.x + k.side*off, 12, W-12);
+    const ty = player.y + 10 + k.rank*14 + Math.sin(k.wob)*2;
     k.x += (tx-k.x)*Math.min(1,dt*9);
     k.y += (ty-k.y)*Math.min(1,dt*9);
     k.fireCd-=dt;
     if(wantFire && k.fireCd<=0){
-      k.fireCd=0.22;
+      k.fireCd=0.24;
       bullets.push({x:k.x, y:k.y-8, vx:0, vy:-700, dmg:0.8, r:3, color:'#ffd0ee', kitten:true});
     }
   }

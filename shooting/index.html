@@ -66,6 +66,28 @@
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.08)}}
   .hint{font-size:11px; letter-spacing:2px; color:#5f74a8;}
 
+  /* ===== Cat skin picker ===== */
+  .skinTitle{font-size:12px; letter-spacing:4px; color:var(--gold); font-weight:800;}
+  .skinRow{display:flex; gap:12px; justify-content:center; flex-wrap:wrap;}
+  .skinCard{display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer;
+    padding:12px 14px 10px; border-radius:16px; border:2px solid rgba(87,246,255,.12);
+    background:rgba(9,12,34,.5); transition:transform .12s, border-color .15s, box-shadow .15s; min-width:84px;}
+  .skinCard:active{transform:scale(.95);}
+  .skinCard.sel{border-color:var(--neon); box-shadow:0 0 18px rgba(87,246,255,.45); background:rgba(20,26,58,.7);}
+  .skinFace{width:50px; height:46px; border-radius:50% 50% 48% 48%; position:relative; background:var(--c);
+    box-shadow:inset 0 -6px 10px rgba(0,0,0,.25), 0 0 0 1px rgba(255,255,255,.18);}
+  .skinFace::before,.skinFace::after{content:''; position:absolute; top:-8px; width:0; height:0;
+    border-left:10px solid transparent; border-right:10px solid transparent; border-bottom:16px solid var(--c);
+    filter:drop-shadow(0 0 0 rgba(255,255,255,.1));}
+  .skinFace::before{left:0; transform:rotate(-22deg);}
+  .skinFace::after{right:0; transform:rotate(22deg);}
+  .skinFace i{position:absolute; top:19px; width:7px; height:9px; border-radius:50%; background:var(--eye);
+    box-shadow:0 0 6px var(--eye);}
+  .skinFace i.l{left:11px;} .skinFace i.r{right:11px;}
+  .skinFace b{position:absolute; top:29px; left:50%; transform:translateX(-50%); width:6px; height:5px;
+    border-radius:0 0 50% 50%; background:var(--nose);}
+  .skinCard .lbl{font-size:12px; font-weight:800; letter-spacing:1px; color:#cfe3ff;}
+
   /* ===== Touch controls ===== */
   #touch{position:absolute; inset:0; z-index:10; display:none; pointer-events:none;}
   body.touch #touch{display:block;}
@@ -78,9 +100,11 @@
     letter-spacing:1px; font-size:15px; border:2px solid rgba(255,255,255,.35);
   }
   #fireBtn:active{transform:scale(.92);}
-  .pauseBtn{position:absolute; top:10px; right:12px; z-index:15; width:40px; height:40px; border-radius:10px;
+  .pauseBtn{position:absolute; top:10px; right:12px; z-index:16; width:40px; height:40px; border-radius:10px;
     background:rgba(9,12,34,.55); border:1px solid rgba(87,246,255,.3); color:var(--neon); font-size:18px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;}
+  #soundBtn{right:auto; left:12px;}
+  #soundBtn.off{opacity:.5; filter:grayscale(1);}
   .toast{position:absolute; left:50%; top:16%; transform:translateX(-50%); z-index:14;
     font-weight:900; letter-spacing:2px; font-size:clamp(16px,5vw,24px); pointer-events:none;
     opacity:0; text-shadow:0 0 14px currentColor;}
@@ -90,6 +114,7 @@
   <canvas id="game"></canvas>
 
   <div class="pauseBtn" id="pauseBtn" style="display:none">❚❚</div>
+  <div class="pauseBtn" id="soundBtn" title="サウンド ON/OFF">🔊</div>
   <div class="toast" id="toast"></div>
 
   <div id="touch">
@@ -103,6 +128,21 @@
     <div class="panel">
       銀河の平和を守る猫パイロット <b>ネコタ</b> の物語。<br>
       迫りくる敵艦隊を撃ち抜き、<b>肉球エネルギー</b>を集めて<br>究極の <b>にゃんコンボ</b> を叩き出せ！
+    </div>
+    <div class="skinTitle">えらぶ　ネコ</div>
+    <div class="skinRow" id="skinRow">
+      <div class="skinCard" data-skin="kijitora">
+        <div class="skinFace" style="--c:linear-gradient(160deg,#f6d9a8,#c98a3f 60%,#7a4a1e); --eye:#8fe36b; --nose:#ff8aa0"><i class="l"></i><i class="r"></i><b></b></div>
+        <div class="lbl">キジトラ</div>
+      </div>
+      <div class="skinCard" data-skin="black">
+        <div class="skinFace" style="--c:linear-gradient(160deg,#4a4a5a,#22222e 60%,#0c0c14); --eye:#ffd85e; --nose:#ff5ec9"><i class="l"></i><i class="r"></i><b></b></div>
+        <div class="lbl">黒ネコ</div>
+      </div>
+      <div class="skinCard" data-skin="white">
+        <div class="skinFace" style="--c:linear-gradient(160deg,#ffffff,#ffe9f4 60%,#e8c6e0); --eye:#57c9ff; --nose:#ff7ab0"><i class="l"></i><i class="r"></i><b></b></div>
+        <div class="lbl">白ネコ</div>
+      </div>
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="panel" id="ctrlPanel">
@@ -244,7 +284,10 @@ const Audio2 = (function(){
   }
   function stopMusic(){ if(musicTimer){ clearTimeout(musicTimer); musicTimer=null; } }
   return { init, resume, sfx, startMusic, stopMusic,
-           toggle(){enabled=!enabled; return enabled;} };
+           isEnabled(){ return enabled; },
+           isRunning(){ return !!(actx && actx.state==='running'); },
+           setMasterMuted(m){ if(master) master.gain.value = m?0:0.9; },
+           toggle(){ enabled=!enabled; if(!enabled) stopMusic(); return enabled; } };
 })();
 
 // ============================================================
@@ -912,10 +955,25 @@ function drawBullets(){
 }
 
 // ============================================================
-//  DRAW PLAYER (cat starfighter — original)
+//  DRAW PLAYER (cat starfighter — selectable skins)
 // ============================================================
+const SKINS={
+  kijitora:{ label:'キジトラ', body:['#f6d9a8','#d79b4e','#7a4a1e'], edge:'#ffe6bf', ear:'#c98a3f',
+    innerEar:'#ffb3c1', face:'#3a2410', eye:'#8fe36b', nose:'#ff8aa0', glow:'#ffb45e',
+    flame:['#ffe6a8','#ff9d3c'], stripe:'#5a3212' },
+  black:{ label:'黒ネコ', body:['#5a5a6e','#2a2a38','#0c0c14'], edge:'#8a8ab0', ear:'#26263a',
+    innerEar:'#ff5ec9', face:'#050510', eye:'#ffd85e', nose:'#ff5ec9', glow:'#b46bff',
+    flame:['#c9a8ff','#7a3cff'], stripe:null },
+  white:{ label:'白ネコ', body:['#ffffff','#ffe9f4','#dcbfe0'], edge:'#ffffff', ear:'#ffe1f0',
+    innerEar:'#ff9dd0', face:'#2a2440', eye:'#57c9ff', nose:'#ff7ab0', glow:'#ffd0ee',
+    flame:['#ffffff','#ff9dd0'], stripe:null },
+};
+let selectedSkin = localStorage.getItem('nekota_skin') || 'kijitora';
+if(!SKINS[selectedSkin]) selectedSkin='kijitora';
+
 function drawPlayer(){
   if(!player.alive) return;
+  const sk=SKINS[selectedSkin];
   const blink = player.invuln>0 && Math.floor(player.invuln*16)%2===0;
   ctx.save(); ctx.translate(player.x,player.y);
   if(blink) ctx.globalAlpha=0.4;
@@ -931,16 +989,16 @@ function drawPlayer(){
   const tl=8+player.thrust*16+Math.random()*6;
   ctx.globalCompositeOperation='lighter';
   const fg=ctx.createLinearGradient(0,player.r,0,player.r+tl);
-  fg.addColorStop(0,'#aefcff'); fg.addColorStop(0.5,'#57f6ff'); fg.addColorStop(1,'rgba(255,94,201,0)');
+  fg.addColorStop(0,sk.flame[0]); fg.addColorStop(0.5,sk.flame[1]); fg.addColorStop(1,'rgba(255,94,201,0)');
   ctx.fillStyle=fg;
   ctx.beginPath(); ctx.moveTo(-6,player.r-2); ctx.lineTo(6,player.r-2); ctx.lineTo(0,player.r+tl); ctx.closePath(); ctx.fill();
   ctx.globalCompositeOperation='source-over';
 
   // ship body (rounded triangle)
-  ctx.shadowColor='#57f6ff'; ctx.shadowBlur=14;
+  ctx.shadowColor=sk.glow; ctx.shadowBlur=14;
   const g=ctx.createLinearGradient(0,-player.r,0,player.r);
-  g.addColorStop(0,'#ffffff'); g.addColorStop(0.5,'#8be9ff'); g.addColorStop(1,'#2b7bd6');
-  ctx.fillStyle=g; ctx.strokeStyle='#eaf6ff'; ctx.lineWidth=1.5;
+  g.addColorStop(0,sk.body[0]); g.addColorStop(0.5,sk.body[1]); g.addColorStop(1,sk.body[2]);
+  ctx.fillStyle=g; ctx.strokeStyle=sk.edge; ctx.lineWidth=1.5;
   ctx.beginPath();
   ctx.moveTo(0,-player.r-2);
   ctx.quadraticCurveTo(player.r*1.1,player.r*0.4, player.r*0.7,player.r);
@@ -948,26 +1006,35 @@ function drawPlayer(){
   ctx.quadraticCurveTo(-player.r*1.1,player.r*0.4,0,-player.r-2);
   ctx.fill(); ctx.stroke();
 
+  // tabby stripes
+  if(sk.stripe){
+    ctx.save(); ctx.clip();
+    ctx.strokeStyle=sk.stripe; ctx.lineWidth=2; ctx.globalAlpha=0.55;
+    for(let k=-1;k<=3;k++){ ctx.beginPath(); ctx.moveTo(-player.r,-player.r*0.3+k*5); ctx.lineTo(player.r,-player.r*0.3+k*5); ctx.stroke(); }
+    ctx.restore();
+  }
+
   // cat ears on the ship
-  ctx.fillStyle='#8be9ff';
+  ctx.shadowBlur=0;
+  ctx.fillStyle=sk.ear;
   ctx.beginPath(); ctx.moveTo(-player.r*0.55,-player.r*0.3); ctx.lineTo(-player.r*0.85,-player.r*0.95); ctx.lineTo(-player.r*0.2,-player.r*0.55); ctx.closePath();
   ctx.moveTo(player.r*0.55,-player.r*0.3); ctx.lineTo(player.r*0.85,-player.r*0.95); ctx.lineTo(player.r*0.2,-player.r*0.55); ctx.closePath();
   ctx.fill();
   // inner ear
-  ctx.fillStyle='#ff5ec9';
+  ctx.fillStyle=sk.innerEar;
   ctx.beginPath(); ctx.moveTo(-player.r*0.5,-player.r*0.45); ctx.lineTo(-player.r*0.68,-player.r*0.82); ctx.lineTo(-player.r*0.32,-player.r*0.58); ctx.closePath();
   ctx.moveTo(player.r*0.5,-player.r*0.45); ctx.lineTo(player.r*0.68,-player.r*0.82); ctx.lineTo(player.r*0.32,-player.r*0.58); ctx.closePath();
   ctx.fill();
 
   // cockpit / cat face
-  ctx.shadowBlur=0;
-  ctx.fillStyle='#0a1230';
+  ctx.fillStyle=sk.face;
   ctx.beginPath(); ctx.ellipse(0,-2,player.r*0.5,player.r*0.55,0,0,TAU); ctx.fill();
   // eyes
-  ctx.fillStyle='#57f6ff';
+  ctx.fillStyle=sk.eye; ctx.shadowColor=sk.eye; ctx.shadowBlur=6;
   ctx.beginPath(); ctx.arc(-player.r*0.22,-4,2.4,0,TAU); ctx.arc(player.r*0.22,-4,2.4,0,TAU); ctx.fill();
+  ctx.shadowBlur=0;
   // nose
-  ctx.fillStyle='#ff5ec9'; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-2,2.5); ctx.lineTo(2,2.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle=sk.nose; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-2,2.5); ctx.lineTo(2,2.5); ctx.closePath(); ctx.fill();
   // whiskers
   ctx.strokeStyle='rgba(234,246,255,.7)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(-3,2); ctx.lineTo(-player.r*0.9,0); ctx.moveTo(-3,3); ctx.lineTo(-player.r*0.9,4);
@@ -1189,6 +1256,37 @@ document.getElementById('retryBtn').addEventListener('click',()=>{ Audio2.sfx.se
 document.getElementById('resumeBtn').addEventListener('click', togglePause);
 document.getElementById('quitBtn').addEventListener('click',()=>{ state='title'; pauseScreen.classList.add('hidden'); pauseBtn.style.display='none'; titleScreen.classList.remove('hidden'); Audio2.stopMusic(); showTitleHigh(); });
 pauseBtn.addEventListener('click', togglePause);
+
+// sound on/off button
+const soundBtn=document.getElementById('soundBtn');
+let soundMuted=false;
+function refreshSoundBtn(){ soundBtn.textContent = soundMuted?'🔇':'🔊'; soundBtn.classList.toggle('off', soundMuted); }
+soundBtn.addEventListener('click', ()=>{
+  Audio2.init(); Audio2.resume();
+  soundMuted=!soundMuted;
+  Audio2.setMasterMuted(soundMuted);
+  if(!soundMuted){ Audio2.sfx.select(); if(state==='play') Audio2.startMusic(); }
+  else { Audio2.stopMusic(); }
+  refreshSoundBtn();
+});
+refreshSoundBtn();
+
+// cat skin picker
+const skinRow=document.getElementById('skinRow');
+function refreshSkinSel(){
+  skinRow.querySelectorAll('.skinCard').forEach(c=>c.classList.toggle('sel', c.dataset.skin===selectedSkin));
+}
+skinRow.querySelectorAll('.skinCard').forEach(card=>{
+  const choose=()=>{ selectedSkin=card.dataset.skin; localStorage.setItem('nekota_skin',selectedSkin);
+    refreshSkinSel(); Audio2.init(); Audio2.resume(); Audio2.sfx.select(); };
+  card.addEventListener('click', choose);
+});
+refreshSkinSel();
+
+// Robust audio unlock for iOS Safari: resume on the very first user gesture
+function unlockAudio(){ Audio2.init(); Audio2.resume(); }
+['touchend','pointerdown','mousedown','keydown'].forEach(ev=>
+  window.addEventListener(ev, unlockAudio, {passive:true}));
 
 // space/tap to retry or start
 window.addEventListener('keydown',e=>{

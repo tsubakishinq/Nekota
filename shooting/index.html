@@ -1797,6 +1797,14 @@ requestAnimationFrame(loop);
 // prevent context menu / scroll
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('gesturechange',e=>e.preventDefault());
+// iOS Safari のダブルタップ拡大を抑止（連打での誤ズーム防止）
+let __lastTouchEnd=0;
+document.addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-__lastTouchEnd<=350) e.preventDefault();
+  __lastTouchEnd=now;
+},{passive:false});
 
 // optional debug hook (only when URL has ?debug) for testing
 if(location.search.indexOf('debug')>=0){

@@ -215,7 +215,7 @@
       <div class="grpLabel">■ 強化・パワーアップ</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">⬆</div><div class="itemTxt"><div class="itemName">パワーアップ</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を追加（左右に各5体・最大10機）。一緒に子猫弾を撃ってくれる</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を追加（最大10機）。ネコで挙動が変化：キジトラ=左右に並んで援護／白ネコ=自機の周りを回るバリア＋ホーミング弾／黒ネコ=肉球型ボムを発射</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">⚡</div><div class="itemTxt"><div class="itemName">ラピッド</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
@@ -681,22 +681,69 @@ function addKitten(){
 }
 function updateKittens(dt, wantFire){
   const kits=player.kittens;
-  for(const k of kits){
+  const n=kits.length;
+  const skin=selectedSkin;
+  const t=performance.now()*0.001;
+  for(let idx=0; idx<n; idx++){
+    const k=kits[idx];
     k.wob+=dt*4;
-    const off = 30 + k.rank*20;                      // 外側へ広がるV字隊形
-    let tx = clamp(player.x + k.side*off, 12, W-12);
-    const ty = player.y + 10 + k.rank*14 + Math.sin(k.wob)*2;
-    k.x += (tx-k.x)*Math.min(1,dt*9);
-    k.y += (ty-k.y)*Math.min(1,dt*9);
+    if(skin==='white'){
+      // 自機の周りをクルクル回るバリア
+      const R = 42 + (n>6 ? (idx%2)*15 : 0);
+      const ang = t*2.4 + (idx/Math.max(1,n))*TAU;
+      const tx = player.x + Math.cos(ang)*R;
+      const ty = player.y + Math.sin(ang)*R;
+      k.x += (tx-k.x)*Math.min(1,dt*13);
+      k.y += (ty-k.y)*Math.min(1,dt*13);
+      // バリア: 敵弾を消す
+      for(let j=eBullets.length-1;j>=0;j--){ const eb=eBullets[j];
+        if(dist2(eb.x,eb.y,k.x,k.y) < (11+eb.r)*(11+eb.r)){ spawnParticles(eb.x,eb.y,'#ff9dd0',3,120,0.3); eBullets.splice(j,1); } }
+      // バリア: 触れた敵を削る
+      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j];
+        if(e.kicked||e.t==='boss') continue;
+        if(dist2(e.x,e.y,k.x,k.y) < (11+e.r)*(11+e.r)){ e.hp-=dt*10; e.hitFlash=1; if(e.hp<=0) killEnemy(e); } }
+    } else {
+      // V字隊形（キジトラ・黒ネコ）
+      const off = 30 + k.rank*20;
+      const tx = clamp(player.x + k.side*off, 12, W-12);
+      const ty = player.y + 10 + k.rank*14 + Math.sin(k.wob)*2;
+      k.x += (tx-k.x)*Math.min(1,dt*9);
+      k.y += (ty-k.y)*Math.min(1,dt*9);
+    }
+    // 発射
     k.fireCd-=dt;
     if(wantFire && k.fireCd<=0){
-      k.fireCd=0.24;
-      bullets.push({x:k.x, y:k.y-8, vx:0, vy:-700, dmg:0.8, r:3, color:'#ffd0ee', kitten:true});
+      if(skin==='white'){
+        k.fireCd=0.5; // 子猫のホーミング弾
+        bullets.push({x:k.x, y:k.y, vx:0, vy:-260, dmg:1.2, r:4, color:'#ff9dd0', homing:true, speed:260, turn:7, life:2.6, trailT:0});
+      } else if(skin==='black'){
+        k.fireCd=0.7; // 肉球型ボム
+        bullets.push({x:k.x, y:k.y-6, vx:0, vy:-430, dmg:1.6, r:9, color:'#c9a8ff', pawbomb:true, spin:rnd(-8,8), sa:0});
+      } else {
+        k.fireCd=0.24;
+        bullets.push({x:k.x, y:k.y-8, vx:0, vy:-700, dmg:0.8, r:3, color:'#ffd0ee', kitten:true});
+      }
     }
   }
 }
+// 肉球ボムの爆発（黒ネコの子猫）
+function pawBombExplode(b){
+  const R=68;
+  Audio2.sfx.explode(); screenShake(4,.1);
+  spawnParticles(b.x,b.y,'#b46bff',14,220,0.5); spawnParticles(b.x,b.y,'#fff',5,150,0.4);
+  for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j];
+    if(e.kicked) continue;
+    if(dist2(e.x,e.y,b.x,b.y) < (R+e.r)*(R+e.r)){ e.hp-=b.dmg*2.2; e.hitFlash=1; if(e.t!=='boss'&&e.hp<=0) killEnemy(e); else if(e.hp<=0) killEnemy(e); } }
+}
 function drawKittens(){
   if(!player.alive) return;
+  // 白ネコ: バリアの輪をうっすら描く
+  if(selectedSkin==='white' && player.kittens.length>0){
+    ctx.save(); ctx.globalCompositeOperation='lighter';
+    ctx.strokeStyle=`rgba(255,157,208,${0.25+0.1*Math.sin(performance.now()*0.006)})`; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(player.x,player.y,42,0,TAU); ctx.stroke();
+    ctx.restore();
+  }
   for(const k of player.kittens){
     ctx.save(); ctx.translate(k.x,k.y);
     const r=8;
@@ -1256,6 +1303,7 @@ function updateBullets(dt){
       if(b.life<=0){ spawnParticles(b.x,b.y,'#ff7ab0',6,120,0.35); bullets.splice(i,1); continue; }
     }
     b.x+=b.vx*dt; b.y+=b.vy*dt;
+    if(b.pawbomb) b.sa=(b.sa||0)+(b.spin||6)*dt;
     const margin = b.homing?70:20;
     if(b.y<-margin || b.x<-margin || b.x>W+margin || (b.homing && b.y>H+margin)){ bullets.splice(i,1); continue; }
     // collide enemies
@@ -1270,6 +1318,8 @@ function updateBullets(dt){
           e.hp-=b.dmg; e.hitFlash=1;
           if(Math.random()<0.3) spawnParticles(b.x,b.y,'#b46bff',2,120,0.3);
           if(e.hp<=0) killEnemy(e);
+        } else if(b.pawbomb){
+          pawBombExplode(b); bullets.splice(i,1); hit=true;
         } else if(b.big){
           hitEnemy(e,b.dmg,b.x,b.y); b.dmg*=0.8; if(b.dmg<0.3){ bullets.splice(i,1); hit=true; }
         } else {
@@ -1321,6 +1371,13 @@ function drawBullets(){
       ctx.fillStyle=b.color;
       ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(4,5); ctx.lineTo(0,3); ctx.lineTo(-4,5); ctx.closePath(); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(0,-3,1.8,0,TAU); ctx.fill();
+      ctx.restore();
+    } else if(b.pawbomb){
+      // 肉球型ボム（回転する猫の手）
+      ctx.save(); ctx.globalCompositeOperation='source-over';
+      ctx.translate(b.x,b.y); ctx.rotate(b.sa||0);
+      ctx.shadowColor='#b46bff'; ctx.shadowBlur=12;
+      drawPaw(0,0,b.r*1.7,'#c9a8ff',1);
       ctx.restore();
     } else {
       ctx.fillStyle=b.color; ctx.beginPath();

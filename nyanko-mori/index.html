@@ -218,7 +218,8 @@
   .food-card:active{transform:scale(.98);}
   .food-card .fem{font-size:27px;width:36px;text-align:center;}
   .food-card .fn{font-size:14px;font-weight:800;}
-  .food-card .ft{font-size:10.5px;color:var(--ink-light);font-weight:700;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+  .food-card .ft{font-size:10.5px;color:var(--ink-light);font-weight:700;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;}
+  .food-card .fing{font-size:10px;color:var(--ink-light);font-weight:600;margin-top:2px;line-height:1.4;}
   .tag{border-radius:7px;padding:1px 7px;font-weight:900;font-size:10px;}
   .tag.l{background:var(--lacto-light);color:var(--lacto)}.tag.f{background:var(--fiber-light);color:var(--fiber)}
   .food-card .fadd{background:var(--leaf-d);color:#fff;border:none;border-radius:12px;width:34px;height:34px;font-size:22px;font-weight:900;line-height:1;cursor:pointer;flex-shrink:0;box-shadow:0 3px 0 var(--leaf-deep);}
@@ -338,7 +339,7 @@
   <div class="sheet-head">
     <div class="sheet-grip"></div>
     <div class="sh-row"><h2>食べたものを選ぶ</h2><button class="sheet-close" id="closeSheet">✕</button></div>
-    <input class="search" id="searchInput" placeholder="食べものを検索（例：ヨーグルト）">
+    <input class="search" id="searchInput" placeholder="料理名・食材で検索（例：肉じゃが / ごぼう）">
   </div>
   <div class="cat-chips" id="catChips"></div>
   <div class="food-list" id="foodList"></div>
@@ -388,7 +389,39 @@ const FOODS=[
   {id:'ryebread',n:'ライ麦パン',e:'🍞',c:'主食',lacto:0,fiber:3},
   {id:'soba',n:'そば',e:'🍜',c:'主食',lacto:0,fiber:2},
 ];
-const FOOD_CATS=['すべて','発酵','野菜','果物','豆・海藻','主食'];
+// 料理（レシピ）辞書：料理名を入れると材料から乳酸菌・食物繊維を推定して記録
+const DISHES=[
+  {id:'d_misoshiru',n:'味噌汁',e:'🍲',c:'料理',lacto:2,fiber:2,ing:'味噌・わかめ・豆腐'},
+  {id:'d_tonjiru',n:'豚汁',e:'🍲',c:'料理',lacto:2,fiber:4.5,ing:'味噌・ごぼう・大根・にんじん・こんにゃく'},
+  {id:'d_kenchin',n:'けんちん汁',e:'🍲',c:'料理',lacto:0,fiber:4,ing:'大根・にんじん・ごぼう・豆腐・こんにゃく'},
+  {id:'d_nattogohan',n:'納豆ごはん',e:'🍚',c:'料理',lacto:2,fiber:3.3,ing:'納豆・ごはん'},
+  {id:'d_kimchinabe',n:'キムチ鍋',e:'🍲',c:'料理',lacto:3,fiber:4,ing:'キムチ・豆腐・白菜・きのこ'},
+  {id:'d_nikujaga',n:'肉じゃが',e:'🍲',c:'料理',lacto:0,fiber:3.5,ing:'じゃがいも・にんじん・玉ねぎ・牛肉'},
+  {id:'d_curry',n:'カレーライス',e:'🍛',c:'料理',lacto:0,fiber:4,ing:'じゃがいも・にんじん・玉ねぎ・ごはん'},
+  {id:'d_yasaiitame',n:'野菜炒め',e:'🥘',c:'料理',lacto:0,fiber:3.5,ing:'キャベツ・にんじん・ピーマン・もやし'},
+  {id:'d_kinpira',n:'きんぴらごぼう',e:'🥘',c:'料理',lacto:0,fiber:4.5,ing:'ごぼう・にんじん'},
+  {id:'d_hijiki',n:'ひじきの煮物',e:'🥘',c:'料理',lacto:0,fiber:4.5,ing:'ひじき・にんじん・大豆'},
+  {id:'d_chikuzen',n:'筑前煮',e:'🥘',c:'料理',lacto:0,fiber:5.5,ing:'ごぼう・れんこん・にんじん・こんにゃく・しいたけ'},
+  {id:'d_gomokumame',n:'五目豆',e:'🥘',c:'料理',lacto:0,fiber:6,ing:'大豆・にんじん・昆布・ごぼう・こんにゃく'},
+  {id:'d_kiriboshi',n:'切り干し大根',e:'🥘',c:'料理',lacto:0,fiber:4,ing:'切り干し大根・にんじん・油揚げ'},
+  {id:'d_oden',n:'おでん',e:'🍢',c:'料理',lacto:0,fiber:4,ing:'大根・こんにゃく・昆布・卵'},
+  {id:'d_salad',n:'野菜サラダ',e:'🥗',c:'料理',lacto:0,fiber:2.5,ing:'レタス・トマト・きゅうり・にんじん'},
+  {id:'d_potesara',n:'ポテトサラダ',e:'🥗',c:'料理',lacto:0,fiber:3,ing:'じゃがいも・にんじん・きゅうり'},
+  {id:'d_minestrone',n:'ミネストローネ',e:'🍲',c:'料理',lacto:0,fiber:4,ing:'トマト・豆・玉ねぎ・にんじん'},
+  {id:'d_mabo',n:'麻婆豆腐',e:'🥘',c:'料理',lacto:1,fiber:1.5,ing:'豆腐・味噌・ねぎ'},
+  {id:'d_hoikoro',n:'回鍋肉',e:'🥘',c:'料理',lacto:2,fiber:2.5,ing:'キャベツ・ピーマン・味噌・豚肉'},
+  {id:'d_sabamiso',n:'サバの味噌煮',e:'🐟',c:'料理',lacto:2,fiber:1,ing:'さば・味噌'},
+  {id:'d_okonomi',n:'お好み焼き',e:'🥘',c:'料理',lacto:0,fiber:3,ing:'キャベツ・卵・豚肉'},
+  {id:'d_hiyayakko',n:'冷奴',e:'🥢',c:'料理',lacto:0,fiber:1,ing:'豆腐・ねぎ・かつお'},
+  {id:'d_nukamori',n:'ぬか漬け盛り合わせ',e:'🥒',c:'料理',lacto:3,fiber:2,ing:'きゅうり・大根・なすのぬか漬け'},
+  {id:'d_yogurtbowl',n:'ヨーグルトボウル',e:'🥣',c:'料理',lacto:3,fiber:4,ing:'ヨーグルト・バナナ・ベリー・オートミール'},
+  {id:'d_granola',n:'グラノーラヨーグルト',e:'🥣',c:'料理',lacto:3,fiber:3,ing:'ヨーグルト・グラノーラ'},
+  {id:'d_smoothie',n:'グリーンスムージー',e:'🥤',c:'料理',lacto:3,fiber:3,ing:'バナナ・ほうれん草・ヨーグルト'},
+  {id:'d_cheesetoast',n:'チーズトースト',e:'🧀',c:'料理',lacto:2,fiber:1.5,ing:'チーズ・パン'},
+  {id:'d_cornsoup',n:'コーンスープ',e:'🌽',c:'料理',lacto:0,fiber:2,ing:'とうもろこし・牛乳・玉ねぎ'},
+];
+DISHES.forEach(d=>FOODS.push(d));
+const FOOD_CATS=['すべて','料理','発酵','野菜','果物','豆・海藻','主食'];
 const FOOD_MAP=Object.fromEntries(FOODS.map(f=>[f.id,f]));
 const FIBER_TARGET=18;
 
@@ -795,11 +828,14 @@ document.getElementById('catChips').innerHTML=FOOD_CATS.map((c,i)=>`<button clas
 document.getElementById('catChips').addEventListener('click',e=>{const b=e.target.closest('.cat-chip');if(!b)return;curCat=b.dataset.c;document.querySelectorAll('.cat-chip').forEach(x=>x.classList.toggle('active',x===b));renderFoods();});
 document.getElementById('searchInput').addEventListener('input',e=>{curSearch=e.target.value.trim();renderFoods();});
 function renderFoods(){
-  let list=FOODS;if(curCat!=='すべて')list=list.filter(f=>f.c===curCat);if(curSearch)list=list.filter(f=>f.n.includes(curSearch));
+  let list=FOODS;
+  if(curCat!=='すべて')list=list.filter(f=>f.c===curCat);
+  if(curSearch)list=list.filter(f=>f.n.includes(curSearch)||(f.ing&&f.ing.includes(curSearch)));
   const el=document.getElementById('foodList');
   el.innerHTML=list.length?list.map(f=>{const tags=[];if(f.lacto)tags.push(`<span class="tag l">乳酸菌 +${f.lacto}</span>`);if(f.fiber)tags.push(`<span class="tag f">食物繊維 ${f.fiber}g</span>`);
-    return `<div class="food-card" data-id="${f.id}"><span class="fem">${f.e}</span><div style="flex:1"><div class="fn">${f.n}</div><div class="ft">${tags.join('')}</div></div><button class="fadd">＋</button></div>`;
-  }).join(''):'<div class="empty">見つかりませんでした</div>';
+    const ing=f.ing?`<div class="fing">🥕 ${f.ing}</div>`:'';
+    return `<div class="food-card" data-id="${f.id}"><span class="fem">${f.e}</span><div style="flex:1"><div class="fn">${f.n}</div>${ing}<div class="ft">${tags.join('')}</div></div><button class="fadd">＋</button></div>`;
+  }).join(''):'<div class="empty">見つかりませんでした<br><span style="font-size:11px">単品の食材で記録してみてね 🐾</span></div>';
 }
 document.getElementById('foodList').addEventListener('click',e=>{const card=e.target.closest('.food-card');if(!card)return;addFood(card.dataset.id);});
 document.getElementById('renameBtn').onclick=()=>{const nm=prompt('猫のなまえ',state.catName);if(nm&&nm.trim()){state.catName=nm.trim().slice(0,12);save();render();}};

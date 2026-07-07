@@ -224,9 +224,9 @@
     <button class="btn ghost" id="tutoBtn">🎬 あそびかた</button>
     <button class="btn ghost" id="helpBtn">📖 アイテム説明</button>
     <div class="panel" id="ctrlPanel">
-      <b>操作</b>　移動：左下の <span class="key">十字キー</span> / <span class="key">← →↑↓</span><br>
-      ショット：右下の <span class="key">FIRE</span>（<span class="key">Space</span>/<span class="key">Z</span>）<br>
-      ボム：FIREを <b>上にスワイプ</b>（PCは <span class="key">X</span>）／子猫展開：FIRE<b>2回タップ</b>
+      <b>片手操作OK</b>　左下の <span class="key">十字キー</span> に触れると<b>移動＋自動ショット</b><br>
+      ボム：十字キーを <b>ダブルタップ</b> or <b>スワイプ</b>（右下 <span class="key">FIRE</span> でも操作可）<br>
+      子猫展開：FIRE<b>2回タップ</b>／PC：<span class="key">←→↑↓</span> <span class="key">Space</span> <span class="key">X</span>
     </div>
     <div class="hs" id="titleHigh"></div>
   </div>
@@ -493,11 +493,12 @@ fireBtn.addEventListener('mouseup',()=>input.fire=false);
 // 右下FIREの下ラベルにボム残数を表示
 const fireBombEl=document.getElementById('fireBomb');
 
-// ===== 左下 十字キー(バーチャルパッド) =====
+// ===== 左下 十字キー(バーチャルパッド) 片手操作 =====
+// 触れている間=移動＋自動ファイヤー / ダブルタップ・素早いスワイプ=ボム
 const dpad={active:false, dx:0, dy:0};
 const dpadEl=document.getElementById('dpad');
 const dnub=document.getElementById('dnub');
-let dpadTouchId=null;
+let dpadTouchId=null, dpLastTap=0, dpSwiped=false, dpStartX=0, dpStartY=0, dpPrevX=0, dpPrevY=0, dpPrevT=0;
 function dpadSet(clientX, clientY){
   const r=dpadEl.getBoundingClientRect();
   const cx=r.left+r.width/2, cy=r.top+r.height/2;
@@ -508,12 +509,24 @@ function dpadSet(clientX, clientY){
     const nm=Math.min(mag, r.width*0.32);
     dnub.style.transform=`translate(${dpad.dx*nm}px,${dpad.dy*nm}px)`; }
   dpad.active=true;
+  // スワイプ判定(素早く大きく動かしたらボム)
+  const now=performance.now(), dtt=(now-dpPrevT)/1000||0.016;
+  const spd=Math.hypot(clientX-dpPrevX, clientY-dpPrevY)/dtt;
+  const netD=Math.hypot(clientX-dpStartX, clientY-dpStartY);
+  if(!dpSwiped && spd>950 && netD>85){ dpSwiped=true; useBomb(); }
+  dpPrevX=clientX; dpPrevY=clientY; dpPrevT=now;
+}
+function dpadStart(clientX, clientY){
+  const now=performance.now();
+  if(now-dpLastTap<300){ useBomb(); dpLastTap=0; } else { dpLastTap=now; } // ダブルタップ=ボム
+  dpSwiped=false; dpStartX=dpPrevX=clientX; dpStartY=dpPrevY=clientY; dpPrevT=now;
+  dpadSet(clientX, clientY);
 }
 function dpadEnd(){ dpad.active=false; dpad.dx=0; dpad.dy=0; dpadTouchId=null; dnub.style.transform='translate(0,0)'; }
-dpadEl.addEventListener('touchstart',e=>{ Audio2.init();Audio2.resume(); const t=e.changedTouches[0]; dpadTouchId=t.identifier; dpadSet(t.clientX,t.clientY); e.preventDefault();},{passive:false});
+dpadEl.addEventListener('touchstart',e=>{ Audio2.init();Audio2.resume(); const t=e.changedTouches[0]; dpadTouchId=t.identifier; dpadStart(t.clientX,t.clientY); e.preventDefault();},{passive:false});
 dpadEl.addEventListener('touchmove',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId) dpadSet(t.clientX,t.clientY);} e.preventDefault();},{passive:false});
 dpadEl.addEventListener('touchend',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId) dpadEnd();} e.preventDefault();},{passive:false});
-dpadEl.addEventListener('mousedown',e=>{ dpadSet(e.clientX,e.clientY); dpadTouchId='m'; e.preventDefault();});
+dpadEl.addEventListener('mousedown',e=>{ dpadTouchId='m'; dpadStart(e.clientX,e.clientY); e.preventDefault();});
 window.addEventListener('mousemove',e=>{ if(dpadTouchId==='m' && (e.buttons&1)) dpadSet(e.clientX,e.clientY);});
 window.addEventListener('mouseup',()=>{ if(dpadTouchId==='m') dpadEnd(); });
 // desktop: Cキーでも出撃/帰還
@@ -671,7 +684,7 @@ function updatePlayer(dt){
 
   // firing
   player.fireCd-=dt;
-  const wantFire = input.fire || keys[' ']||keys['z']||keys['j'];
+  const wantFire = input.fire || dpad.active || keys[' ']||keys['z']||keys['j'];
   const wType = SKIN_WEAPON[selectedSkin] || 'spread';
   if(wType==='laser'){
     // 黒ネコ: 押している間ずっと出る1本の連続ビーム(うねる)
@@ -2268,7 +2281,7 @@ document.addEventListener('touchend',e=>{
 if(location.search.indexOf('debug')>=0){
   window.__nk={ spawn:(t)=>spawnPowerup(player.x, player.y-160, t), player,
     enemy:(t)=>spawnEnemy(t||'grunt'), bomb:()=>{ player.bombs++; useBomb(); },
-    boss:()=>spawnBoss(), pawflame:(x,y)=>pawBombExplode({x:x??player.x,y:y??player.y-200}), flames, allies, enemies, eBullets };
+    boss:()=>spawnBoss(), pawflame:(x,y)=>pawBombExplode({x:x??player.x,y:y??player.y-200}), flames, allies, enemies, eBullets, bullets };
 }
 
 })();

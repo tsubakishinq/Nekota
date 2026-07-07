@@ -609,7 +609,7 @@ function drawTexts(){
 //  PLAYER
 // ============================================================
 const player={
-  x:W/2, y:H*0.8, r:14, speed:68,
+  x:W/2, y:H*0.8, r:14, speed:102,
   hp:100, maxhp:100, alive:true,
   weapon:1, wpLevel:1, // weapon level 1..5
   fireCd:0, fireRate:0.14,
@@ -780,7 +780,7 @@ function fireLaserBeam(dt){
   if(Math.random()<0.5) spawnParticles(player.x+rnd(-halfW,halfW), top, '#c9a8ff', 1, 70, 0.2);
   player.laserSfxCd-=dt;
   if(player.laserSfxCd<=0){ player.laserSfxCd=0.10; Audio2.sfx.laser(); }
-  screenShake(0.5,0.03);
+  // 画面揺れは付けない(押しっぱなしで揺れ続けるのを防止)
 }
 function drawLaserBeam(){
   if(!player.alive || !player.laserOn) return;
@@ -1203,7 +1203,7 @@ function killEnemy(e){
   Audio2.sfx.explode();
   spawnParticles(e.x,e.y,e.color,e.r>=20?26:16, e.r>=20?260:200, 0.7);
   spawnParticles(e.x,e.y,'#ffffff',6,120,0.4);
-  screenShake(e.r>=20?6:2.5, .12);
+  screenShake(e.r>=20?4:1.4, .1);
   // score with combo
   combo++; comboTimer=COMBO_WINDOW; maxCombo=Math.max(maxCombo,combo);
   const mult=1+Math.floor(combo/5)*0.5;

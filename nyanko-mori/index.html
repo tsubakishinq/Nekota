@@ -80,6 +80,7 @@
   @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5%) rotate(-.6deg)}}
   .cat-bounce.walking{animation:walk .42s ease-in-out infinite;}
   @keyframes walk{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-5%) rotate(1deg)}}
+  .cat-bounce.still{animation:none;}
   .cat-pet{animation:wiggle .5s ease;}
   @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.03)}75%{transform:rotate(5deg) scale(1.03)}}
   .pet-hint{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:6;font-size:11px;font-weight:800;color:#fff;
@@ -640,23 +641,28 @@ function catWalkSVG(stage,eq){
   };
   const farLegs=leg(70,false,true)+leg(132,false,false);
   const nearLegs=leg(56,true,false)+leg(120,true,true);
-  const hat=WALK_HAT(eq.hat), collar=WALK_COLLAR(eq.collar);
+  const hat=WALK_HAT(eq.hat), collar=WALK_COLLAR(eq.collar), glasses=WALK_GLASSES(eq.glasses), outfit=WALK_OUTFIT(eq.outfit), back=WALK_BACK(eq.back);
   return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
     <ellipse cx="98" cy="176" rx="54" ry="8" fill="rgba(80,60,30,.10)"/>
+    ${back}
     <path d="M50 116 q-26 -4 -24 -34 q1 -16 15 -14" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round">
       <animateTransform attributeName="transform" type="rotate" values="-5 50 116;6 50 116;-5 50 116" dur="1.1s" repeatCount="indefinite"/></path>
     ${farLegs}
     <ellipse cx="96" cy="116" rx="52" ry="28" fill="${coat}"/>
+    ${outfit}
     ${nearLegs}
-    <path d="M138 78 L133 54 L153 72 Z" fill="${coat}"/><path d="M158 76 L170 54 L175 76 Z" fill="${coat}"/>
-    <path d="M140 72 L138 60 L150 71 Z" fill="#ffb3c6"/><path d="M161 72 L168 58 L172 74 Z" fill="#ffb3c6"/>
-    <circle cx="154" cy="96" r="26" fill="${coat}"/>
-    <ellipse cx="150" cy="104" rx="7" ry="5" fill="#ffc9d8" opacity=".6"/>
-    <circle cx="163" cy="93" r="4" fill="#3a2b2e"/><circle cx="164.5" cy="91.5" r="1.3" fill="#fff"/>
-    <path d="M178 98 l7 2 -6 4 Z" fill="#ff9db0"/>
-    <path d="M179 104 q-4 4 -9 1" stroke="#6b5636" stroke-width="2" fill="none" stroke-linecap="round"/>
-    <path d="M172 97 h16 M172 102 h15" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
-    ${collar}${hat}
+    ${collar}
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -2;0 0" dur="0.5s" repeatCount="indefinite"/>
+      <path d="M138 78 L133 54 L153 72 Z" fill="${coat}"/><path d="M158 76 L170 54 L175 76 Z" fill="${coat}"/>
+      <path d="M140 72 L138 60 L150 71 Z" fill="#ffb3c6"/><path d="M161 72 L168 58 L172 74 Z" fill="#ffb3c6"/>
+      <circle cx="154" cy="96" r="26" fill="${coat}"/>
+      <ellipse cx="150" cy="104" rx="7" ry="5" fill="#ffc9d8" opacity=".6"/>
+      <circle cx="163" cy="93" r="4" fill="#3a2b2e"/><circle cx="164.5" cy="91.5" r="1.3" fill="#fff"/>
+      <path d="M178 98 l7 2 -6 4 Z" fill="#ff9db0"/>
+      <path d="M179 104 q-4 4 -9 1" stroke="#6b5636" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <path d="M172 97 h16 M172 102 h15" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
+      ${glasses}${hat}
+    </g>
   </g></svg>`;
 }
 function WALK_HAT(id){switch(id){
@@ -672,6 +678,110 @@ function WALK_COLLAR(id){switch(id){
   case 'c_scarf':return '<path d="M118 104 q14 18 30 14 l-3 12 q-16 2 -30 -12 Z" fill="#3fa66b"/><path d="M140 116 l12 4 -4 16 -10 -8 Z" fill="#2e8c58"/>';
   case 'c_lei':return '<g>'+[120,128,136,144].map((x,i)=>`<circle cx="${x}" cy="${112+ (i%2?3:0)}" r="5" fill="${['#ff8fab','#ffd23f','#7ee081','#ff8fab'][i]}"/>`).join('')+'</g>';
   default:return '';}}
+function WALK_GLASSES(id){switch(id){
+  case 'g_round':return '<circle cx="163" cy="93" r="10" fill="#fff" fill-opacity=".15" stroke="#5a4632" stroke-width="2.6"/><path d="M173 90 l8 -3" stroke="#5a4632" stroke-width="2.6" stroke-linecap="round"/>';
+  case 'g_sun':return '<rect x="152" y="86" width="23" height="14" rx="6" fill="#2b2b3a"/><path d="M175 88 l8 -3" stroke="#2b2b3a" stroke-width="3" stroke-linecap="round"/><path d="M157 90 l6 -3" stroke="#fff" stroke-width="2" opacity=".5" stroke-linecap="round"/>';
+  case 'g_heart':return '<path d="M163 88 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z" fill="#ff5c8a" fill-opacity=".85"/>';
+  default:return '';}}
+function WALK_OUTFIT(id){switch(id){
+  case 'o_hoodie':return '<path d="M46 116 a50 28 0 0 0 100 0 Z" fill="#f2a154"/><path d="M120 100 q16 -8 26 4 q-6 12 -22 9 q-8 -9 -4 -13 Z" fill="#dd8b3a"/>';
+  case 'o_kimono':return '<path d="M46 116 a50 28 0 0 0 100 0 Z" fill="#f2ece0"/><rect x="80" y="112" width="12" height="30" fill="#c0455e"/>';
+  case 'o_hero':return '<path d="M46 116 a50 28 0 0 0 100 0 Z" fill="#3a6fd6"/><path d="M96 120 l3 9 10 0 -8 6 3 10 -8 -6 -8 6 3 -10 -8 -6 10 0 Z" fill="#ffd23f"/>';
+  default:return '';}}
+function WALK_BACK(id){switch(id){
+  case 'b_wings':return '<g fill="#fff" stroke="#e6ecf5" stroke-width="1.5"><path d="M84 96 q-30 -30 -56 -12 q22 2 26 20 q-20 6 -16 26 q18 -14 36 -6 Z"/><path d="M100 94 q-22 -32 -46 -18 q20 0 24 20 q-16 8 -12 26 q16 -16 32 -6 Z"/></g>';
+  case 'b_cape':return '<path d="M124 100 q-44 2 -80 42 q42 -8 84 2 Z" fill="#c0392b"/>';
+  default:return '';}}
+
+// ===== しぐさ用スプライト =====
+// 寝る（横向きの香箱・目を閉じて💤）
+function catSleepSVG(stage){
+  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
+    <ellipse cx="102" cy="176" rx="66" ry="9" fill="rgba(80,60,30,.10)"/>
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -2.5;0 0" dur="2.6s" repeatCount="indefinite"/>
+      <path d="M150 160 q30 8 30 -16" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round"/>
+      <path d="M44 170 Q42 122 100 122 Q160 122 160 170 Z" fill="${coat}"/>
+      <circle cx="58" cy="150" r="27" fill="${coat}"/>
+      <path d="M40 132 L34 110 L54 128 Z" fill="${coat}"/><path d="M62 128 L70 108 L80 130 Z" fill="${coat}"/>
+      <path d="M42 130 L38 114 L52 127 Z" fill="#ffb3c6"/><path d="M64 127 L70 112 L78 128 Z" fill="#ffb3c6"/>
+      <ellipse cx="50" cy="158" rx="7" ry="5" fill="#ffc9d8" opacity=".55"/>
+      <path d="M40 150 q6 5 12 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M58 150 q6 5 12 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M52 160 l7 0 -3.5 4 Z" fill="#ff9db0"/>
+    </g>
+    <text x="116" y="118" font-size="16" opacity="0">💤<animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 8;10 -16;20 -34" dur="3s" repeatCount="indefinite"/></text>
+  </g></svg>`;
+}
+// のび（前足を伸ばすプレイバウ）
+function catStretchSVG(stage){
+  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
+    <ellipse cx="100" cy="176" rx="64" ry="8" fill="rgba(80,60,30,.10)"/>
+    <path d="M150 116 q34 -4 30 -42" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round"/>
+    <ellipse cx="134" cy="118" rx="30" ry="27" fill="${coat}"/>
+    <rect x="119" y="130" width="11" height="40" rx="5.5" fill="${coatDark}"/>
+    <rect x="140" y="130" width="11" height="40" rx="5.5" fill="${coat}"/>
+    <path d="M56 152 Q104 100 152 120 Q150 152 104 158 Q72 160 56 152 Z" fill="${coat}"/>
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;-7 1;0 0" dur="2.2s" repeatCount="indefinite"/>
+      <rect x="26" y="150" width="44" height="10" rx="5" fill="${coatDark}"/>
+      <rect x="30" y="158" width="44" height="10" rx="5" fill="${coat}"/>
+      <ellipse cx="28" cy="155" rx="6" ry="5" fill="${coat}"/><ellipse cx="32" cy="163" rx="6" ry="5" fill="${coat}"/>
+    </g>
+    <circle cx="60" cy="142" r="23" fill="${coat}"/>
+    <path d="M44 126 L39 106 L58 124 Z" fill="${coat}"/><path d="M64 122 L72 104 L82 126 Z" fill="${coat}"/>
+    <path d="M46 124 L43 110 L56 123 Z" fill="#ffb3c6"/><path d="M66 123 L72 108 L80 124 Z" fill="#ffb3c6"/>
+    <path d="M48 144 q5 5 11 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M40 148 l7 2 -6 4 Z" fill="#ff9db0"/>
+    <path d="M56 148 h12" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
+  </g></svg>`;
+}
+// あそぶ（前足でボールをちょいちょい）
+function catPlaySVG(stage){
+  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
+    <ellipse cx="108" cy="176" rx="58" ry="8" fill="rgba(80,60,30,.10)"/>
+    <path d="M148 130 q30 -2 30 -34" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" values="6 148 130;-10 148 130;6 148 130" dur="0.6s" repeatCount="indefinite"/></path>
+    <rect x="118" y="134" width="11" height="36" rx="5.5" fill="${coatDark}"/>
+    <rect x="134" y="136" width="11" height="34" rx="5.5" fill="${coat}"/>
+    <ellipse cx="112" cy="134" rx="46" ry="26" fill="${coat}"/>
+    <path d="M136 88 L131 66 L151 84 Z" fill="${coat}"/><path d="M156 86 L168 64 L173 86 Z" fill="${coat}"/>
+    <circle cx="152" cy="108" r="24" fill="${coat}"/>
+    <circle cx="160" cy="105" r="4" fill="#3a2b2e"/><circle cx="161.5" cy="103.5" r="1.3" fill="#fff"/>
+    <path d="M175 110 l7 2 -6 4 Z" fill="#ff9db0"/>
+    <path d="M170 109 h14 M170 114 h13" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
+    <g><animateTransform attributeName="transform" type="rotate" values="-8 118 132;20 118 132;-8 118 132" dur="0.5s" repeatCount="indefinite"/>
+      <rect x="90" y="130" width="10" height="34" rx="5" fill="${coat}"/><ellipse cx="95" cy="162" rx="7" ry="4.5" fill="${coat}"/></g>
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -20;0 0" dur="0.5s" repeatCount="indefinite"/>
+      <circle cx="62" cy="160" r="13" fill="#ff8fab"/><path d="M53 156 q9 -8 18 2 M55 164 q9 8 17 -2" stroke="#e05c86" stroke-width="1.6" fill="none"/></g>
+  </g></svg>`;
+}
+// 毛づくろい（正面すわりで前足をペロペロ・着せ替え反映）
+function catGroomSVG(stage,eq){
+  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';const fluff=stage>=5;eq=eq||{};
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
+    <ellipse cx="100" cy="184" rx="46" ry="9" fill="rgba(80,60,30,.10)"/>
+    ${COSTUME_BACK(eq.back)}
+    <path d="M142 170 q34 6 30 -30 q-3 -20 -18 -18" fill="none" stroke="${coatDark}" stroke-width="13" stroke-linecap="round"/>
+    <path d="M58 184 C50 132 66 120 100 120 C134 120 150 132 142 184 Z" fill="${coat}"/>
+    <ellipse cx="120" cy="182" rx="12" ry="7.5" fill="${coatDark}"/>
+    ${COSTUME_OUTFIT(eq.outfit)}
+    <path d="M60 72 L54 28 L96 58 Z" fill="${coat}"/><path d="M140 72 L146 28 L104 58 Z" fill="${coat}"/>
+    <path d="M64 64 L61 40 L86 58 Z" fill="#ffb3c6"/><path d="M136 64 L139 40 L114 58 Z" fill="#ffb3c6"/>
+    ${fluff?`<circle cx="100" cy="94" r="50" fill="${coat}" opacity=".5"/>`:''}
+    <circle cx="100" cy="94" r="42" fill="${coat}"/>
+    <ellipse cx="70" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/><ellipse cx="130" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/>
+    <path d="M78 96 q7 -8 14 0" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M108 96 q7 -8 14 0" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <path d="M96 106 h8 l-4 5 Z" fill="#ff9db0"/>
+    <path d="M99 112 q4 7 -2 9 q-4 -3 -3 -9 Z" fill="#ff7a9c"/>
+    <path d="M136 102 h22 M134 110 h20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -3.5;0 0" dur="0.55s" repeatCount="indefinite"/>
+      <path d="M78 184 q-4 -42 12 -54 q10 -7 18 3" fill="none" stroke="${coat}" stroke-width="15" stroke-linecap="round"/>
+      <ellipse cx="98" cy="120" rx="9.5" ry="7.5" fill="${coat}"/></g>
+    ${COSTUME_COLLAR(eq.collar)}${COSTUME_HAT(eq.hat)}
+  </g></svg>`;
+}
 function COSTUME_HAT(id){switch(id){
   case 'h_ribbon':return '<g transform="translate(100 50)"><path d="M0 0 L-16 -9 L-16 11 Z" fill="#ff6f91"/><path d="M0 0 L16 -9 L16 11 Z" fill="#ff6f91"/><circle r="6" fill="#e84c74"/></g>';
   case 'h_straw':return '<g><ellipse cx="100" cy="54" rx="52" ry="13" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M74 54 a26 30 0 0 1 52 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/><rect x="74" y="47" width="52" height="7" rx="3" fill="#c26b6b"/></g>';
@@ -717,7 +827,8 @@ function render(){
   document.getElementById('hdrCoin').textContent=wallet();
   document.getElementById('homeName').textContent=state.catName;
   document.getElementById('homeStage').textContent=st.n;
-  document.getElementById('catArtHome').innerHTML=(typeof isWalking!=='undefined'&&isWalking)?catWalkSVG(stage,state.equipped):catSVG(stage,mood.key,state.equipped);
+  if(typeof homeSprite==='function')document.getElementById('catArtHome').innerHTML=homeSprite();
+  else document.getElementById('catArtHome').innerHTML=catSVG(stage,mood.key,state.equipped);
   renderRoom();
   const bl=bondLevel(state.bond);
   document.getElementById('bondLabel').textContent=bl.l;
@@ -922,7 +1033,7 @@ function pet(ev){
   if(isNaN(x)){x=r.width/2;y=r.height*0.5;}
   const h=document.createElement('div');h.className='heart-p';h.textContent=['💚','💛','💕','🍃'][Math.floor(Math.random()*4)];
   h.style.left=(x-9)+'px';h.style.top=(y-9)+'px';room.appendChild(h);setTimeout(()=>h.remove(),1000);
-  pauseWander();
+  pauseBehave();
   const art=document.getElementById('catArtHome');art.classList.remove('cat-pet','cat-bounce','walking');void art.offsetWidth;art.classList.add('cat-pet');
   setTimeout(()=>{art.classList.remove('cat-pet');art.classList.add('cat-bounce');},520);
   if(state.pet.date!==TODAY)state.pet={date:TODAY,count:0};
@@ -935,38 +1046,56 @@ function pet(ev){
   }
 }
 document.getElementById('catHome').addEventListener('click',pet);
-// ===== 猫のおさんぽ（お部屋をゆっくり歩き回る）=====
-let walkTimer=null,walkResume=null,isWalking=false;
-function paintHomeCat(){
-  const el=document.getElementById('catArtHome');if(!el)return;
+// ===== 猫のしぐさ（歩く・すわる・寝る・のび・毛づくろい・あそぶ）=====
+let behaveTimer=null,catAct='sit';
+function homeSprite(){
   const stage=stageFor(earned());
   const mood=petJustNow?'great':moodOf(daySummary(TODAY)).key;
-  el.innerHTML=isWalking?catWalkSVG(stage,state.equipped):catSVG(stage,mood,state.equipped);
+  switch(catAct){
+    case 'walk':   return catWalkSVG(stage,state.equipped);
+    case 'sleep':  return catSleepSVG(stage);
+    case 'stretch':return catStretchSVG(stage);
+    case 'play':   return catPlaySVG(stage);
+    case 'groom':  return catGroomSVG(stage,state.equipped);
+    default:       return catSVG(stage,mood,state.equipped);
+  }
 }
+function paintHomeCat(){const el=document.getElementById('catArtHome');if(el)el.innerHTML=homeSprite();}
+function setActClass(){const art=document.getElementById('catArtHome');if(!art)return;
+  art.classList.remove('walking','still');
+  if(catAct==='walk')art.classList.add('walking');
+  else if(catAct==='sleep'||catAct==='stretch'||catAct==='play')art.classList.add('still');}
 function freezeCat(){
   const cat=document.getElementById('catHome'),room=document.getElementById('room');if(!cat||!room)return;
   const rr=room.getBoundingClientRect(),cr=cat.getBoundingClientRect();
-  if(rr.width>0){const pct=((cr.left+cr.width/2)-rr.left)/rr.width*100;cat.style.transition='none';cat.style.left=Math.max(27,Math.min(73,pct))+'%';}
-  document.getElementById('catArtHome').classList.remove('walking');
-  isWalking=false;paintHomeCat();
+  if(rr.width>0){const pct=((cr.left+cr.width/2)-rr.left)/rr.width*100;cat.style.transition='none';cat.style.left=Math.max(26,Math.min(74,pct))+'%';}
 }
-function catWander(){
-  const cat=document.getElementById('catHome'),face=document.getElementById('catFace'),art=document.getElementById('catArtHome');if(!cat)return;
+function startWalk(){
+  const cat=document.getElementById('catHome'),face=document.getElementById('catFace');if(!cat)return;
+  catAct='walk';
   const cur=parseFloat(cat.style.left)||50;
-  let target=27+Math.random()*46;
-  if(Math.abs(target-cur)<14)target=cur<50?cur+18:cur-18;
-  target=Math.max(27,Math.min(73,target));
-  const dur=Math.max(1.2,Math.abs(target-cur)*0.12);
+  let target=26+Math.random()*48;
+  if(Math.abs(target-cur)<16)target=cur<50?cur+20:cur-20;
+  target=Math.max(26,Math.min(74,target));
+  const dur=Math.max(1.6,Math.abs(target-cur)*0.17);        // ゆっくりめの歩き
   face.style.transform='scaleX('+(target>cur?1:-1)+')';
-  isWalking=true;paintHomeCat();
+  paintHomeCat();setActClass();
   cat.style.transition='left '+dur+'s linear';cat.style.left=target+'%';
-  art.classList.add('walking');
-  clearTimeout(walkTimer);
-  walkTimer=setTimeout(()=>{isWalking=false;paintHomeCat();art.classList.remove('walking');walkTimer=setTimeout(catWander,1600+Math.random()*2600);},dur*1000);
+  clearTimeout(behaveTimer);behaveTimer=setTimeout(behave,dur*1000+(500+Math.random()*900));
 }
-function pauseWander(){clearTimeout(walkTimer);clearTimeout(walkResume);freezeCat();walkResume=setTimeout(catWander,2200);}
+function startIdle(act){
+  catAct=act;freezeCat();paintHomeCat();setActClass();
+  const hold=act==='sleep'?(4500+Math.random()*4000):(1800+Math.random()*2400);
+  clearTimeout(behaveTimer);behaveTimer=setTimeout(behave,hold);
+}
+function behave(){
+  if(Math.random()<0.5)startWalk();
+  else{const acts=['sit','sleep','groom','play','stretch'];startIdle(acts[Math.floor(Math.random()*acts.length)]);}
+}
+function pauseBehave(){clearTimeout(behaveTimer);catAct='sit';freezeCat();setActClass();behaveTimer=setTimeout(behave,2600);}
 document.getElementById('catHome').style.left='50%';
-setTimeout(catWander,1800);
+paintHomeCat();
+behaveTimer=setTimeout(behave,1600);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));

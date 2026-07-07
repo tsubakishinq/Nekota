@@ -262,7 +262,7 @@
       <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化＋FIREダブルタップ(PCはC)で必殺展開：キジトラ=左右で援護→前方出撃し四方八方に攻撃（もう一度で帰還）／白ネコ=周回バリア（2発防ぐと消える）＋ホーミング→バリアの輪が拡大（もう一度で収束）／黒ネコ=肉球ボム(命中で1秒の肉球型 爆炎が残りダメージ)→横に広がって3秒間ホーミングレーザーを連射</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd85e">S</div><div class="itemTxt"><div class="itemName">スピードアップ（S）</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd85e">S</div><div class="itemTxt"><div class="itemName">スピードアップ（S）</div><div class="itemDesc">移動速度がアップ。集めるほど速くなり、最終的に初期の約2倍まで（永続）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ff5ec9">✦</div><div class="itemTxt"><div class="itemName">マグネット</div><div class="itemDesc">アイテムを引き寄せる（約6秒）</div></div></div>
       <div class="grpLabel">■ 回復・その他</div>
       <div class="itemRow"><div class="itemIco" style="color:#ff3b4e;background:#fff">✚</div><div class="itemTxt"><div class="itemName">回復（救急マーク）</div><div class="itemDesc">HPが30回復する</div></div></div>
@@ -616,6 +616,7 @@ const player={
   invuln:0, thrust:0,
   shield:0, // shield time
   bombs:3, magnet:0, rapid:0,
+  speedMul:1, // スピードアップ: 移動速度倍率(最大2)
   matatabi:0, // またたび無敵の残り時間
   kittens:[], // 子猫の子機（最大10機）
   kittensDeployed:false, // 子猫の展開状態(白=輪拡大 / キジトラ=前方出撃)
@@ -625,7 +626,7 @@ const player={
 function resetPlayer(){
   player.x=W/2; player.y=H*0.8; player.hp=100; player.maxhp=100; player.alive=true;
   player.wpLevel=1; player.fireCd=0; player.invuln=1.2; player.shield=0;
-  player.bombs=3; player.magnet=0; player.rapid=0;
+  player.bombs=3; player.magnet=0; player.rapid=0; player.speedMul=1;
   player.matatabi=0; player.kittens=[]; player.kittensDeployed=false; player.kittenBurst=0;
   player.laserOn=false; player.laserSfxCd=0; player.laserPts=[];
 }
@@ -654,7 +655,8 @@ function updatePlayer(dt){
     player.thrust=clamp(d/30,0,1);
   } else {
     const len=Math.hypot(dx,dy)||1;
-    player.x+=dx/len*player.speed*dt; player.y+=dy/len*player.speed*dt;
+    const sp=player.speed*player.speedMul;
+    player.x+=dx/len*sp*dt; player.y+=dy/len*sp*dt;
     player.thrust=dirMove?1:0.3;
   }
   player.x=clamp(player.x,player.r,W-player.r);
@@ -1433,7 +1435,11 @@ function collectPowerup(p){
     case 'power': if(player.wpLevel<5){ player.wpLevel++; Audio2.sfx.levelup(); spawnText(player.x,player.y-30,'LEVEL '+player.wpLevel,'#57f6ff',18);} else { addScore(500); spawnText(player.x,player.y-30,'MAX +500','#ffd85e',16); Audio2.sfx.coin(); } break;
     case 'heal': player.hp=Math.min(player.maxhp,player.hp+30); Audio2.sfx.power(); break;
     case 'shield': player.shield=8; Audio2.sfx.power(); break;
-    case 'rapid': player.rapid=7; Audio2.sfx.power(); break;
+    case 'rapid': // スピードアップ: 移動速度を上げる(最大2倍で頭打ち)
+      if(player.speedMul<2){ player.speedMul=Math.min(2, player.speedMul+0.2); Audio2.sfx.power();
+        spawnText(player.x,player.y-30,'スピード x'+player.speedMul.toFixed(1),'#ffd85e',15); spawnParticles(p.x,p.y,'#ffd85e',10,150,0.5); }
+      else { addScore(300); spawnText(player.x,player.y-30,'速度MAX +300','#ffd85e',14); Audio2.sfx.coin(); }
+      return;
     case 'magnet': player.magnet=6; Audio2.sfx.power(); break;
     case 'bomb': player.bombs++; Audio2.sfx.power(); break;
     case 'coin': addScore(120); coins++; Audio2.sfx.coin(); break;
@@ -1990,7 +1996,7 @@ function drawHUD(){
   const buffs=[];
   if(player.matatabi>0) buffs.push(['無敵 '+Math.ceil(player.matatabi),'#8fe36b']);
   if(player.shield>0) buffs.push(['❂ '+Math.ceil(player.shield),'#57f6ff']);
-  if(player.rapid>0) buffs.push(['⚡ '+Math.ceil(player.rapid),'#ffd85e']);
+  if(player.speedMul>1) buffs.push(['S x'+player.speedMul.toFixed(1),'#ffd85e']);
   if(player.magnet>0) buffs.push(['✦ '+Math.ceil(player.magnet),'#ff5ec9']);
   if(player.kittens.length>0) buffs.push(['🐱x'+player.kittens.length,'#ffd0ee']);
   for(const [t,c] of buffs){ ctx.fillStyle=c; ctx.fillText(t,bx2,by2); bx2+=ctx.measureText(t).width+12; }

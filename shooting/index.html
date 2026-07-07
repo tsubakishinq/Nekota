@@ -213,15 +213,15 @@
     <div class="guideTitle">🎁 アイテム図鑑</div>
     <div class="itemList">
       <div class="grpLabel">■ 強化・パワーアップ</div>
-      <div class="itemRow"><div class="itemIco" style="color:#57f6ff">⬆</div><div class="itemTxt"><div class="itemName">パワーアップ</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#57f6ff">P</div><div class="itemTxt"><div class="itemName">パワーアップ（P）</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を追加（最大10機）。ネコで挙動が変化：キジトラ=左右に並んで援護（FIREダブルタップ/Cキーで前方に出撃し四方八方に攻撃、もう一度で帰還）／白ネコ=自機の周りを回るバリア＋ホーミング弾／黒ネコ=肉球型ボムを発射</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化：キジトラ=左右で援護（FIREダブルタップ/Cで前方出撃、もう一度で帰還）／白ネコ=周回バリア＋ホーミング弾／黒ネコ=肉球ボムを発射</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd85e">⚡</div><div class="itemTxt"><div class="itemName">ラピッド</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd85e">S</div><div class="itemTxt"><div class="itemName">スピードアップ（S）</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ff5ec9">✦</div><div class="itemTxt"><div class="itemName">マグネット</div><div class="itemDesc">アイテムを引き寄せる（約6秒）</div></div></div>
       <div class="grpLabel">■ 回復・その他</div>
-      <div class="itemRow"><div class="itemIco" style="color:#5effa0">✚</div><div class="itemTxt"><div class="itemName">回復</div><div class="itemDesc">HPが30回復する</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ff3b4e;background:#fff">✚</div><div class="itemTxt"><div class="itemName">回復（救急マーク）</div><div class="itemDesc">HPが30回復する</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム（必殺技）</div><div class="itemDesc">ストック+1（最初は3個）。発動＝左下のBOMBボタン / Xキー。ネコで技が変化：キジトラ🐾ネコパンチで押しつぶし／黒ネコ🌀ネコキックで敵を吹き飛ばし／白ネコ🐱敵を全部15秒 味方の子猫にする</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">🐾</div><div class="itemTxt"><div class="itemName">肉球エネルギー</div><div class="itemDesc">スコア +120。集めてハイスコアを狙おう</div></div></div>
       <div class="grpLabel">■ ネコごとのメイン武器</div>
@@ -999,7 +999,7 @@ function spawnBoss(){
   const hp = 180 + wave*55;
   boss={ t:'boss', x:W/2, y:-120, tx:W/2, ty:130, r:60, hp, maxhp:hp,
     phase:0, phaseTimer:0, fireCd:1.5, hitFlash:0, angle:0, entered:false, seed:0,
-    color:'#ff5ec9', sweepDir:1 };
+    color:'#c9c4d6', sweepDir:1 };
   enemies.push(boss);
 }
 function updateBoss(e,dt){
@@ -1055,34 +1055,46 @@ function updateBoss(e,dt){
 }
 function drawBoss(e){
   const flash=e.hitFlash>0;
-  ctx.rotate(Math.sin(e.angle*0.5)*0.06);
-  // big cat-demon warship — original
-  ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=24;
-  // body
-  const grad=ctx.createLinearGradient(0,-e.r,0,e.r);
-  grad.addColorStop(0, flash?'#fff':'#ff8ad6'); grad.addColorStop(1, flash?'#fff':'#7a1150');
+  const r=e.r;
+  ctx.rotate(Math.sin(e.angle*0.5)*0.05);
+  // ===== 巨大ネズミ =====
+  // しっぽ（後ろでうねる）
+  ctx.strokeStyle=flash?'#fff':'#c98fb0'; ctx.lineWidth=6; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,r*0.7);
+  for(let s=0;s<=6;s++){ const yy=r*0.7+s*r*0.16; const xx=Math.sin(e.angle*2+s*0.7)*r*0.22*(s/6); ctx.lineTo(xx,yy); }
+  ctx.stroke();
+  ctx.shadowColor='#d8b0c0'; ctx.shadowBlur=22;
+  // 丸い耳（大きい）
+  const earGrad=flash?'#fff':'#b9b4c4';
+  ctx.fillStyle=earGrad;
+  ctx.beginPath(); ctx.arc(-r*0.72,-r*0.62,r*0.42,0,TAU); ctx.arc(r*0.72,-r*0.62,r*0.42,0,TAU); ctx.fill();
+  ctx.fillStyle=flash?'#fff':'#f4b8cd'; // 耳の内側ピンク
+  ctx.beginPath(); ctx.arc(-r*0.72,-r*0.62,r*0.24,0,TAU); ctx.arc(r*0.72,-r*0.62,r*0.24,0,TAU); ctx.fill();
+  // 体（グレーの丸顔）
+  const grad=ctx.createLinearGradient(0,-r,0,r);
+  grad.addColorStop(0, flash?'#fff':'#d7d2df'); grad.addColorStop(1, flash?'#fff':'#8b8598');
   ctx.fillStyle=grad;
-  ctx.beginPath(); ctx.ellipse(0,0,e.r,e.r*0.82,0,0,TAU); ctx.fill();
-  // ears
-  ctx.beginPath();
-  ctx.moveTo(-e.r*0.7,-e.r*0.5); ctx.lineTo(-e.r*0.95,-e.r*1.15); ctx.lineTo(-e.r*0.35,-e.r*0.72); ctx.closePath();
-  ctx.moveTo(e.r*0.7,-e.r*0.5); ctx.lineTo(e.r*0.95,-e.r*1.15); ctx.lineTo(e.r*0.35,-e.r*0.72); ctx.closePath();
-  ctx.fill();
-  // eyes (glow, angrier as phase increases)
-  ctx.shadowBlur=16; ctx.shadowColor='#57f6ff';
-  ctx.fillStyle=flash?'#fff': (e.phase>=2?'#ff3b3b':'#57f6ff');
-  const eo=e.phase>=3?0.5:0.35;
-  ctx.beginPath(); ctx.ellipse(-e.r*0.34,-e.r*0.1,e.r*0.16,e.r*(0.22-eo*0.1),0.3,0,TAU);
-  ctx.ellipse(e.r*0.34,-e.r*0.1,e.r*0.16,e.r*(0.22-eo*0.1),-0.3,0,TAU); ctx.fill();
-  // slit pupils
-  ctx.fillStyle='#0a0010'; ctx.shadowBlur=0;
-  ctx.fillRect(-e.r*0.36,-e.r*0.28,2.5,e.r*0.36); ctx.fillRect(e.r*0.32,-e.r*0.28,2.5,e.r*0.36);
-  // mouth
-  ctx.strokeStyle=flash?'#fff':'#2a0016'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.arc(0,e.r*0.28,e.r*0.3,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
-  // whisker cannons
-  ctx.strokeStyle='#57f6ff'; ctx.lineWidth=2;
-  for(let s=-1;s<=1;s+=2){ for(let k=0;k<3;k++){ ctx.beginPath(); ctx.moveTo(s*e.r*0.5,e.r*0.15+k*5); ctx.lineTo(s*e.r*1.2,e.r*0.05+k*10); ctx.stroke(); } }
+  ctx.beginPath(); ctx.ellipse(0,0,r,r*0.9,0,0,TAU); ctx.fill();
+  // ほっぺ（マズル）
+  ctx.fillStyle=flash?'#fff':'#efeaf2';
+  ctx.beginPath(); ctx.ellipse(-r*0.24,r*0.34,r*0.34,r*0.28,0,0,TAU); ctx.ellipse(r*0.24,r*0.34,r*0.34,r*0.28,0,0,TAU); ctx.fill();
+  // 目（怒るほど赤く）
+  ctx.shadowBlur=14; ctx.shadowColor=e.phase>=2?'#ff3b3b':'#2a1020';
+  ctx.fillStyle=flash?'#333':(e.phase>=2?'#ff3b3b':'#20121c');
+  ctx.beginPath(); ctx.arc(-r*0.32,-r*0.05,r*0.15,0,TAU); ctx.arc(r*0.32,-r*0.05,r*0.15,0,TAU); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(-r*0.28,-r*0.1,r*0.05,0,TAU); ctx.arc(r*0.36,-r*0.1,r*0.05,0,TAU); ctx.fill();
+  // 鼻（ピンクの三角）
+  ctx.fillStyle=flash?'#fff':'#ff6fa0';
+  ctx.beginPath(); ctx.moveTo(0,r*0.22); ctx.lineTo(-r*0.12,r*0.34); ctx.lineTo(r*0.12,r*0.34); ctx.closePath(); ctx.fill();
+  // 前歯（ネズミの象徴）
+  ctx.fillStyle=flash?'#eee':'#fffdf0'; ctx.strokeStyle='#b0a890'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(-r*0.10,r*0.34,r*0.09,r*0.22); ctx.rect(r*0.01,r*0.34,r*0.09,r*0.22); ctx.fill(); ctx.stroke();
+  // ヒゲ
+  ctx.strokeStyle=flash?'#fff':'rgba(60,50,60,.7)'; ctx.lineWidth=2;
+  for(let s=-1;s<=1;s+=2){ for(let k=0;k<3;k++){ ctx.beginPath(); ctx.moveTo(s*r*0.18,r*0.3+k*4); ctx.lineTo(s*r*1.0,r*0.12+k*11); ctx.stroke(); } }
+  ctx.shadowBlur=0;
   // boss hp handled in HUD
 }
 function defeatBoss(e){
@@ -1108,6 +1120,10 @@ function defeatBoss(e){
 // ============================================================
 // types: power, heal, shield, rapid, magnet, bomb, coin, matatabi, kitten
 function spawnPowerup(x,y,type){
+  if(type==='kitten'){ // 檻に入った子猫: 壊すと仲間になる
+    powerups.push({x,y,vy:42, type, r:15, seed:Math.random()*TAU, caged:true, cageHp:4, cageMax:4, hitFlash:0});
+    return;
+  }
   powerups.push({x,y,vy:60, type, r:12, seed:Math.random()*TAU});
 }
 function maybeDrop(e){
@@ -1126,9 +1142,29 @@ function maybeDrop(e){
 }
 function pick(a){ return a[rndi(0,a.length-1)]; }
 
+function freeCagedKitten(p){
+  Audio2.sfx.explode(); spawnParticles(p.x,p.y,'#b7b0c0',12,180,0.5);
+  if(addKitten()){ Audio2.sfx.power(); spawnText(p.x,p.y-20,'子猫 なかまに！','#ffd0ee',15); spawnParticles(p.x,p.y,'#ffd0ee',16,180,0.6); }
+  else { addScore(400); spawnText(p.x,p.y-20,'子猫MAX +400','#ffd85e',14); Audio2.sfx.coin(); }
+}
 function updatePowerups(dt){
   for(let i=powerups.length-1;i>=0;i--){
     const p=powerups[i]; p.seed+=dt*4;
+    if(p.hitFlash) p.hitFlash=Math.max(0,p.hitFlash-dt*6);
+    // 檻入り子猫: マグネット無効・弾で檻を壊す・接触でも解放
+    if(p.caged){
+      p.y+=p.vy*dt;
+      for(let j=bullets.length-1;j>=0;j--){ const b=bullets[j];
+        if(dist2(b.x,b.y,p.x,p.y) < (p.r+b.r)*(p.r+b.r)){
+          p.cageHp-=(b.dmg||1); p.hitFlash=1; spawnParticles(b.x,b.y,'#e8e2f0',3,130,0.3);
+          if(!b.pierce && !b.big){ bullets.splice(j,1); }
+        }
+      }
+      const touch = player.alive && dist2(p.x,p.y,player.x,player.y) < (p.r+player.r)*(p.r+player.r);
+      if(p.cageHp<=0 || touch){ freeCagedKitten(p); powerups.splice(i,1); continue; }
+      if(p.y>H+30){ powerups.splice(i,1); }
+      continue;
+    }
     // magnet attraction
     if(player.magnet>0 || dist2(p.x,p.y,player.x,player.y)<120*120){
       const ang=Math.atan2(player.y-p.y,player.x-p.x); const pull=player.magnet>0?300:160;
@@ -1141,10 +1177,10 @@ function updatePowerups(dt){
   }
 }
 const PU_INFO={
-  power:{c:'#57f6ff',icon:'⬆',label:'POWER UP'},
-  heal:{c:'#5effa0',icon:'✚',label:'HP +30'},
+  power:{c:'#57f6ff',icon:'P',label:'パワーアップ'},
+  heal:{c:'#5effa0',icon:'✚',firstaid:true,label:'HP +30'},
   shield:{c:'#57f6ff',icon:'❂',label:'SHIELD'},
-  rapid:{c:'#ffd85e',icon:'⚡',label:'RAPID'},
+  rapid:{c:'#ffd85e',icon:'S',label:'スピードアップ'},
   magnet:{c:'#ff5ec9',icon:'✦',label:'MAGNET'},
   bomb:{c:'#ff8a5e',icon:'✹',label:'BOMB +1'},
   coin:{c:'#ffd85e',icon:'🐾',emoji:true,label:''},
@@ -1179,13 +1215,38 @@ function drawPowerups(){
     const info=PU_INFO[p.type];
     const bob=Math.sin(p.seed)*2;
     ctx.save(); ctx.translate(p.x,p.y+bob);
+    // 檻入り子猫
+    if(p.caged){
+      const r=p.r, fl=p.hitFlash>0;
+      // 中の子猫
+      ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=8;
+      ctx.fillStyle='#fff6fb'; ctx.beginPath(); ctx.arc(0,1,r*0.6,0,TAU); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-r*0.42,-r*0.2); ctx.lineTo(-r*0.62,-r*0.72); ctx.lineTo(-r*0.1,-r*0.38); ctx.closePath();
+      ctx.moveTo(r*0.42,-r*0.2); ctx.lineTo(r*0.62,-r*0.72); ctx.lineTo(r*0.1,-r*0.38); ctx.closePath(); ctx.fill();
+      ctx.shadowBlur=0; ctx.fillStyle='#57c9ff'; ctx.beginPath(); ctx.arc(-2.2,0,1.4,0,TAU); ctx.arc(2.2,0,1.4,0,TAU); ctx.fill();
+      // 檻（枠＋縦格子）
+      ctx.strokeStyle=fl?'#fff':'#c9c4d6'; ctx.lineWidth=2.5;
+      ctx.strokeRect(-r,-r,r*2,r*2);
+      ctx.lineWidth=2;
+      for(let gx=-r*0.5; gx<=r*0.5+0.1; gx+=r*0.5){ ctx.beginPath(); ctx.moveTo(gx,-r); ctx.lineTo(gx,r); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(-r,0); ctx.lineTo(r,0); ctx.stroke();
+      // 檻の耐久バー
+      if(p.cageHp<p.cageMax){ ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-r,-r-6,r*2,3);
+        ctx.fillStyle='#ff8a5e'; ctx.fillRect(-r,-r-6,r*2*(p.cageHp/p.cageMax),3); }
+      ctx.restore(); continue;
+    }
     ctx.shadowColor=info.c; ctx.shadowBlur=14;
     // capsule
     ctx.fillStyle='rgba(6,10,26,.85)'; ctx.strokeStyle=info.c; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); ctx.stroke();
     ctx.shadowBlur=0;
-    if(info.emoji){ ctx.font='15px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(info.icon,0,1); }
-    else { ctx.fillStyle=info.c; ctx.font='900 15px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(info.icon,0,1); }
+    if(info.firstaid){
+      // 救急マーク（白丸に赤十字）
+      ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(0,0,p.r*0.72,0,TAU); ctx.fill();
+      ctx.fillStyle='#ff3b4e'; const t=p.r*0.28, l=p.r*0.62;
+      ctx.fillRect(-t/2,-l/2,t,l); ctx.fillRect(-l/2,-t/2,l,t);
+    } else if(info.emoji){ ctx.font='15px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(info.icon,0,1); }
+    else { ctx.fillStyle=info.c; ctx.font='900 16px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(info.icon,0,1); }
     ctx.restore();
   }
 }
@@ -1682,7 +1743,7 @@ function drawHUD(){
     ctx.fillStyle='#ff5ec9'; ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=8;
     roundRect(bxx,byy,bw*clamp(boss.hp/boss.maxhp,0,1),bh,5); ctx.fill(); ctx.shadowBlur=0;
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 10px "Trebuchet MS"'; ctx.textBaseline='top';
-    ctx.fillText('★ NEKOMATA — GALAXY OVERLORD ★', W/2, byy-1);
+    ctx.fillText('★ ラットキング — ネズミ大魔王 ★', W/2, byy-1);
   }
 
   // wave banner
@@ -1910,7 +1971,7 @@ document.addEventListener('touchend',e=>{
 if(location.search.indexOf('debug')>=0){
   window.__nk={ spawn:(t)=>spawnPowerup(player.x, player.y-160, t), player,
     enemy:(t)=>spawnEnemy(t||'grunt'), bomb:()=>{ player.bombs++; useBomb(); },
-    allies, enemies };
+    boss:()=>spawnBoss(), allies, enemies };
 }
 
 })();

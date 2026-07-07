@@ -215,7 +215,7 @@
       <div class="grpLabel">■ 強化・パワーアップ</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">P</div><div class="itemTxt"><div class="itemName">パワーアップ（P）</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化：キジトラ=左右で援護（FIREダブルタップ/Cで前方出撃、もう一度で帰還）／白ネコ=周回バリア＋ホーミング弾／黒ネコ=肉球ボムを発射</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化＋FIREダブルタップ(PCはC)で必殺展開：キジトラ=左右で援護→前方出撃し四方八方に攻撃／白ネコ=周回バリア＋ホーミング→バリアの輪が拡大／黒ネコ=肉球ボム→横一列に広がり一斉レーザー。もう一度で解除</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">S</div><div class="itemTxt"><div class="itemName">スピードアップ（S）</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
@@ -401,10 +401,15 @@ const fireBtn=document.getElementById('fireBtn');
 let lastFireTapT=0;
 function onFireTap(){ const now=performance.now(); if(now-lastFireTapT<360){ toggleKittenDeploy(); lastFireTapT=0; } else { lastFireTapT=now; } }
 function toggleKittenDeploy(){
-  if(state!=='play' || selectedSkin!=='kijitora' || player.kittens.length===0) return;
+  if(state!=='play' || player.kittens.length===0) return;
   player.kittensDeployed=!player.kittensDeployed;
   Audio2.sfx.power();
-  showToast(player.kittensDeployed?'🐱 子猫 出撃！':'🐱 子猫 もどれ！','#ffd85e');
+  const on=player.kittensDeployed;
+  let msg;
+  if(selectedSkin==='white') msg = on?'🐱 子猫の輪 展開！':'🐱 子猫の輪 収束';
+  else if(selectedSkin==='black') msg = on?'🐱 レーザー隊形！':'🐱 隊形もどれ';
+  else msg = on?'🐱 子猫 出撃！':'🐱 子猫 もどれ！';
+  showToast(msg,'#ffd85e');
   for(const k of player.kittens){ k.roamT=0; k.rx=undefined; k.aimAngle=undefined; }
 }
 let lastTouchFire=0;
@@ -707,16 +712,24 @@ function addKitten(){
   kits.push({ side, rank, x:player.x+side*40, y:player.y+12, fireCd:0, wob:Math.random()*TAU });
   return true;
 }
+let kittenVolleyCd=0; // 黒ネコ隊形の一斉レーザー用タイマー
 function updateKittens(dt, wantFire){
   const kits=player.kittens;
   const n=kits.length;
   const skin=selectedSkin;
+  const dep=player.kittensDeployed;
   const t=performance.now()*0.001;
+  // 黒ネコ隊形: 一斉レーザーのタイミング
+  let blackVolley=false;
+  if(skin==='black' && dep && n>0){
+    kittenVolleyCd-=dt;
+    if(kittenVolleyCd<=0){ kittenVolleyCd=0.55; blackVolley=true; Audio2.sfx.laser(); screenShake(2,0.05); }
+  }
   for(let idx=0; idx<n; idx++){
     const k=kits[idx];
     k.wob+=dt*4;
     // キジトラ: 出撃中は前方を飛び回り四方八方に攻撃
-    if(skin==='kijitora' && player.kittensDeployed){
+    if(skin==='kijitora' && dep){
       k.roamT=(k.roamT||0)-dt;
       if(k.roamT<=0 || k.rx===undefined){ k.rx=rnd(36,W-36); k.ry=rnd(70,H*0.5); k.roamT=rnd(0.7,1.6); }
       k.x += (k.rx-k.x)*Math.min(1,dt*3.2);
@@ -730,9 +743,20 @@ function updateKittens(dt, wantFire){
       }
       continue;
     }
+    // 黒ネコ: 隊形展開中は横一列に広がり一斉レーザー
+    if(skin==='black' && dep){
+      const margin=28;
+      const tx = n<=1 ? W/2 : margin + (idx/(n-1))*(W-2*margin);
+      const ty = player.y - 8;
+      k.x += (tx-k.x)*Math.min(1,dt*8);
+      k.y += (ty-k.y)*Math.min(1,dt*8);
+      if(blackVolley){ bullets.push({x:k.x, y:k.y-8, vx:0, vy:-1150, dmg:1.8, r:5, laser:true, pierce:true, w:4, color:'#b46bff'}); }
+      continue;
+    }
     if(skin==='white'){
-      // 自機の周りをクルクル回るバリア
-      const R = 42 + (n>6 ? (idx%2)*15 : 0);
+      // 自機の周りをクルクル回るバリア（展開中は輪が広がる）
+      const baseR = dep ? 100 : 42;
+      const R = baseR + (n>6 ? (idx%2)*15 : 0);
       const ang = t*2.4 + (idx/Math.max(1,n))*TAU;
       const tx = player.x + Math.cos(ang)*R;
       const ty = player.y + Math.sin(ang)*R;
@@ -746,7 +770,7 @@ function updateKittens(dt, wantFire){
         if(e.kicked||e.t==='boss') continue;
         if(dist2(e.x,e.y,k.x,k.y) < (11+e.r)*(11+e.r)){ e.hp-=dt*10; e.hitFlash=1; if(e.hp<=0) killEnemy(e); } }
     } else {
-      // V字隊形（キジトラ・黒ネコ）
+      // V字隊形（キジトラ・黒ネコ 通常時）
       const off = 30 + k.rank*20;
       const tx = clamp(player.x + k.side*off, 12, W-12);
       const ty = player.y + 10 + k.rank*14 + Math.sin(k.wob)*2;
@@ -780,11 +804,12 @@ function pawBombExplode(b){
 }
 function drawKittens(){
   if(!player.alive) return;
-  // 白ネコ: バリアの輪をうっすら描く
+  // 白ネコ: バリアの輪をうっすら描く（展開中は大きく）
   if(selectedSkin==='white' && player.kittens.length>0){
+    const ringR=player.kittensDeployed?100:42;
     ctx.save(); ctx.globalCompositeOperation='lighter';
     ctx.strokeStyle=`rgba(255,157,208,${0.25+0.1*Math.sin(performance.now()*0.006)})`; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(player.x,player.y,42,0,TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(player.x,player.y,ringR,0,TAU); ctx.stroke();
     ctx.restore();
   }
   for(const k of player.kittens){

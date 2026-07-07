@@ -74,9 +74,12 @@
   .furni{position:absolute;transform:translate(-50%,-50%);z-index:3;filter:drop-shadow(0 3px 3px rgba(0,0,0,.14));display:flex;align-items:flex-end;justify-content:center;pointer-events:none;}
   .rug{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:60%;height:14%;border-radius:50%;z-index:2;opacity:.92;}
   .cat-in-room{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);width:50%;z-index:5;cursor:pointer;}
+  #catFace{transition:transform .25s ease;}
   .cat-in-room svg{width:100%;height:auto;display:block;overflow:visible;}
   .cat-bounce{animation:bob 2.8s ease-in-out infinite;transform-origin:50% 92%;}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5%) rotate(-.6deg)}}
+  .cat-bounce.walking{animation:walk .42s ease-in-out infinite;}
+  @keyframes walk{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-5%) rotate(1deg)}}
   .cat-pet{animation:wiggle .5s ease;}
   @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.03)}75%{transform:rotate(5deg) scale(1.03)}}
   .pet-hint{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:6;font-size:11px;font-weight:800;color:#fff;
@@ -272,7 +275,7 @@
       <div class="room-floor"></div>
       <div class="rug" id="rug" style="display:none"></div>
       <div id="furniLayer"></div>
-      <div class="cat-in-room" id="catHome"><div class="cat-bounce" id="catArtHome"></div></div>
+      <div class="cat-in-room" id="catHome"><div id="catFace"><div class="cat-bounce" id="catArtHome"></div></div></div>
       <div class="pet-hint">タップしてなでる 🐾</div>
     </div>
 
@@ -873,7 +876,8 @@ function pet(ev){
   if(isNaN(x)){x=r.width/2;y=r.height*0.5;}
   const h=document.createElement('div');h.className='heart-p';h.textContent=['💚','💛','💕','🍃'][Math.floor(Math.random()*4)];
   h.style.left=(x-9)+'px';h.style.top=(y-9)+'px';room.appendChild(h);setTimeout(()=>h.remove(),1000);
-  const art=document.getElementById('catArtHome');art.classList.remove('cat-pet','cat-bounce');void art.offsetWidth;art.classList.add('cat-pet');
+  pauseWander();
+  const art=document.getElementById('catArtHome');art.classList.remove('cat-pet','cat-bounce','walking');void art.offsetWidth;art.classList.add('cat-pet');
   setTimeout(()=>{art.classList.remove('cat-pet');art.classList.add('cat-bounce');},520);
   if(state.pet.date!==TODAY)state.pet={date:TODAY,count:0};
   if(state.pet.count<5){
@@ -885,6 +889,30 @@ function pet(ev){
   }
 }
 document.getElementById('catHome').addEventListener('click',pet);
+// ===== 猫のおさんぽ（お部屋をゆっくり歩き回る）=====
+let walkTimer=null,walkResume=null;
+function freezeCat(){
+  const cat=document.getElementById('catHome'),room=document.getElementById('room');if(!cat||!room)return;
+  const rr=room.getBoundingClientRect(),cr=cat.getBoundingClientRect();
+  if(rr.width>0){const pct=((cr.left+cr.width/2)-rr.left)/rr.width*100;cat.style.transition='none';cat.style.left=Math.max(27,Math.min(73,pct))+'%';}
+  document.getElementById('catArtHome').classList.remove('walking');
+}
+function catWander(){
+  const cat=document.getElementById('catHome'),face=document.getElementById('catFace'),art=document.getElementById('catArtHome');if(!cat)return;
+  const cur=parseFloat(cat.style.left)||50;
+  let target=27+Math.random()*46;
+  if(Math.abs(target-cur)<14)target=cur<50?cur+18:cur-18;
+  target=Math.max(27,Math.min(73,target));
+  const dur=Math.max(1.2,Math.abs(target-cur)*0.12);
+  face.style.transform='scaleX('+(target>cur?-1:1)+')';
+  cat.style.transition='left '+dur+'s linear';cat.style.left=target+'%';
+  art.classList.add('walking');
+  clearTimeout(walkTimer);
+  walkTimer=setTimeout(()=>{art.classList.remove('walking');walkTimer=setTimeout(catWander,1600+Math.random()*2600);},dur*1000);
+}
+function pauseWander(){clearTimeout(walkTimer);clearTimeout(walkResume);freezeCat();walkResume=setTimeout(catWander,2200);}
+document.getElementById('catHome').style.left='50%';
+setTimeout(catWander,1800);
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));

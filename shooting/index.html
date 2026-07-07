@@ -124,9 +124,19 @@
     display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff;
     letter-spacing:1px; font-size:15px; border:2px solid rgba(255,255,255,.35);
   }
-  #fireBtn{flex-direction:column;}
-  #fireBtn small{font-size:8.5px; letter-spacing:1px; font-weight:800; opacity:.85; margin-top:1px;}
   #fireBtn:active{transform:scale(.92);}
+  /* 右の専用ボムボタン(FIREの上) */
+  #bombBtn{
+    pointer-events:auto; position:absolute; right:30px; bottom:128px; width:66px; height:66px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #ffe0b0, #ff8a3c 70%);
+    box-shadow:0 0 20px rgba(255,138,60,.6), inset 0 0 16px rgba(255,255,255,.3);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1;
+    color:#3a1c00; border:2px solid rgba(255,255,255,.4); font-size:15px;
+  }
+  #bombBtn span{font-weight:900; font-size:17px; margin-top:1px;}
+  #bombBtn small{font-size:7.5px; letter-spacing:1px; font-weight:800; opacity:.8;}
+  #bombBtn:active{transform:scale(.92);}
+  #bombBtn.empty{opacity:.4; filter:grayscale(.6);}
   /* 左下の十字キー */
   #dpad{
     pointer-events:auto; position:absolute; left:16px; bottom:24px; width:118px; height:118px;
@@ -162,13 +172,16 @@
   .tFire{position:absolute; right:18px; bottom:20px; width:58px; height:58px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%, #ffd0ee, var(--neon2) 70%); display:flex; align-items:center;
     justify-content:center; color:#fff; font-weight:900; font-size:11px; box-shadow:0 0 14px rgba(255,94,201,.5);}
+  .tBomb{position:absolute; right:24px; bottom:92px; width:46px; height:46px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #ffe0b0, #ff8a3c 70%); display:flex; align-items:center;
+    justify-content:center; font-size:18px; box-shadow:0 0 14px rgba(255,138,60,.5);}
   #tFinger{position:absolute; width:36px; height:36px; border-radius:50%; z-index:5;
     background:rgba(255,255,255,.28); border:2px solid rgba(255,255,255,.85); box-shadow:0 0 14px rgba(255,255,255,.5);
     left:53px; bottom:53px; transform:translate(-50%,50%); pointer-events:none;
     transition:left .5s cubic-bezier(.5,0,.3,1), bottom .5s cubic-bezier(.5,0,.3,1), transform .12s;}
   #tFinger.onDpad{left:53px; bottom:53px;}
   #tFinger.onFire{left:calc(100% - 47px); bottom:49px;}
-  #tFinger.swipeUp{left:calc(100% - 47px); bottom:150px;}
+  #tFinger.onBomb{left:calc(100% - 47px); bottom:115px;}
   #tFinger.press{transform:translate(-50%,50%) scale(.7);}
   .tBullet{position:absolute; width:5px; height:14px; border-radius:3px; background:#ffd85e; box-shadow:0 0 8px #ffd85e;
     z-index:4; animation:tbUp .6s linear forwards;}
@@ -194,7 +207,8 @@
       <span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span>
       <div class="nub" id="dnub"></div>
     </div>
-    <div id="fireBtn"><span>FIRE</span><small id="fireBomb">↑ボム3</small></div>
+    <div id="fireBtn"><span>FIRE</span></div>
+    <div id="bombBtn">🐾<span id="fireBomb">3</span><small>BOMB</small></div>
   </div>
 
   <!-- Title -->
@@ -225,8 +239,8 @@
     <button class="btn ghost" id="helpBtn">📖 アイテム説明</button>
     <div class="panel" id="ctrlPanel">
       <b>片手操作OK</b>　左下の <span class="key">十字キー</span> に触れると<b>移動＋自動ショット</b><br>
-      ボム：十字キーを <b>ダブルタップ</b> or <b>スワイプ</b>（右下 <span class="key">FIRE</span> でも操作可）<br>
-      子猫展開：FIRE<b>2回タップ</b>／PC：<span class="key">←→↑↓</span> <span class="key">Space</span> <span class="key">X</span>
+      ボム：右の <span class="key">BOMB</span> ボタン（PCは <span class="key">X</span>）<br>
+      子猫展開：右下 <span class="key">FIRE</span> を<b>2回タップ</b>／PC：<span class="key">←→↑↓</span> <span class="key">Space</span>
     </div>
     <div class="hs" id="titleHigh"></div>
   </div>
@@ -282,6 +296,7 @@
     <div id="tutoStage">
       <div class="tDpad">✚</div>
       <div class="tFire">FIRE</div>
+      <div class="tBomb">🐾</div>
       <div id="tShip">🐱</div>
       <div id="tFinger"></div>
       <div id="tFlash"></div>
@@ -480,25 +495,26 @@ function toggleKittenDeploy(){
   showToast(msg,'#ffd85e');
   for(const k of player.kittens){ k.roamT=0; k.rx=undefined; k.aimAngle=undefined; }
 }
-let lastTouchFire=0, fireStartY=0, fireSwiped=false;
-fireBtn.addEventListener('touchstart',e=>{ input.fire=true; lastTouchFire=Date.now(); fireStartY=e.changedTouches[0].clientY; fireSwiped=false; onFireTap(); e.preventDefault();},{passive:false});
-fireBtn.addEventListener('touchmove',e=>{
-  // 上にスワイプでボム
-  if(!fireSwiped && (fireStartY - e.changedTouches[0].clientY) > 34){ fireSwiped=true; input.fire=false; useBomb(); }
-  e.preventDefault();
-},{passive:false});
+let lastTouchFire=0;
+fireBtn.addEventListener('touchstart',e=>{ input.fire=true; lastTouchFire=Date.now(); onFireTap(); e.preventDefault();},{passive:false});
 fireBtn.addEventListener('touchend',e=>{ input.fire=false; e.preventDefault();},{passive:false});
 fireBtn.addEventListener('mousedown',()=>{ input.fire=true; if(Date.now()-lastTouchFire>700) onFireTap(); });
 fireBtn.addEventListener('mouseup',()=>input.fire=false);
-// 右下FIREの下ラベルにボム残数を表示
+// 右の専用ボムボタン
+const bombBtn=document.getElementById('bombBtn');
 const fireBombEl=document.getElementById('fireBomb');
+if(bombBtn){
+  const doBomb=e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); useBomb(); };
+  bombBtn.addEventListener('touchstart',doBomb,{passive:false});
+  bombBtn.addEventListener('mousedown',doBomb);
+}
 
 // ===== 左下 十字キー(バーチャルパッド) 片手操作 =====
 // 触れている間=移動＋自動ファイヤー / ダブルタップ・素早いスワイプ=ボム
 const dpad={active:false, dx:0, dy:0};
 const dpadEl=document.getElementById('dpad');
 const dnub=document.getElementById('dnub');
-let dpadTouchId=null, dpLastTap=0, dpSwiped=false, dpStartX=0, dpStartY=0, dpPrevX=0, dpPrevY=0, dpPrevT=0;
+let dpadTouchId=null;
 function dpadSet(clientX, clientY){
   const r=dpadEl.getBoundingClientRect();
   const cx=r.left+r.width/2, cy=r.top+r.height/2;
@@ -509,17 +525,9 @@ function dpadSet(clientX, clientY){
     const nm=Math.min(mag, r.width*0.32);
     dnub.style.transform=`translate(${dpad.dx*nm}px,${dpad.dy*nm}px)`; }
   dpad.active=true;
-  // スワイプ判定(素早く大きく動かしたらボム)
-  const now=performance.now(), dtt=(now-dpPrevT)/1000||0.016;
-  const spd=Math.hypot(clientX-dpPrevX, clientY-dpPrevY)/dtt;
-  const netD=Math.hypot(clientX-dpStartX, clientY-dpStartY);
-  if(!dpSwiped && spd>950 && netD>85){ dpSwiped=true; useBomb(); }
-  dpPrevX=clientX; dpPrevY=clientY; dpPrevT=now;
 }
 function dpadStart(clientX, clientY){
-  const now=performance.now();
-  if(now-dpLastTap<300){ useBomb(); dpLastTap=0; } else { dpLastTap=now; } // ダブルタップ=ボム
-  dpSwiped=false; dpStartX=dpPrevX=clientX; dpStartY=dpPrevY=clientY; dpPrevT=now;
+  // 十字キーは移動＋自動ファイヤーのみ(ボムは右の専用ボタン)
   dpadSet(clientX, clientY);
 }
 function dpadEnd(){ dpad.active=false; dpad.dx=0; dpad.dy=0; dpadTouchId=null; dnub.style.transform='translate(0,0)'; }
@@ -1646,12 +1654,13 @@ function drawBombFx(){
   }
 }
 document.addEventListener('keydown',e=>{ if((e.key==='x'||e.key==='X'||e.key==='Shift') && state==='play'){ useBomb(); }});
-// FIREボタン下のボム残数ラベルを更新
+// 右のボムボタンの残数表示を更新
 let lastBombShown=-1;
 function refreshBombBtn(){
   if(player.bombs!==lastBombShown){
     lastBombShown=player.bombs;
-    if(fireBombEl) fireBombEl.textContent='↑ボム'+player.bombs;
+    if(fireBombEl) fireBombEl.textContent=player.bombs;
+    if(bombBtn) bombBtn.classList.toggle('empty', player.bombs<=0);
   }
 }
 
@@ -2107,7 +2116,7 @@ const tutoScreen=document.getElementById('tutoScreen');
 const tFinger=document.getElementById('tFinger'), tShip=document.getElementById('tShip'),
       tCap=document.getElementById('tutoCap'), tStage=document.getElementById('tutoStage'), tFlash=document.getElementById('tFlash');
 let tutoTimer=null, tutoStep=0;
-const TUTO_CAPS=['① 左下の十字キーで移動','② 右下のFIREでショット','③ FIREを上にスワイプでボム！','④ FIREを2回タップで子猫パワー'];
+const TUTO_CAPS=['① 十字キーで移動','② 触れてる間 自動でショット','③ 右のBOMBボタンでボム','④ FIRE2回タップで子猫パワー'];
 function tShoot(){ const bx=(tShip.offsetLeft||150); const el=document.createElement('div'); el.className='tBullet';
   el.style.left=(tShip.offsetLeft+13)+'px'; el.style.bottom=(tStage.clientHeight-tShip.offsetTop+2)+'px';
   tStage.appendChild(el); setTimeout(()=>el.remove(),650); }
@@ -2115,10 +2124,10 @@ function tPress(){ tFinger.classList.add('press'); setTimeout(()=>tFinger.classL
 function tutoTick(){
   const s=tutoStep%4; tCap.textContent=TUTO_CAPS[s];
   tFinger.className=''; tShip.className='';
-  if(s===0){ tFinger.classList.add('onDpad'); tShip.classList.add('mLeft');
-    setTimeout(()=>{ if(tutoStep%4===1-1){ tShip.classList.remove('mLeft'); tShip.classList.add('mRight'); } },1100); }
-  else if(s===1){ tFinger.classList.add('onFire'); tPress(); tShoot(); setTimeout(tShoot,400); setTimeout(()=>{tPress();tShoot();},800); }
-  else if(s===2){ tFinger.classList.add('onFire'); setTimeout(()=>{ tFinger.classList.remove('onFire'); tFinger.classList.add('swipeUp'); tFlash.classList.remove('go'); void tFlash.offsetWidth; tFlash.classList.add('go'); },550); }
+  if(s===0){ tFinger.classList.add('onDpad'); tShip.classList.add('mLeft'); tShoot();
+    setTimeout(()=>{ tShip.classList.remove('mLeft'); tShip.classList.add('mRight'); },1100); }
+  else if(s===1){ tFinger.classList.add('onDpad'); tShoot(); setTimeout(tShoot,350); setTimeout(tShoot,700); setTimeout(tShoot,1050); }
+  else if(s===2){ tFinger.classList.add('onBomb'); tPress(); setTimeout(()=>{ tFlash.classList.remove('go'); void tFlash.offsetWidth; tFlash.classList.add('go'); },250); }
   else { tFinger.classList.add('onFire'); tPress(); setTimeout(tPress,240); }
   tutoStep++;
 }

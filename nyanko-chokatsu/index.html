@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="にゃんこ腸活">
+<title>にゃんこ腸活｜腸活で子猫を育てよう</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --bg:#fbf3ec;--surface:#fff;--ink:#3a2b2e;--ink-light:#9a8a8d;
+    --accent:#ff8fab;--accent-dark:#ef6a8e;--accent-light:#ffe1ea;
+    --fiber:#3fa66b;--fiber-light:#e2f4e9;
+    --lacto:#8a63d2;--lacto-light:#efe8fb;
+    --coin:#f5a524;--coin-light:#fdefd4;
+    --heart:#ff5c7a;
+    --border:#efe1d7;
+  }
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:0 0 82px;}
+  header{background:var(--ink);color:#fff;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  header h1{font-size:15px;font-weight:900;letter-spacing:.03em;display:flex;align-items:center;gap:6px;}
+  .coin-chip{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.14);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:#ffd98a;}
+  main{max-width:480px;margin:0 auto;padding:14px;}
+  .screen{display:none;animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .section-title{font-size:11px;font-weight:900;color:var(--ink-light);letter-spacing:.08em;margin:0 0 10px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:15px;margin-bottom:13px;box-shadow:0 1px 2px rgba(58,43,46,.03);}
+
+  .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);max-width:480px;margin:0 auto;}
+  .tab{flex:1;border:none;background:none;padding:9px 4px 7px;font-family:inherit;color:var(--ink-light);font-size:11px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+  .tab .ic{font-size:20px;line-height:1;}
+  .tab.active{color:var(--accent-dark);}
+
+  /* ============ ROOM ============ */
+  .room{position:relative;width:100%;aspect-ratio:1/1;border-radius:20px;overflow:hidden;border:1px solid var(--border);box-shadow:inset 0 0 0 4px rgba(255,255,255,.35);}
+  .room-wall{position:absolute;inset:0;}
+  .room-floor{position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,#e7cba6,#d8b385);}
+  .room-floor:before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:rgba(0,0,0,.06);}
+  .furni{position:absolute;transform:translate(-50%,-50%);z-index:2;filter:drop-shadow(0 3px 3px rgba(0,0,0,.14));display:flex;align-items:flex-end;justify-content:center;pointer-events:none;}
+  .furni.emoji{line-height:1;}
+  .rug{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:64%;height:15%;border-radius:50%;z-index:1;opacity:.9;}
+  .cat-in-room{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);width:52%;z-index:5;cursor:pointer;}
+  .cat-in-room svg{width:100%;height:auto;display:block;overflow:visible;}
+  .cat-bounce{animation:bob 2.8s ease-in-out infinite;transform-origin:50% 92%;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5%) rotate(-.6deg)}}
+  .cat-pet{animation:wiggle .5s ease;}
+  @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.03)}75%{transform:rotate(5deg) scale(1.03)}}
+  .pet-hint{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);z-index:6;font-size:10.5px;font-weight:700;color:#fff;background:rgba(58,43,46,.45);border-radius:20px;padding:3px 12px;pointer-events:none;}
+  .purr{position:absolute;z-index:7;font-size:13px;font-weight:900;color:var(--accent-dark);pointer-events:none;animation:purr .9s ease forwards;text-shadow:0 1px 3px #fff;}
+  @keyframes purr{0%{opacity:0;transform:translateY(6px) scale(.6)}30%{opacity:1;transform:translateY(-4px) scale(1.1)}100%{opacity:0;transform:translateY(-30px)}}
+  .heart-p{position:absolute;z-index:7;pointer-events:none;font-size:18px;animation:heartUp 1s ease forwards;}
+  @keyframes heartUp{0%{opacity:0;transform:translateY(0) scale(.4)}25%{opacity:1;transform:translateY(-10px) scale(1.1)}100%{opacity:0;transform:translateY(-56px) scale(.9)}}
+
+  /* cat name & stage banner */
+  .catbar{display:flex;align-items:center;justify-content:space-between;margin:14px 2px 10px;}
+  .catbar .cn{font-size:19px;font-weight:900;}
+  .catbar .cn .edit{font-size:11px;color:var(--ink-light);margin-left:6px;text-decoration:underline;cursor:pointer;font-weight:500;}
+  .catbar .stg{font-size:11px;font-weight:900;color:#fff;background:var(--accent);border-radius:20px;padding:5px 12px;}
+
+  /* bond */
+  .bond-card{display:flex;align-items:center;gap:12px;}
+  .bond-hearts{font-size:18px;letter-spacing:1px;line-height:1;}
+  .bond-info{flex:1;}
+  .bond-info .bl{font-size:13px;font-weight:900;}
+  .bond-info .bs{font-size:11px;color:var(--ink-light);font-weight:600;margin-top:1px;}
+  .bond-bar{height:8px;background:#f2e7dd;border-radius:20px;overflow:hidden;margin-top:6px;}
+  .bond-fill{height:100%;background:linear-gradient(90deg,#ff9db0,var(--heart));border-radius:20px;transition:width .6s;}
+
+  /* level */
+  .lvl-wrap{margin-top:4px;}
+  .lvl-row{display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--ink-light);margin-bottom:5px;}
+  .lvl-row b{color:var(--accent-dark);}
+  .lvl-bar{height:9px;background:#f2e7dd;border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+  .lvl-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-dark));border-radius:20px;transition:width .6s cubic-bezier(.3,1,.4,1);}
+
+  /* mini stats */
+  .mini-stats{display:flex;gap:8px;margin-top:12px;}
+  .mini{flex:1;text-align:center;background:var(--bg);border-radius:12px;padding:9px 4px;}
+  .mini .v{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;}
+  .mini .l{font-size:9.5px;font-weight:700;color:var(--ink-light);margin-top:1px;}
+  .mini.l1 .v{color:var(--lacto)}.mini.l2 .v{color:var(--fiber)}.mini.l3 .v{color:var(--coin)}
+
+  .add-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:900;font-family:inherit;cursor:pointer;letter-spacing:.03em;box-shadow:0 4px 0 var(--accent-dark);transition:transform .08s,box-shadow .08s;}
+  .add-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-dark);}
+
+  /* ============ FOOD ============ */
+  .stats{display:flex;gap:10px;margin-bottom:13px;}
+  .stat{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;}
+  .stat .ic{font-size:20px;}
+  .stat .val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;margin-top:2px;}
+  .stat .unit{font-size:10px;font-weight:400;color:var(--ink-light);}
+  .stat .lbl{font-size:10.5px;font-weight:700;color:var(--ink-light);margin-top:2px;}
+  .stat.lacto .val{color:var(--lacto)}.stat.fiber .val{color:var(--fiber)}.stat.point .val{color:var(--coin)}
+  .measuring .val{animation:meas .6s ease;}
+  @keyframes meas{0%{transform:scale(.6);opacity:.3}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+
+  .balance .brow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .balance .brow .t{font-size:12px;font-weight:900;}
+  .balance .brow .s{font-size:11px;color:var(--ink-light);}
+  .meter{height:12px;border-radius:20px;background:#f0e7dd;overflow:hidden;display:flex;}
+  .meter .mf{height:100%;transition:width .5s ease;}
+  .meter .mf.l{background:var(--lacto)}.meter .mf.f{background:var(--fiber)}
+  .legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--ink-light);}
+  .legend b{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:middle;}
+  .synbio{margin-top:12px;background:linear-gradient(90deg,var(--lacto-light),var(--fiber-light));border-radius:12px;padding:10px 12px;font-size:12px;font-weight:700;line-height:1.5;display:none;}
+  .synbio.on{display:block;}
+  .log-item{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--border);}
+  .log-item:last-child{border-bottom:none;}
+  .log-item .lem{font-size:23px;width:32px;text-align:center;}
+  .log-item .lname{font-size:14px;font-weight:700;}
+  .log-item .lmeta{font-size:10.5px;color:var(--ink-light);font-weight:500;margin-top:1px;}
+  .log-item .lmeta .lc{color:var(--lacto)}.log-item .lmeta .fc{color:var(--fiber)}
+  .qty{display:flex;align-items:center;gap:7px;}
+  .qty button{width:27px;height:27px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;line-height:1;}
+  .qty span{font-family:'DM Mono',monospace;font-size:14px;min-width:14px;text-align:center;}
+  .empty{text-align:center;color:var(--ink-light);font-size:13px;padding:22px 8px;line-height:1.7;}
+
+  /* ============ SHOP ============ */
+  .subtabs{display:flex;gap:8px;margin-bottom:14px;}
+  .subtab{flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--ink-light);font-size:13px;font-weight:900;font-family:inherit;cursor:pointer;}
+  .subtab.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .shop-group-title{font-size:12px;font-weight:900;margin:16px 2px 9px;display:flex;align-items:center;gap:6px;}
+  .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .shop-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:11px;text-align:center;position:relative;}
+  .shop-item.equipped{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-light);}
+  .shop-preview{height:66px;display:flex;align-items:center;justify-content:center;font-size:38px;line-height:1;}
+  .shop-preview svg{height:64px;width:auto;overflow:visible;}
+  .shop-name{font-size:12.5px;font-weight:700;margin-top:2px;}
+  .shop-price{font-family:'DM Mono',monospace;font-size:12px;color:var(--coin);font-weight:500;margin-top:2px;}
+  .shop-btn{margin-top:8px;width:100%;border:none;border-radius:10px;padding:8px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;}
+  .shop-btn.buy{background:var(--coin);color:#fff;}
+  .shop-btn.buy:disabled{background:#e7dccf;color:#b3a698;cursor:not-allowed;}
+  .shop-btn.use{background:var(--accent);color:#fff;}
+  .shop-btn.off{background:var(--bg);color:var(--ink-light);border:1.5px solid var(--border);}
+  .badge{position:absolute;top:8px;right:8px;font-size:9px;font-weight:900;background:var(--accent);color:#fff;border-radius:6px;padding:2px 6px;}
+
+  /* ============ HISTORY ============ */
+  .streak-card{display:flex;align-items:center;gap:14px;}
+  .streak-card .flame{font-size:36px;}
+  .streak-card .sn{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;color:var(--accent-dark);}
+  .streak-card .sl{font-size:12px;color:var(--ink-light);font-weight:700;}
+  .chart{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;height:118px;margin-top:6px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+  .bar{width:70%;max-width:26px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,var(--coin),#e88f16);min-height:3px;transition:height .5s ease;}
+  .bar.zero{background:#eadfd4;}
+  .bar-lbl{font-size:9.5px;color:var(--ink-light);font-weight:700;}
+  .bar-val{font-size:9px;color:var(--coin);font-family:'DM Mono',monospace;}
+  .hist-item{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--border);}
+  .hist-item:last-child{border-bottom:none;}
+  .hist-date{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;width:56px;color:var(--ink-light);}
+  .hist-date b{display:block;font-size:16px;color:var(--ink);}
+  .hist-detail{flex:1;font-size:11px;color:var(--ink-light);font-weight:600;}
+  .hist-detail .lc{color:var(--lacto)}.hist-detail .fc{color:var(--fiber)}
+  .hist-pt{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--coin);}
+  .growth-item{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:1px solid var(--border);opacity:.4;}
+  .growth-item.reached{opacity:1;}
+  .growth-item.current{opacity:1;background:var(--accent-light);border-radius:12px;padding:10px 12px;border-bottom:none;}
+  .growth-item .gem{width:44px;height:44px;}
+  .growth-item .gem svg{width:100%;height:100%;overflow:visible;}
+  .growth-item .gn{flex:1;font-size:14px;font-weight:900;}
+  .growth-item .gr{font-size:11px;color:var(--ink-light);font-weight:600;}
+  .growth-item .gpt{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-light);}
+  .growth-item.reached .gpt{color:var(--fiber);}
+  .info{font-size:11.5px;color:var(--ink-light);line-height:1.8;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .info b{color:var(--ink);}
+  .btn-ghost{width:100%;background:none;border:1.5px solid var(--border);color:var(--ink-light);border-radius:12px;padding:12px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;}
+
+  /* ============ SHEET ============ */
+  .sheet-bg{position:fixed;inset:0;background:rgba(58,43,46,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .sheet-bg.open{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;background:var(--bg);border-radius:22px 22px 0 0;z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,1,.4,1);max-height:88vh;display:flex;flex-direction:column;}
+  .sheet.open{transform:translateY(0);}
+  .sheet-head{padding:13px 18px 6px;position:sticky;top:0;background:var(--bg);border-radius:22px 22px 0 0;}
+  .sheet-grip{width:38px;height:4px;background:#dcd0c6;border-radius:4px;margin:0 auto 11px;}
+  .sh-row{display:flex;justify-content:space-between;align-items:center;}
+  .sh-row h2{font-size:16px;font-weight:900;}
+  .sheet-close{background:none;border:none;font-size:22px;color:var(--ink-light);cursor:pointer;line-height:1;}
+  .search{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-size:14px;font-family:inherit;background:#fff;outline:none;margin-top:9px;}
+  .search:focus{border-color:var(--accent);}
+  .cat-chips{display:flex;gap:7px;overflow-x:auto;padding:9px 18px 4px;scrollbar-width:none;}
+  .cat-chips::-webkit-scrollbar{display:none;}
+  .cat-chip{white-space:nowrap;border:1.5px solid var(--border);background:#fff;color:var(--ink-light);border-radius:20px;padding:7px 13px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;flex-shrink:0;}
+  .cat-chip.active{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .food-list{overflow-y:auto;padding:6px 14px 24px;flex:1;}
+  .food-card{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:11px 13px;margin-bottom:9px;cursor:pointer;transition:transform .08s;}
+  .food-card:active{transform:scale(.98);}
+  .food-card .fem{font-size:27px;width:36px;text-align:center;}
+  .food-card .fn{font-size:14px;font-weight:700;}
+  .food-card .ft{font-size:10.5px;color:var(--ink-light);font-weight:500;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+  .tag{border-radius:6px;padding:1px 6px;font-weight:700;font-size:10px;}
+  .tag.l{background:var(--lacto-light);color:var(--lacto)}.tag.f{background:var(--fiber-light);color:var(--fiber)}
+  .food-card .fadd{background:var(--accent-light);color:var(--accent-dark);border:none;border-radius:10px;width:34px;height:34px;font-size:22px;font-weight:700;line-height:1;cursor:pointer;flex-shrink:0;}
+
+  #pop{position:fixed;left:50%;top:30%;transform:translateX(-50%);z-index:300;pointer-events:none;}
+  .pt-fly{position:absolute;left:0;top:0;font-weight:900;font-size:22px;color:var(--coin);text-shadow:0 2px 6px rgba(245,165,36,.4);white-space:nowrap;animation:fly 1.1s ease forwards;}
+  @keyframes fly{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50px) scale(1)}}
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:11px 18px;border-radius:20px;z-index:300;opacity:0;transition:.3s;pointer-events:none;max-width:88%;text-align:center;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐾 にゃんこ腸活</h1>
+  <span class="coin-chip">✨ <span id="hdrCoin">0</span></span>
+</header>
+
+<main>
+  <!-- ============ HOME ============ -->
+  <section class="screen active" id="scr-home">
+    <div class="room" id="room">
+      <div class="room-wall" id="roomWall"></div>
+      <div class="room-floor"></div>
+      <div class="rug" id="rug" style="display:none"></div>
+      <div id="furniLayer"></div>
+      <div class="cat-in-room" id="catHome"><div class="cat-bounce" id="catArtHome"></div></div>
+      <div class="pet-hint">タップしてなでる 🐾</div>
+    </div>
+
+    <div class="catbar">
+      <div class="cn"><span id="homeName">ネコタ</span><span class="edit" id="renameBtn">なまえ変更</span></div>
+      <div class="stg" id="homeStage">生まれたて</div>
+    </div>
+
+    <div class="card bond-card">
+      <div class="bond-hearts" id="bondHearts"></div>
+      <div class="bond-info">
+        <div class="bl" id="bondLabel">よそよそしい</div>
+        <div class="bs" id="bondSub"></div>
+        <div class="bond-bar"><div class="bond-fill" id="bondFill"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="lvl-wrap">
+        <div class="lvl-row"><span>せいちょう Lv.<b id="lvlNum">1</b></span><span id="lvlNext"></span></div>
+        <div class="lvl-bar"><div class="lvl-fill" id="lvlFill"></div></div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini l1"><div class="v" id="mLacto">0</div><div class="l">乳酸菌</div></div>
+        <div class="mini l2"><div class="v" id="mFiber">0g</div><div class="l">食物繊維</div></div>
+        <div class="mini l3"><div class="v" id="mPoint">0</div><div class="l">今日のP</div></div>
+      </div>
+    </div>
+
+    <button class="add-btn" id="homeAdd">🍽️ 今日のごはんを記録する</button>
+  </section>
+
+  <!-- ============ FOOD ============ -->
+  <section class="screen" id="scr-food">
+    <div class="stats">
+      <div class="stat lacto"><div class="ic">🦠</div><div class="val" id="sLacto">0</div><div class="lbl">乳酸菌スコア</div></div>
+      <div class="stat fiber"><div class="ic">🌿</div><div class="val" id="sFiber">0<span class="unit">g</span></div><div class="lbl">食物繊維</div></div>
+      <div class="stat point"><div class="ic">✨</div><div class="val" id="sPoint">0</div><div class="lbl">腸活ポイント</div></div>
+    </div>
+    <div class="card balance">
+      <div class="brow"><span class="t">腸内フローラ 測定</span><span class="s" id="balanceMsg">今日のごはんを記録しよう</span></div>
+      <div class="meter"><div class="mf l" id="mfLacto" style="width:0"></div><div class="mf f" id="mfFiber" style="width:0"></div></div>
+      <div class="legend"><span><b style="background:var(--lacto)"></b>乳酸菌（善玉菌）</span><span><b style="background:var(--fiber)"></b>食物繊維（エサ）</span></div>
+      <div class="synbio" id="synbio">🎉 シンバイオティクス達成！ 善玉菌とエサが両方そろって、子猫がごきげん（＋40P・なつき度UP）</div>
+    </div>
+    <button class="add-btn" id="foodAdd" style="margin-bottom:13px;">＋ 食べたものを記録する</button>
+    <div class="card">
+      <div class="section-title">きょうの食事</div>
+      <div id="todayLog"></div>
+    </div>
+  </section>
+
+  <!-- ============ SHOP ============ -->
+  <section class="screen" id="scr-shop">
+    <div class="subtabs">
+      <button class="subtab active" data-sub="wear">👒 着せ替え</button>
+      <button class="subtab" data-sub="room">🛋️ お部屋</button>
+    </div>
+    <div id="shopBody"></div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="screen" id="scr-hist">
+    <div class="card streak-card">
+      <div class="flame">🔥</div>
+      <div><div class="sn"><span id="streakNum">0</span> <span style="font-size:15px">日</span></div><div class="sl">連続で腸活を記録中！</div></div>
+    </div>
+    <div class="card"><div class="section-title">この7日間の腸活ポイント</div><div class="chart" id="chart"></div></div>
+    <div class="card"><div class="section-title">せいちょうの道のり</div><div id="growthList"></div></div>
+    <div class="card"><div class="section-title">記録の履歴</div><div id="histList"></div></div>
+    <div class="info">
+      <b>腸活のヒント 🐈</b><br>
+      善玉菌を含む<b>ヨーグルト・納豆・キムチ</b>などの発酵食品（乳酸菌）と、そのエサになる<b>野菜・海藻・きのこ・豆</b>などの食物繊維を<b>両方</b>とると、腸内の善玉菌が元気に。この組み合わせを<b>シンバイオティクス</b>と呼びます。毎日ごはんを記録して子猫をなでると、少しずつなついてくれます 🐾
+    </div>
+    <button class="btn-ghost" id="resetBtn" style="margin-top:13px;">データをリセット</button>
+    <div style="text-align:center;font-size:10.5px;color:var(--ink-light);padding:10px;line-height:1.6;">※ 栄養値はおおよその目安です。医療・栄養指導を目的としたものではありません。</div>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tab active" data-scr="home"><span class="ic">🏠</span>おうち</button>
+  <button class="tab" data-scr="food"><span class="ic">🍽️</span>ごはん</button>
+  <button class="tab" data-scr="shop"><span class="ic">🛍️</span>ショップ</button>
+  <button class="tab" data-scr="hist"><span class="ic">📅</span>きろく</button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-head">
+    <div class="sheet-grip"></div>
+    <div class="sh-row"><h2>食べたものを選ぶ</h2><button class="sheet-close" id="closeSheet">✕</button></div>
+    <input class="search" id="searchInput" placeholder="食べものを検索（例：ヨーグルト）">
+  </div>
+  <div class="cat-chips" id="catChips"></div>
+  <div class="food-list" id="foodList"></div>
+</div>
+
+<div id="pop"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+//=============================== 食べものデータ ===============================
+const FOODS=[
+  {id:'yogurt',n:'ヨーグルト',e:'🥛',c:'発酵',lacto:3,fiber:0},
+  {id:'drinkyogurt',n:'飲むヨーグルト',e:'🥤',c:'発酵',lacto:3,fiber:0},
+  {id:'lacto',n:'乳酸菌飲料',e:'🧴',c:'発酵',lacto:3,fiber:0},
+  {id:'kimchi',n:'キムチ',e:'🌶️',c:'発酵',lacto:3,fiber:1.5},
+  {id:'nukazuke',n:'ぬか漬け',e:'🥒',c:'発酵',lacto:3,fiber:1.5},
+  {id:'natto',n:'納豆',e:'🫘',c:'発酵',lacto:2,fiber:3.3},
+  {id:'miso',n:'味噌汁',e:'🍲',c:'発酵',lacto:2,fiber:1},
+  {id:'cheese',n:'チーズ',e:'🧀',c:'発酵',lacto:2,fiber:0},
+  {id:'amazake',n:'甘酒',e:'🍶',c:'発酵',lacto:2,fiber:0.5},
+  {id:'kraut',n:'ザワークラウト',e:'🥬',c:'発酵',lacto:3,fiber:2},
+  {id:'gobo',n:'ごぼう',e:'🥕',c:'野菜',lacto:0,fiber:5.7},
+  {id:'broccoli',n:'ブロッコリー',e:'🥦',c:'野菜',lacto:0,fiber:2.5},
+  {id:'spinach',n:'ほうれん草',e:'🥬',c:'野菜',lacto:0,fiber:2},
+  {id:'kabocha',n:'かぼちゃ',e:'🎃',c:'野菜',lacto:0,fiber:2.8},
+  {id:'mushroom',n:'きのこ',e:'🍄',c:'野菜',lacto:0,fiber:2.2},
+  {id:'corn',n:'とうもろこし',e:'🌽',c:'野菜',lacto:0,fiber:2.5},
+  {id:'avocado',n:'アボカド',e:'🥑',c:'野菜',lacto:0,fiber:3.5},
+  {id:'konnyaku',n:'こんにゃく',e:'⬜',c:'野菜',lacto:0,fiber:2},
+  {id:'carrot',n:'にんじん',e:'🥕',c:'野菜',lacto:0,fiber:1.4},
+  {id:'cabbage',n:'キャベツ',e:'🥬',c:'野菜',lacto:0,fiber:1.4},
+  {id:'banana',n:'バナナ',e:'🍌',c:'果物',lacto:0,fiber:1.1},
+  {id:'apple',n:'りんご',e:'🍎',c:'果物',lacto:0,fiber:1.5},
+  {id:'kiwi',n:'キウイ',e:'🥝',c:'果物',lacto:0,fiber:2.5},
+  {id:'berry',n:'ベリー',e:'🫐',c:'果物',lacto:0,fiber:2},
+  {id:'mikan',n:'みかん',e:'🍊',c:'果物',lacto:0,fiber:1},
+  {id:'strawberry',n:'いちご',e:'🍓',c:'果物',lacto:0,fiber:1.4},
+  {id:'edamame',n:'枝豆',e:'🫛',c:'豆・海藻',lacto:0,fiber:2.5},
+  {id:'daizu',n:'大豆',e:'🟤',c:'豆・海藻',lacto:0,fiber:3},
+  {id:'hijiki',n:'ひじき',e:'⚫',c:'豆・海藻',lacto:0,fiber:3},
+  {id:'wakame',n:'わかめ',e:'🌿',c:'豆・海藻',lacto:0,fiber:1.5},
+  {id:'kombu',n:'昆布',e:'🟢',c:'豆・海藻',lacto:0,fiber:2},
+  {id:'lentil',n:'レンズ豆',e:'🟠',c:'豆・海藻',lacto:0,fiber:3.5},
+  {id:'genmai',n:'玄米',e:'🍚',c:'主食',lacto:0,fiber:1.4},
+  {id:'oatmeal',n:'オートミール',e:'🥣',c:'主食',lacto:0,fiber:3},
+  {id:'satsumaimo',n:'さつまいも',e:'🍠',c:'主食',lacto:0,fiber:2.8},
+  {id:'ryebread',n:'ライ麦パン',e:'🍞',c:'主食',lacto:0,fiber:3},
+  {id:'soba',n:'そば',e:'🍜',c:'主食',lacto:0,fiber:2},
+];
+const FOOD_CATS=['すべて','発酵','野菜','果物','豆・海藻','主食'];
+const FOOD_MAP=Object.fromEntries(FOODS.map(f=>[f.id,f]));
+const FIBER_TARGET=18;
+
+//=============================== 成長ステージ ===============================
+const STAGES=[
+  {n:'生まれたて子猫',min:0},
+  {n:'やんちゃ子猫',  min:80},
+  {n:'げんき子猫',    min:220},
+  {n:'わかねこ',      min:450},
+  {n:'成猫',          min:800},
+  {n:'もふもふ猫',    min:1400},
+  {n:'貫禄マスター猫',min:2400},
+];
+
+//=============================== ショップ ===============================
+// 着せ替え：slot = hat / glasses / collar / outfit / back
+const COSTUMES=[
+  {id:'h_ribbon',n:'ねこリボン',slot:'hat',price:40},
+  {id:'h_straw', n:'むぎわらぼうし',slot:'hat',price:130},
+  {id:'h_santa', n:'サンタぼうし',slot:'hat',price:220},
+  {id:'h_witch', n:'まじょのぼうし',slot:'hat',price:280},
+  {id:'h_crown', n:'おうかん',slot:'hat',price:600},
+  {id:'g_round', n:'まるめがね',slot:'glasses',price:80},
+  {id:'g_sun',   n:'サングラス',slot:'glasses',price:150},
+  {id:'g_heart', n:'ハートめがね',slot:'glasses',price:230},
+  {id:'c_bell',  n:'すず首輪',slot:'collar',price:60},
+  {id:'c_bow',   n:'ちょうネクタイ',slot:'collar',price:110},
+  {id:'c_scarf', n:'マフラー',slot:'collar',price:150},
+  {id:'c_lei',   n:'花の首かざり',slot:'collar',price:200},
+  {id:'o_hoodie',n:'パーカー',slot:'outfit',price:170},
+  {id:'o_kimono',n:'きもの',slot:'outfit',price:320},
+  {id:'o_hero',  n:'ヒーロースーツ',slot:'outfit',price:360},
+  {id:'b_cape',  n:'マント',slot:'back',price:250},
+  {id:'b_wings', n:'てんしのはね',slot:'back',price:450},
+];
+const COSTUME_MAP=Object.fromEntries(COSTUMES.map(c=>[c.id,c]));
+const SLOT_LABEL={hat:'👒 ぼうし・かぶりもの',glasses:'🕶️ メガネ',collar:'🎀 首かざり',outfit:'👕 ふく',back:'🪽 せなか'};
+
+// 家具：pos = [x%, y%]、furniなのでtranslate(-50%,-50%)。emoji or html
+const FURNITURE=[
+  {id:'f_window',  n:'まど',       price:0,  pos:[20,26], size:60, html:'<div style="width:56px;height:52px;background:linear-gradient(160deg,#bfe4ff,#e9f6ff);border:5px solid #fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.12);position:relative"><div style="position:absolute;inset:0;background:linear-gradient(#8fbf6a,#8fbf6a) center/4px 100% no-repeat,linear-gradient(#fff,#fff) center/100% 4px no-repeat"></div></div>'},
+  {id:'f_clock',   n:'かべ時計',   price:60, pos:[50,11], emoji:'🕐', size:30},
+  {id:'f_poster',  n:'ポスター',   price:70, pos:[80,17], emoji:'🖼️', size:34},
+  {id:'f_painting',n:'絵画',       price:120,pos:[82,40], emoji:'🎨', size:32},
+  {id:'f_garland', n:'ガーランド', price:90, pos:[50,4],  emoji:'🎏', size:30},
+  {id:'f_shelf',   n:'本だな',     price:160,pos:[13,48], emoji:'📚', size:40},
+  {id:'f_tv',      n:'テレビ',     price:240,pos:[86,49], emoji:'📺', size:44},
+  {id:'f_plant',   n:'かんようしょくぶつ',price:80,pos:[9,55], emoji:'🪴', size:40},
+  {id:'f_cactus',  n:'サボテン',   price:60, pos:[91,58], emoji:'🌵', size:34},
+  {id:'f_lamp',    n:'フロアランプ',price:130,pos:[10,38], emoji:'🏮', size:32},
+  {id:'f_bed',     n:'ねこベッド', price:200,pos:[76,64], size:60, html:'<div style="width:66px;height:34px;background:radial-gradient(circle at 50% 30%,#ffd0dd,#ff9db8);border-radius:50%/60% 60% 100% 100%;box-shadow:inset 0 -4px 6px rgba(0,0,0,.08),0 3px 4px rgba(0,0,0,.14)"></div>'},
+  {id:'f_tower',   n:'キャットタワー',price:340,pos:[90,40], size:70, html:'<div style="position:relative;width:34px;height:110px"><div style="position:absolute;left:12px;top:0;width:10px;height:110px;background:#cbb18f;border-radius:4px"></div><div style="position:absolute;left:-4px;top:6px;width:42px;height:12px;background:#a9d18e;border-radius:6px"></div><div style="position:absolute;left:0;top:48px;width:34px;height:11px;background:#a9d18e;border-radius:6px"></div></div>'},
+  {id:'f_ball',    n:'けだま',     price:40, pos:[30,74], emoji:'🧶', size:26},
+  {id:'f_fish',    n:'おさかな',   price:50, pos:[68,76], emoji:'🐟', size:24},
+  {id:'f_teddy',   n:'ぬいぐるみ', price:90, pos:[24,72], emoji:'🧸', size:30},
+  {id:'f_mouse',   n:'おもちゃネズミ',price:40,pos:[72,73], emoji:'🐭', size:22},
+  {id:'f_bowl',    n:'ごはんボウル',price:70,pos:[38,80], emoji:'🍚', size:24},
+];
+const FURNI_MAP=Object.fromEntries(FURNITURE.map(f=>[f.id,f]));
+
+// ラグ（rug）と壁紙（wallpaper）はショップの「お部屋」内の別グループ
+const RUGS=[
+  {id:'r_pink', n:'ピンクラグ', price:60, color:'radial-gradient(#ffd0dd,#ff9db8)'},
+  {id:'r_green',n:'グリーンラグ',price:60, color:'radial-gradient(#cfeecf,#8fce8f)'},
+  {id:'r_blue', n:'ブルーラグ', price:60, color:'radial-gradient(#cfe4ff,#8fb8ee)'},
+];
+const RUG_MAP=Object.fromEntries(RUGS.map(r=>[r.id,r]));
+const WALLS=[
+  {id:'w_cream', n:'クリーム',   price:0,  bg:'linear-gradient(#fdeede,#f8e0c8)'},
+  {id:'w_pink',  n:'ももいろ',   price:80, bg:'linear-gradient(#ffe6ef,#ffd0e0)'},
+  {id:'w_sky',   n:'そらいろ',   price:80, bg:'linear-gradient(#dff0ff,#bfe0f7)'},
+  {id:'w_mint',  n:'ミント',     price:80, bg:'linear-gradient(#e2f7ee,#c6ecd9)'},
+  {id:'w_night', n:'よぞら',     price:180,bg:'radial-gradient(1px 1px at 20% 30%,#fff,transparent),radial-gradient(1px 1px at 70% 20%,#fff,transparent),radial-gradient(1px 1px at 45% 55%,#fff,transparent),radial-gradient(1px 1px at 85% 60%,#fff,transparent),linear-gradient(#2b2b52,#42427a)'},
+  {id:'w_wa',    n:'わふう',     price:180,bg:'repeating-linear-gradient(45deg,#efe3cf 0 10px,#e8d9bf 10px 20px)'},
+];
+const WALL_MAP=Object.fromEntries(WALLS.map(w=>[w.id,w]));
+
+//=============================== 状態 ===============================
+const KEY='nyanko_chokatsu_v1';
+let state=load();
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.logs)return migrate(s);}catch(e){}
+  return {
+    logs:{}, catName:'ネコタ', bond:0, spent:0, petPoints:0,
+    owned:['w_cream'], equipped:{hat:null,glasses:null,collar:null,outfit:null,back:null},
+    placed:[], wallpaper:'w_cream', rug:null,
+    pet:{date:'',count:0}, feedBondDate:'', synbioBondDate:''
+  };
+}
+function migrate(s){
+  s.equipped=s.equipped||{hat:null,glasses:null,collar:null,outfit:null,back:null};
+  s.owned=s.owned||['w_cream'];s.placed=s.placed||[];s.pet=s.pet||{date:'',count:0};
+  if(s.bond==null)s.bond=0;if(s.spent==null)s.spent=0;if(s.petPoints==null)s.petPoints=0;
+  if(!s.wallpaper)s.wallpaper='w_cream';if(!s.rug)s.rug=null;
+  return s;
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+
+function tk(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+const TODAY=tk();
+
+//=============================== 計算 ===============================
+function entries(k){return state.logs[k]||[];}
+function daySummary(k){
+  let lacto=0,fiber=0;
+  entries(k).forEach(it=>{const f=FOOD_MAP[it.id];if(!f)return;lacto+=f.lacto*it.qty;fiber+=f.fiber*it.qty;});
+  const synbio=(lacto>=2&&fiber>=FIBER_TARGET);
+  const points=Math.round(lacto*8+fiber*4+(synbio?40:0));
+  return {lacto:+lacto.toFixed(1),fiber:+fiber.toFixed(1),points,synbio};
+}
+function earned(){let t=0;for(const k in state.logs)t+=daySummary(k).points;return t;}
+function wallet(){return earned()+state.petPoints-state.spent;}
+function stageFor(pt){let s=0;for(let i=0;i<STAGES.length;i++)if(pt>=STAGES[i].min)s=i;return s;}
+
+//=============================== なつき度 ===============================
+const BOND_LEVELS=[
+  {min:0, l:'よそよそしい', s:'まだ様子見中…ごはんとなでなでで仲良くなろう'},
+  {min:20,l:'きょうみしんしん',s:'ちょっと近づいてきた！'},
+  {min:40,l:'なかよし', s:'すっかり慣れてきたみたい 🐾'},
+  {min:60,l:'だいすき', s:'あなたが大好き！そばにいたがる'},
+  {min:85,l:'メロメロ', s:'いつもゴロゴロ甘えん坊 💕'},
+  {min:100,l:'きずなMAX',s:'ずっと一緒だよ 🌟'},
+];
+function bondLevel(b){let r=BOND_LEVELS[0];for(const x of BOND_LEVELS)if(b>=x.min)r=x;return r;}
+function addBond(n){state.bond=Math.min(100,state.bond+n);}
+
+//=============================== 猫SVG ===============================
+function catSVG(stage,mood,eq){
+  const scale=Math.min(0.62+stage*0.075,1);
+  const coat=stage>=6?'#ffd873':'#ffd9a8', coatDark=stage>=6?'#f0b93b':'#f2b982';
+  const fluff=stage>=5, sparkle=stage>=4;
+  eq=eq||{};
+  // ---- 表情 ----
+  let eyes,mouth;
+  if(mood==='great'){
+    eyes=`<path d="M78 96 q7 -11 14 0" stroke="#3a2b2e" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M108 96 q7 -11 14 0" stroke="#3a2b2e" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    mouth=`<path d="M92 112 q8 9 16 0" stroke="#3a2b2e" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  }else if(mood==='good'){
+    eyes=`<circle cx="85" cy="97" r="6.5" fill="#3a2b2e"/><circle cx="115" cy="97" r="6.5" fill="#3a2b2e"/><circle cx="87" cy="94" r="2" fill="#fff"/><circle cx="117" cy="94" r="2" fill="#fff"/>`;
+    mouth=`<path d="M94 110 q6 6 12 0" stroke="#3a2b2e" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  }else if(mood==='meh'){
+    eyes=`<circle cx="85" cy="97" r="6" fill="#3a2b2e"/><circle cx="115" cy="97" r="6" fill="#3a2b2e"/>`;
+    mouth=`<path d="M93 111 h14" stroke="#3a2b2e" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  }else{
+    eyes=`<path d="M79 99 q6 -7 13 -2" stroke="#3a2b2e" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M108 97 q7 -5 13 2" stroke="#3a2b2e" stroke-width="3.4" fill="none" stroke-linecap="round"/>`;
+    mouth=`<path d="M93 113 q7 -5 14 0" stroke="#3a2b2e" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+  }
+  // ---- 着せ替えパーツ ----
+  const back=COSTUME_BACK(eq.back);
+  const outfit=COSTUME_OUTFIT(eq.outfit,coat);
+  const collar=COSTUME_COLLAR(eq.collar);
+  const glasses=COSTUME_GLASSES(eq.glasses);
+  const hat=COSTUME_HAT(eq.hat);
+
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
+    <ellipse cx="100" cy="184" rx="46" ry="9" fill="rgba(58,43,46,.08)"/>
+    ${back}
+    <path d="M142 170 q34 6 30 -30 q-3 -20 -18 -18" fill="none" stroke="${coatDark}" stroke-width="13" stroke-linecap="round"/>
+    <path d="M58 184 C50 132 66 120 100 120 C134 120 150 132 142 184 Z" fill="${coat}"/>
+    <ellipse cx="80" cy="182" rx="12" ry="7.5" fill="${coatDark}"/><ellipse cx="120" cy="182" rx="12" ry="7.5" fill="${coatDark}"/>
+    ${outfit}
+    <path d="M60 72 L54 28 L96 58 Z" fill="${coat}"/><path d="M140 72 L146 28 L104 58 Z" fill="${coat}"/>
+    <path d="M64 64 L61 40 L86 58 Z" fill="#ffb3c6"/><path d="M136 64 L139 40 L114 58 Z" fill="#ffb3c6"/>
+    ${fluff?`<circle cx="100" cy="94" r="50" fill="${coat}" opacity=".5"/>`:''}
+    <circle cx="100" cy="94" r="42" fill="${coat}"/>
+    <ellipse cx="70" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/><ellipse cx="130" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/>
+    ${eyes}
+    <path d="M96 106 h8 l-4 5 Z" fill="#ff9db0"/>
+    ${mouth}
+    <path d="M64 102 h-22 M66 110 h-20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
+    <path d="M136 102 h22 M134 110 h20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
+    ${collar}${glasses}${hat}
+    ${sparkle?`<text x="150" y="58" font-size="18" opacity=".9">✨</text><text x="30" y="118" font-size="15" opacity=".8">✨</text>`:''}
+  </g></svg>`;
+}
+// --- 着せ替えSVGパーツ（cat座標系） ---
+function COSTUME_HAT(id){switch(id){
+  case 'h_ribbon':return `<g transform="translate(100 50)"><path d="M0 0 L-16 -9 L-16 11 Z" fill="#ff6f91"/><path d="M0 0 L16 -9 L16 11 Z" fill="#ff6f91"/><circle r="6" fill="#e84c74"/></g>`;
+  case 'h_straw':return `<g><ellipse cx="100" cy="54" rx="52" ry="13" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M74 54 a26 30 0 0 1 52 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/><rect x="74" y="47" width="52" height="7" rx="3" fill="#c26b6b"/></g>`;
+  case 'h_santa':return `<g><path d="M62 52 Q100 -14 140 46 Z" fill="#e5484d"/><ellipse cx="101" cy="50" rx="43" ry="9" fill="#fff"/><circle cx="140" cy="26" r="8" fill="#fff"/></g>`;
+  case 'h_witch':return `<g><ellipse cx="100" cy="52" rx="50" ry="12" fill="#4b3a63"/><path d="M76 52 Q112 -26 118 48 Z" fill="#5a4780"/><rect x="80" y="42" width="42" height="8" rx="2" fill="#7a5cff"/><path d="M118 48 q10 -2 12 -10" stroke="#5a4780" stroke-width="7" fill="none" stroke-linecap="round"/></g>`;
+  case 'h_crown':return `<g><path d="M70 48 L78 20 L100 40 L122 20 L130 48 Z" fill="#ffd23f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><rect x="70" y="46" width="60" height="8" rx="3" fill="#f0b93b"/><circle cx="78" cy="20" r="4" fill="#ff6b8a"/><circle cx="122" cy="20" r="4" fill="#6ac0ff"/><circle cx="100" cy="40" r="4" fill="#7ee081"/></g>`;
+  default:return '';}}
+function COSTUME_GLASSES(id){switch(id){
+  case 'g_round':return `<g fill="#fff" fill-opacity=".2" stroke="#5a4632" stroke-width="3"><circle cx="85" cy="96" r="12"/><circle cx="115" cy="96" r="12"/></g><path d="M97 96 h6 M73 92 l-10 -4 M127 92 l10 -4" stroke="#5a4632" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  case 'g_sun':return `<g fill="#2b2b3a"><rect x="71" y="88" width="27" height="16" rx="7"/><rect x="102" y="88" width="27" height="16" rx="7"/></g><path d="M98 91 h6 M71 90 l-9 -3 M129 90 l9 -3" stroke="#2b2b3a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M76 92 l6 -3 M107 92 l6 -3" stroke="#fff" stroke-width="2" opacity=".55" stroke-linecap="round"/>`;
+  case 'g_heart':return `<g fill="#ff5c8a" fill-opacity=".85"><path d="M85 90 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z"/><path d="M115 90 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z"/></g><path d="M97 94 h6" stroke="#ff5c8a" stroke-width="3" stroke-linecap="round"/>`;
+  default:return '';}}
+function COSTUME_COLLAR(id){switch(id){
+  case 'c_bell':return `<path d="M72 126 q28 12 56 0" fill="none" stroke="#e5484d" stroke-width="7"/><circle cx="100" cy="134" r="7" fill="#ffcf33" stroke="#e0a500" stroke-width="1.5"/><path d="M96 134 h8" stroke="#c98f00" stroke-width="1.5"/>`;
+  case 'c_bow':return `<path d="M72 126 q28 10 56 0" fill="none" stroke="#5b8def" stroke-width="4"/><g transform="translate(100 128)"><path d="M0 0 L-14 -8 L-14 8 Z" fill="#5b8def"/><path d="M0 0 L14 -8 L14 8 Z" fill="#5b8def"/><rect x="-4" y="-6" width="8" height="12" rx="2" fill="#3a6fd6"/></g>`;
+  case 'c_scarf':return `<path d="M66 122 q34 20 68 0 l-4 15 q-30 13 -60 0 Z" fill="#3fa66b"/><path d="M118 133 l15 6 -5 20 -13 -9 Z" fill="#2e8c58"/>`;
+  case 'c_lei':return `<g>${[68,80,92,104,116,128].map((x,i)=>{const y=126+Math.sin((i-2.5)*0.5)*6;const col=['#ff8fab','#ffd23f','#ff8fab','#7ee081','#ff8fab','#ffd23f'][i];return `<circle cx="${x}" cy="${y}" r="5.5" fill="${col}"/><circle cx="${x}" cy="${y}" r="2" fill="#fff"/>`;}).join('')}</g>`;
+  default:return '';}}
+function COSTUME_OUTFIT(id,coat){switch(id){
+  case 'o_hoodie':return `<path d="M60 184 C54 138 70 128 100 128 C130 128 146 138 140 184 Z" fill="#f2a154"/><path d="M72 130 q28 -13 56 0 q-7 15 -28 15 q-21 0 -28 -15 Z" fill="#dd8b3a"/><path d="M86 158 h28 v16 h-28 Z" fill="#dd8b3a"/><path d="M96 132 v10 M104 132 v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`;
+  case 'o_kimono':return `<path d="M60 184 C56 140 70 128 100 128 C130 128 144 140 140 184 Z" fill="#f2ece0"/><path d="M100 130 L82 184 M100 130 L118 184" stroke="#c0455e" stroke-width="6" fill="none"/><rect x="62" y="158" width="76" height="12" fill="#c0455e"/><path d="M100 130 l-9 24 18 0 Z" fill="#e2c4cb"/>`;
+  case 'o_hero':return `<path d="M60 184 C54 138 70 128 100 128 C130 128 146 138 140 184 Z" fill="#3a6fd6"/><path d="M100 138 l4 12 13 0 -10 8 4 13 -11 -8 -11 8 4 -13 -10 -8 13 0 Z" fill="#ffd23f"/><rect x="62" y="166" width="76" height="9" fill="#ffd23f"/>`;
+  default:return '';}}
+function COSTUME_BACK(id){switch(id){
+  case 'b_wings':return `<g fill="#fff" stroke="#e6ecf5" stroke-width="1.5"><path d="M72 132 q-42 -24 -56 4 q28 -4 36 14 q-26 2 -22 24 q24 -12 36 4 Z"/><path d="M128 132 q42 -24 56 4 q-28 -4 -36 14 q26 2 22 24 q-24 -12 -36 4 Z"/></g>`;
+  case 'b_cape':return `<path d="M66 128 q34 -12 68 0 l8 62 q-42 -14 -84 0 Z" fill="#c0392b"/><path d="M78 124 q22 -9 44 0 l-3 11 q-19 -8 -38 0 Z" fill="#9e2c1e"/>`;
+  default:return '';}}
+
+//=============================== 気分 ===============================
+function moodOf(sum){
+  if(sum.synbio)return {key:'great',msg:'ごきげん！ 腸内フローラばっちり 😻'};
+  if(sum.lacto>0&&sum.fiber>0)return {key:'good',msg:'うれしい！ この調子 😺'};
+  if(sum.lacto>0||sum.fiber>0)return {key:'meh',msg:'もうちょっと！ 反対の栄養もほしいな'};
+  if(state.bond>=60)return {key:'meh',msg:'ごはんまだかな？ でもそばにいるよ'};
+  return {key:'hungry',msg:'おなかすいた… ごはん記録してね 😿'};
+}
+
+//=============================== 描画 ===============================
+let petJustNow=false;
+function render(){
+  const sum=daySummary(TODAY), total=earned(), stage=stageFor(total), st=STAGES[stage];
+  const mood=petJustNow?{key:'great',msg:''}:moodOf(sum);
+  const w=wallet();
+
+  document.getElementById('hdrCoin').textContent=w;
+
+  // room
+  document.getElementById('homeName').textContent=state.catName;
+  document.getElementById('homeStage').textContent=st.n;
+  const catHtml=catSVG(stage,mood.key,state.equipped);
+  document.getElementById('catArtHome').innerHTML=catHtml;
+  renderRoom();
+
+  // bond
+  const bl=bondLevel(state.bond);
+  document.getElementById('bondLabel').textContent=bl.l;
+  document.getElementById('bondSub').textContent=bl.s;
+  document.getElementById('bondFill').style.width=state.bond+'%';
+  const hearts=Math.round(state.bond/20);
+  document.getElementById('bondHearts').innerHTML=Array.from({length:5},(_,i)=>i<hearts?'❤️':'🤍').join('');
+
+  // level
+  const nextMin=stage<STAGES.length-1?STAGES[stage+1].min:st.min;
+  document.getElementById('lvlNum').textContent=stage+1;
+  if(stage<STAGES.length-1){
+    document.getElementById('lvlFill').style.width=Math.min(100,(total-st.min)/(nextMin-st.min)*100)+'%';
+    document.getElementById('lvlNext').textContent=`次の姿まで あと ${nextMin-total}P`;
+  }else{document.getElementById('lvlFill').style.width='100%';document.getElementById('lvlNext').textContent='最終形態！ 🏆';}
+
+  // mini stats
+  document.getElementById('mLacto').textContent=sum.lacto;
+  document.getElementById('mFiber').textContent=sum.fiber+'g';
+  document.getElementById('mPoint').textContent=sum.points;
+
+  // food tab
+  document.getElementById('sLacto').textContent=sum.lacto;
+  document.getElementById('sFiber').innerHTML=sum.fiber+'<span class="unit">g</span>';
+  document.getElementById('sPoint').textContent=sum.points;
+  document.getElementById('mfLacto').style.width=(Math.min(100,sum.lacto/3*100)*0.5)+'%';
+  document.getElementById('mfFiber').style.width=(Math.min(100,sum.fiber/FIBER_TARGET*100)*0.5)+'%';
+  let bmsg;
+  if(sum.synbio)bmsg='完ぺき！ バランス◎';
+  else if(sum.fiber<FIBER_TARGET&&sum.lacto>=2)bmsg='食物繊維をもう少し';
+  else if(sum.fiber>=FIBER_TARGET&&sum.lacto<2)bmsg='発酵食品をプラス';
+  else if(sum.lacto>0||sum.fiber>0)bmsg='両方そろえよう';
+  else bmsg='今日のごはんを記録しよう';
+  document.getElementById('balanceMsg').textContent=bmsg;
+  document.getElementById('synbio').classList.toggle('on',sum.synbio);
+
+  renderLog();renderHistory();renderShop();
+}
+
+function renderRoom(){
+  // wallpaper
+  const wall=WALL_MAP[state.wallpaper]||WALLS[0];
+  document.getElementById('roomWall').style.background=wall.bg;
+  // rug
+  const rug=document.getElementById('rug');
+  if(state.rug&&RUG_MAP[state.rug]){rug.style.display='block';rug.style.background=RUG_MAP[state.rug].color;}
+  else rug.style.display='none';
+  // furniture
+  document.getElementById('furniLayer').innerHTML=state.placed.map(id=>{
+    const f=FURNI_MAP[id];if(!f)return '';
+    const inner=f.html||`<span style="font-size:${f.size}px">${f.emoji}</span>`;
+    return `<div class="furni ${f.emoji?'emoji':''}" style="left:${f.pos[0]}%;top:${f.pos[1]}%">${inner}</div>`;
+  }).join('');
+}
+
+function renderLog(){
+  const el=document.getElementById('todayLog'), items=entries(TODAY);
+  if(!items.length){el.innerHTML='<div class="empty">まだ記録がありません。<br>「＋ 食べたものを記録する」からどうぞ 🐾</div>';return;}
+  el.innerHTML=items.map((it,i)=>{
+    const f=FOOD_MAP[it.id];if(!f)return '';
+    const meta=[];
+    if(f.lacto)meta.push(`<span class="lc">乳酸菌+${f.lacto*it.qty}</span>`);
+    if(f.fiber)meta.push(`<span class="fc">食物繊維+${(f.fiber*it.qty).toFixed(1)}g</span>`);
+    return `<div class="log-item"><span class="lem">${f.e}</span>
+      <div style="flex:1"><div class="lname">${f.n}</div><div class="lmeta">${meta.join(' ・ ')||'—'}</div></div>
+      <div class="qty"><button data-act="dec" data-i="${i}">−</button><span>${it.qty}</span><button data-act="inc" data-i="${i}">＋</button></div></div>`;
+  }).join('');
+}
+
+function renderHistory(){
+  let streak=0;const base=entries(TODAY).length?new Date():(()=>{const d=new Date();d.setDate(d.getDate()-1);return d;})();
+  for(const d=new Date(base);;d.setDate(d.getDate()-1)){if(entries(tk(d)).length)streak++;else break;}
+  document.getElementById('streakNum').textContent=streak;
+
+  const days=[];for(let i=6;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dt);}
+  const sums=days.map(dt=>daySummary(tk(dt)));
+  const max=Math.max(60,...sums.map(s=>s.points));
+  document.getElementById('chart').innerHTML=days.map((dt,i)=>{
+    const p=sums[i].points;
+    return `<div class="bar-col"><div class="bar-val">${p||''}</div><div class="bar ${p?'':'zero'}" style="height:${Math.max(3,p/max*100)}%"></div><div class="bar-lbl">${['日','月','火','水','木','金','土'][dt.getDay()]}</div></div>`;
+  }).join('');
+
+  const total=earned(),stage=stageFor(total);
+  document.getElementById('growthList').innerHTML=STAGES.map((s,i)=>{
+    const reached=total>=s.min,cur=i===stage;
+    const mini=catSVG(i,'good',{});
+    return `<div class="growth-item ${reached?'reached':''} ${cur?'current':''}"><div class="gem">${mini}</div>
+      <div style="flex:1"><div class="gn">${s.n}</div><div class="gr">${cur?'いまここ 🐾':reached?'到達ずみ':'これから'}</div></div>
+      <div class="gpt">${s.min}P${reached?' ✓':''}</div></div>`;
+  }).join('');
+
+  const keys=Object.keys(state.logs).filter(k=>entries(k).length).sort().reverse();
+  const hl=document.getElementById('histList');
+  hl.innerHTML=keys.length?keys.slice(0,30).map(k=>{
+    const s=daySummary(k),[y,m,dd]=k.split('-');
+    return `<div class="hist-item"><div class="hist-date"><b>${+m}/${+dd}</b>${k===TODAY?'今日':''}</div>
+      <div class="hist-detail"><span class="lc">乳酸菌 ${s.lacto}</span> ・ <span class="fc">繊維 ${s.fiber}g</span>${s.synbio?' 🎉':''}</div>
+      <div class="hist-pt">${s.points}<span style="font-size:10px">P</span></div></div>`;
+  }).join(''):'<div class="empty">記録がたまるとここに並びます 📖</div>';
+}
+
+//=============================== ショップ ===============================
+let shopSub='wear';
+function renderShop(){
+  const w=wallet(),body=document.getElementById('shopBody');
+  if(shopSub==='wear'){
+    let html='';
+    ['hat','glasses','collar','outfit','back'].forEach(slot=>{
+      const items=COSTUMES.filter(c=>c.slot===slot);
+      html+=`<div class="shop-group-title">${SLOT_LABEL[slot]}</div><div class="shop-grid">`;
+      html+=items.map(c=>shopCard('costume',c,w)).join('');
+      html+='</div>';
+    });
+    body.innerHTML=html;
+  }else{
+    let html='';
+    html+=`<div class="shop-group-title">🖼️ かべがみ</div><div class="shop-grid">`+WALLS.map(x=>shopCard('wall',x,w)).join('')+'</div>';
+    html+=`<div class="shop-group-title">🟣 ラグ</div><div class="shop-grid">`+RUGS.map(x=>shopCard('rug',x,w)).join('')+'</div>';
+    html+=`<div class="shop-group-title">🪑 かぐ・こもの</div><div class="shop-grid">`+FURNITURE.map(x=>shopCard('furni',x,w)).join('')+'</div>';
+    body.innerHTML=html;
+  }
+}
+function shopPreview(type,x){
+  if(type==='costume'){const eq={};eq[x.slot]=x.id;return catSVG(3,'good',eq);}
+  if(type==='wall')return `<div style="width:56px;height:56px;border-radius:10px;background:${x.bg};border:1px solid var(--border)"></div>`;
+  if(type==='rug')return `<div style="width:56px;height:30px;border-radius:50%;background:${x.color}"></div>`;
+  if(type==='furni')return x.html?x.html:`<span style="font-size:40px">${x.emoji}</span>`;
+}
+function shopCard(type,x,w){
+  const owned=type==='wall'||type==='rug'?state.owned.includes(x.id):state.owned.includes(x.id);
+  const free=x.price===0;
+  let active=false,label,cls;
+  if(type==='costume')active=state.equipped[x.slot]===x.id;
+  if(type==='wall')active=state.wallpaper===x.id;
+  if(type==='rug')active=state.rug===x.id;
+  if(type==='furni')active=state.placed.includes(x.id);
+  const isOwned=owned||free;
+  if(!isOwned){
+    const can=w>=x.price;
+    label=`買う`;cls=`buy`;
+    return `<div class="shop-item ${active?'equipped':''}"><div class="shop-preview">${shopPreview(type,x)}</div>
+      <div class="shop-name">${x.n}</div><div class="shop-price">✨ ${x.price}</div>
+      <button class="shop-btn buy" data-type="${type}" data-id="${x.id}" ${can?'':'disabled'}>${can?'買う':'P不足'}</button></div>`;
+  }else{
+    // owned: toggle
+    if(type==='costume'){label=active?'ぬぐ':'きる';cls=active?'off':'use';}
+    else if(type==='furni'){label=active?'しまう':'かざる';cls=active?'off':'use';}
+    else {label=active?'つかってる':'つかう';cls=active?'off':'use';}
+    return `<div class="shop-item ${active?'equipped':''}">${active?'<span class="badge">着用中</span>':''}<div class="shop-preview">${shopPreview(type,x)}</div>
+      <div class="shop-name">${x.n}</div><div class="shop-price">${free?'さいしょから':'もってる ✓'}</div>
+      <button class="shop-btn ${cls}" data-type="${type}" data-id="${x.id}" data-toggle="1">${label}</button></div>`;
+  }
+}
+document.getElementById('shopBody').addEventListener('click',e=>{
+  const b=e.target.closest('.shop-btn');if(!b)return;
+  const type=b.dataset.type,id=b.dataset.id,toggle=b.dataset.toggle;
+  const map={costume:COSTUME_MAP,wall:WALL_MAP,rug:RUG_MAP,furni:FURNI_MAP};
+  const x=map[type][id];
+  if(!toggle){ // buy
+    if(wallet()<x.price)return;
+    state.spent+=x.price;state.owned.push(id);
+    applyItem(type,id,true);
+    addBond(1);
+    save();render();toast(`「${x.n}」を買ったよ！ 🎁`);flyPoint('-'+x.price+'P');
+  }else{ // toggle
+    applyItem(type,id,'toggle');
+    save();render();
+  }
+});
+function applyItem(type,id,mode){
+  if(type==='costume'){
+    const slot=COSTUME_MAP[id].slot;
+    if(mode===true)state.equipped[slot]=id;
+    else state.equipped[slot]=(state.equipped[slot]===id?null:id);
+  }else if(type==='wall'){state.wallpaper=id;}
+  else if(type==='rug'){state.rug=(mode==='toggle'&&state.rug===id)?null:id;}
+  else if(type==='furni'){
+    if(mode===true){if(!state.placed.includes(id))state.placed.push(id);}
+    else{const i=state.placed.indexOf(id);if(i>=0)state.placed.splice(i,1);else state.placed.push(id);}
+  }
+}
+
+//=============================== 操作 ===============================
+function addFood(id){
+  if(!state.logs[TODAY])state.logs[TODAY]=[];
+  const list=state.logs[TODAY], first=list.length===0;
+  const beforeSyn=daySummary(TODAY).synbio, beforeP=daySummary(TODAY).points;
+  const ex=list.find(it=>it.id===id);
+  if(ex)ex.qty++;else list.push({id,qty:1});
+  // なつき度：その日最初のごはん
+  if(first&&state.feedBondDate!==TODAY){state.feedBondDate=TODAY;addBond(3);toast('ごはんをあげた！ 少しなついた 🐾');}
+  const after=daySummary(TODAY);
+  if(!beforeSyn&&after.synbio&&state.synbioBondDate!==TODAY){state.synbioBondDate=TODAY;addBond(3);toast('🎉 シンバイオティクス達成！ ボーナス＋40P');}
+  save();
+  const gained=after.points-beforeP;
+  petJustNow=false;render();
+  document.querySelectorAll('.stat').forEach(s=>{s.classList.remove('measuring');void s.offsetWidth;s.classList.add('measuring');});
+  if(gained>0)flyPoint('+'+gained+'P');
+}
+function changeQty(i,delta){
+  const list=state.logs[TODAY];if(!list||!list[i])return;
+  list[i].qty+=delta;
+  if(list[i].qty<=0)list.splice(i,1);
+  if(!list.length)delete state.logs[TODAY];
+  save();render();
+}
+
+// なでる
+function pet(ev){
+  const room=document.getElementById('room'),r=room.getBoundingClientRect();
+  let x,y;
+  if(ev.touches&&ev.touches[0]){x=ev.touches[0].clientX-r.left;y=ev.touches[0].clientY-r.top;}
+  else{x=ev.clientX-r.left;y=ev.clientY-r.top;}
+  if(isNaN(x)){x=r.width/2;y=r.height*0.5;}
+  // heart particle
+  const h=document.createElement('div');h.className='heart-p';h.textContent=['💖','💗','💕','🩷'][Math.floor(Math.random()*4)];
+  h.style.left=(x-9)+'px';h.style.top=(y-9)+'px';room.appendChild(h);setTimeout(()=>h.remove(),1000);
+  // wiggle
+  const art=document.getElementById('catArtHome');art.classList.remove('cat-pet','cat-bounce');void art.offsetWidth;art.classList.add('cat-pet');
+  setTimeout(()=>{art.classList.remove('cat-pet');art.classList.add('cat-bounce');},520);
+
+  if(state.pet.date!==TODAY)state.pet={date:TODAY,count:0};
+  if(state.pet.count<5){
+    state.pet.count++;addBond(1);state.petPoints+=2;
+    const p=document.createElement('div');p.className='purr';p.textContent='ゴロゴロ♪';p.style.left=(x-24)+'px';p.style.top=(y-30)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
+    petJustNow=true;save();render();
+    setTimeout(()=>{petJustNow=false;render();},1400);
+  }else{
+    const p=document.createElement('div');p.className='purr';p.textContent='まんぞく♪';p.style.left=(x-22)+'px';p.style.top=(y-30)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
+  }
+}
+document.getElementById('catHome').addEventListener('click',pet);
+
+// tabs
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');document.getElementById('scr-'+t.dataset.scr).classList.add('active');window.scrollTo(0,0);
+});
+// subtabs
+document.querySelectorAll('.subtab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));t.classList.add('active');
+  shopSub=t.dataset.sub;renderShop();
+});
+document.getElementById('todayLog').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;changeQty(+b.dataset.i,b.dataset.act==='inc'?1:-1);});
+
+// food sheet
+const sheet=document.getElementById('sheet'),sheetBg=document.getElementById('sheetBg');
+let curCat='すべて',curSearch='';
+function openSheet(){renderFoods();sheet.classList.add('open');sheetBg.classList.add('open');}
+function closeSheet(){sheet.classList.remove('open');sheetBg.classList.remove('open');document.getElementById('searchInput').blur();}
+document.getElementById('homeAdd').onclick=openSheet;
+document.getElementById('foodAdd').onclick=openSheet;
+document.getElementById('closeSheet').onclick=closeSheet;
+sheetBg.onclick=closeSheet;
+document.getElementById('catChips').innerHTML=FOOD_CATS.map((c,i)=>`<button class="cat-chip ${i===0?'active':''}" data-c="${c}">${c}</button>`).join('');
+document.getElementById('catChips').addEventListener('click',e=>{const b=e.target.closest('.cat-chip');if(!b)return;curCat=b.dataset.c;document.querySelectorAll('.cat-chip').forEach(x=>x.classList.toggle('active',x===b));renderFoods();});
+document.getElementById('searchInput').addEventListener('input',e=>{curSearch=e.target.value.trim();renderFoods();});
+function renderFoods(){
+  let list=FOODS;
+  if(curCat!=='すべて')list=list.filter(f=>f.c===curCat);
+  if(curSearch)list=list.filter(f=>f.n.includes(curSearch));
+  const el=document.getElementById('foodList');
+  el.innerHTML=list.length?list.map(f=>{
+    const tags=[];if(f.lacto)tags.push(`<span class="tag l">乳酸菌 +${f.lacto}</span>`);if(f.fiber)tags.push(`<span class="tag f">食物繊維 ${f.fiber}g</span>`);
+    return `<div class="food-card" data-id="${f.id}"><span class="fem">${f.e}</span>
+      <div style="flex:1"><div class="fn">${f.n}</div><div class="ft">${tags.join('')}</div></div><button class="fadd">＋</button></div>`;
+  }).join(''):'<div class="empty">見つかりませんでした</div>';
+}
+document.getElementById('foodList').addEventListener('click',e=>{const card=e.target.closest('.food-card');if(!card)return;addFood(card.dataset.id);});
+
+// misc
+document.getElementById('renameBtn').onclick=()=>{const nm=prompt('猫のなまえ',state.catName);if(nm&&nm.trim()){state.catName=nm.trim().slice(0,12);save();render();}};
+document.getElementById('resetBtn').onclick=()=>{if(confirm('すべての記録・猫・アイテムをリセットします。よろしいですか？')){localStorage.removeItem(KEY);state=load();save();render();}};
+
+function flyPoint(txt){const pop=document.getElementById('pop');const el=document.createElement('div');el.className='pt-fly';el.textContent=txt;if(txt[0]==='-')el.style.color='var(--accent-dark)';pop.appendChild(el);setTimeout(()=>el.remove(),1100);}
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+render();
+</script>
+</body>
+</html>

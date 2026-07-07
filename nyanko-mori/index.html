@@ -626,6 +626,52 @@ function catSVG(stage,mood,eq){
     ${sparkle?'<text x="150" y="58" font-size="18" opacity=".9">✨</text><text x="30" y="118" font-size="15" opacity=".8">✨</text>':''}
   </g></svg>`;
 }
+// お散歩ちゅうの横向きの猫（4本の脚が交互に動く）。右向きが基準
+function catWalkSVG(stage,eq){
+  const scale=Math.min(0.62+stage*0.075,1);
+  const coat=stage>=6?'#ffd873':'#ffd9a8', coatDark=stage>=6?'#f0b93b':'#f2b982';
+  eq=eq||{};
+  // 脚：hip(回転中心)で前後にスイング。phase で位相を反転
+  const leg=(x,near,phase)=>{
+    const cx=x+5.5, cy=131, col=near?coat:coatDark;
+    const v=phase?`16 ${cx} ${cy};-18 ${cx} ${cy};16 ${cx} ${cy}`:`-18 ${cx} ${cy};16 ${cx} ${cy};-18 ${cx} ${cy}`;
+    return `<g><rect x="${x}" y="128" width="11" height="40" rx="5.5" fill="${col}"/><ellipse cx="${cx}" cy="167" rx="7.5" ry="4.5" fill="${col}"/>`
+      +`<animateTransform attributeName="transform" type="rotate" values="${v}" dur="0.5s" repeatCount="indefinite"/></g>`;
+  };
+  const farLegs=leg(70,false,true)+leg(132,false,false);
+  const nearLegs=leg(56,true,false)+leg(120,true,true);
+  const hat=WALK_HAT(eq.hat), collar=WALK_COLLAR(eq.collar);
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
+    <ellipse cx="98" cy="176" rx="54" ry="8" fill="rgba(80,60,30,.10)"/>
+    <path d="M50 116 q-26 -4 -24 -34 q1 -16 15 -14" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round">
+      <animateTransform attributeName="transform" type="rotate" values="-5 50 116;6 50 116;-5 50 116" dur="1.1s" repeatCount="indefinite"/></path>
+    ${farLegs}
+    <ellipse cx="96" cy="116" rx="52" ry="28" fill="${coat}"/>
+    ${nearLegs}
+    <path d="M138 78 L133 54 L153 72 Z" fill="${coat}"/><path d="M158 76 L170 54 L175 76 Z" fill="${coat}"/>
+    <path d="M140 72 L138 60 L150 71 Z" fill="#ffb3c6"/><path d="M161 72 L168 58 L172 74 Z" fill="#ffb3c6"/>
+    <circle cx="154" cy="96" r="26" fill="${coat}"/>
+    <ellipse cx="150" cy="104" rx="7" ry="5" fill="#ffc9d8" opacity=".6"/>
+    <circle cx="163" cy="93" r="4" fill="#3a2b2e"/><circle cx="164.5" cy="91.5" r="1.3" fill="#fff"/>
+    <path d="M178 98 l7 2 -6 4 Z" fill="#ff9db0"/>
+    <path d="M179 104 q-4 4 -9 1" stroke="#6b5636" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M172 97 h16 M172 102 h15" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
+    ${collar}${hat}
+  </g></svg>`;
+}
+function WALK_HAT(id){switch(id){
+  case 'h_ribbon':return '<g transform="translate(150 70)"><path d="M0 0 L-13 -7 L-13 9 Z" fill="#ff6f91"/><path d="M0 0 L13 -7 L13 9 Z" fill="#ff6f91"/><circle r="5" fill="#e84c74"/></g>';
+  case 'h_straw':return '<g><ellipse cx="152" cy="76" rx="34" ry="9" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M136 76 a17 20 0 0 1 34 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/></g>';
+  case 'h_santa':return '<g><path d="M132 74 Q152 42 176 72 Z" fill="#e5484d"/><ellipse cx="153" cy="73" rx="27" ry="6" fill="#fff"/><circle cx="132" cy="46" r="6" fill="#fff"/></g>';
+  case 'h_witch':return '<g><ellipse cx="152" cy="74" rx="32" ry="8" fill="#4b3a63"/><path d="M138 74 Q160 34 168 72 Z" fill="#5a4780"/><rect x="142" y="66" width="26" height="6" rx="2" fill="#7a5cff"/></g>';
+  case 'h_crown':return '<g><path d="M134 72 L140 52 L154 66 L168 52 L174 72 Z" fill="#ffd23f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><rect x="134" y="70" width="40" height="6" rx="2" fill="#f0b93b"/></g>';
+  default:return '';}}
+function WALK_COLLAR(id){switch(id){
+  case 'c_bell':return '<path d="M126 108 q6 12 16 12" fill="none" stroke="#e5484d" stroke-width="6"/><circle cx="132" cy="120" r="6" fill="#ffcf33" stroke="#e0a500" stroke-width="1.3"/>';
+  case 'c_bow':return '<g transform="translate(131 110)"><path d="M0 0 L-11 -6 L-11 6 Z" fill="#5b8def"/><path d="M0 0 L11 -6 L11 6 Z" fill="#5b8def"/><rect x="-3" y="-5" width="6" height="10" rx="2" fill="#3a6fd6"/></g>';
+  case 'c_scarf':return '<path d="M118 104 q14 18 30 14 l-3 12 q-16 2 -30 -12 Z" fill="#3fa66b"/><path d="M140 116 l12 4 -4 16 -10 -8 Z" fill="#2e8c58"/>';
+  case 'c_lei':return '<g>'+[120,128,136,144].map((x,i)=>`<circle cx="${x}" cy="${112+ (i%2?3:0)}" r="5" fill="${['#ff8fab','#ffd23f','#7ee081','#ff8fab'][i]}"/>`).join('')+'</g>';
+  default:return '';}}
 function COSTUME_HAT(id){switch(id){
   case 'h_ribbon':return '<g transform="translate(100 50)"><path d="M0 0 L-16 -9 L-16 11 Z" fill="#ff6f91"/><path d="M0 0 L16 -9 L16 11 Z" fill="#ff6f91"/><circle r="6" fill="#e84c74"/></g>';
   case 'h_straw':return '<g><ellipse cx="100" cy="54" rx="52" ry="13" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M74 54 a26 30 0 0 1 52 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/><rect x="74" y="47" width="52" height="7" rx="3" fill="#c26b6b"/></g>';
@@ -671,7 +717,7 @@ function render(){
   document.getElementById('hdrCoin').textContent=wallet();
   document.getElementById('homeName').textContent=state.catName;
   document.getElementById('homeStage').textContent=st.n;
-  document.getElementById('catArtHome').innerHTML=catSVG(stage,mood.key,state.equipped);
+  document.getElementById('catArtHome').innerHTML=(typeof isWalking!=='undefined'&&isWalking)?catWalkSVG(stage,state.equipped):catSVG(stage,mood.key,state.equipped);
   renderRoom();
   const bl=bondLevel(state.bond);
   document.getElementById('bondLabel').textContent=bl.l;
@@ -890,12 +936,19 @@ function pet(ev){
 }
 document.getElementById('catHome').addEventListener('click',pet);
 // ===== 猫のおさんぽ（お部屋をゆっくり歩き回る）=====
-let walkTimer=null,walkResume=null;
+let walkTimer=null,walkResume=null,isWalking=false;
+function paintHomeCat(){
+  const el=document.getElementById('catArtHome');if(!el)return;
+  const stage=stageFor(earned());
+  const mood=petJustNow?'great':moodOf(daySummary(TODAY)).key;
+  el.innerHTML=isWalking?catWalkSVG(stage,state.equipped):catSVG(stage,mood,state.equipped);
+}
 function freezeCat(){
   const cat=document.getElementById('catHome'),room=document.getElementById('room');if(!cat||!room)return;
   const rr=room.getBoundingClientRect(),cr=cat.getBoundingClientRect();
   if(rr.width>0){const pct=((cr.left+cr.width/2)-rr.left)/rr.width*100;cat.style.transition='none';cat.style.left=Math.max(27,Math.min(73,pct))+'%';}
   document.getElementById('catArtHome').classList.remove('walking');
+  isWalking=false;paintHomeCat();
 }
 function catWander(){
   const cat=document.getElementById('catHome'),face=document.getElementById('catFace'),art=document.getElementById('catArtHome');if(!cat)return;
@@ -904,11 +957,12 @@ function catWander(){
   if(Math.abs(target-cur)<14)target=cur<50?cur+18:cur-18;
   target=Math.max(27,Math.min(73,target));
   const dur=Math.max(1.2,Math.abs(target-cur)*0.12);
-  face.style.transform='scaleX('+(target>cur?-1:1)+')';
+  face.style.transform='scaleX('+(target>cur?1:-1)+')';
+  isWalking=true;paintHomeCat();
   cat.style.transition='left '+dur+'s linear';cat.style.left=target+'%';
   art.classList.add('walking');
   clearTimeout(walkTimer);
-  walkTimer=setTimeout(()=>{art.classList.remove('walking');walkTimer=setTimeout(catWander,1600+Math.random()*2600);},dur*1000);
+  walkTimer=setTimeout(()=>{isWalking=false;paintHomeCat();art.classList.remove('walking');walkTimer=setTimeout(catWander,1600+Math.random()*2600);},dur*1000);
 }
 function pauseWander(){clearTimeout(walkTimer);clearTimeout(walkResume);freezeCat();walkResume=setTimeout(catWander,2200);}
 document.getElementById('catHome').style.left='50%';

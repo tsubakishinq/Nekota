@@ -1129,15 +1129,15 @@ function spawnPowerup(x,y,type){
 function maybeDrop(e){
   const roll=Math.random();
   if(e.t==='tank'||e.t==='turret'){
-    // 精鋭敵: 高確率で強化・またたび・子猫を落とす
-    if(roll<0.75) spawnPowerup(e.x,e.y, pick(['power','power','matatabi','matatabi','kitten','kitten','kitten','shield','rapid','bomb','magnet']));
-    else if(roll<0.9) spawnPowerup(e.x,e.y,'coin');
+    // 精鋭敵(ドロップ頻度を約半分に)
+    if(roll<0.375) spawnPowerup(e.x,e.y, pick(['power','power','matatabi','matatabi','kitten','kitten','kitten','shield','rapid','bomb','magnet']));
+    else if(roll<0.45) spawnPowerup(e.x,e.y,'coin');
   } else {
-    // 通常敵: またたび・武器強化・子猫の出現率を大幅アップ
-    if(roll<0.09) spawnPowerup(e.x,e.y,'matatabi');
-    else if(roll<0.22) spawnPowerup(e.x,e.y,'kitten');   // 子猫の専用枠(約13%)
-    else if(roll<0.38) spawnPowerup(e.x,e.y, pick(['power','power','power','heal','rapid','magnet','kitten']));
-    else if(roll<0.54) spawnPowerup(e.x,e.y,'coin');
+    // 通常敵(ドロップ頻度を約半分に)
+    if(roll<0.045) spawnPowerup(e.x,e.y,'matatabi');
+    else if(roll<0.11) spawnPowerup(e.x,e.y,'kitten');
+    else if(roll<0.19) spawnPowerup(e.x,e.y, pick(['power','power','power','heal','rapid','magnet','kitten']));
+    else if(roll<0.27) spawnPowerup(e.x,e.y,'coin');
   }
 }
 function pick(a){ return a[rndi(0,a.length-1)]; }

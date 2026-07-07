@@ -215,7 +215,7 @@
       <div class="grpLabel">■ 強化・パワーアップ</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">⬆</div><div class="itemTxt"><div class="itemName">パワーアップ</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を追加（最大10機）。ネコで挙動が変化：キジトラ=左右に並んで援護／白ネコ=自機の周りを回るバリア＋ホーミング弾／黒ネコ=肉球型ボムを発射</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🐱</div><div class="itemTxt"><div class="itemName">猫マーク（子猫）</div><div class="itemDesc">子猫の子機を追加（最大10機）。ネコで挙動が変化：キジトラ=左右に並んで援護（FIREダブルタップ/Cキーで前方に出撃し四方八方に攻撃、もう一度で帰還）／白ネコ=自機の周りを回るバリア＋ホーミング弾／黒ネコ=肉球型ボムを発射</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">⚡</div><div class="itemTxt"><div class="itemName">ラピッド</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
@@ -397,10 +397,23 @@ cv.addEventListener('touchend',e=>{
 },{passive:false});
 
 const fireBtn=document.getElementById('fireBtn');
-fireBtn.addEventListener('touchstart',e=>{ input.fire=true; e.preventDefault();},{passive:false});
+// FIREダブルタップ: キジトラの子猫を出撃/帰還
+let lastFireTapT=0;
+function onFireTap(){ const now=performance.now(); if(now-lastFireTapT<360){ toggleKittenDeploy(); lastFireTapT=0; } else { lastFireTapT=now; } }
+function toggleKittenDeploy(){
+  if(state!=='play' || selectedSkin!=='kijitora' || player.kittens.length===0) return;
+  player.kittensDeployed=!player.kittensDeployed;
+  Audio2.sfx.power();
+  showToast(player.kittensDeployed?'🐱 子猫 出撃！':'🐱 子猫 もどれ！','#ffd85e');
+  for(const k of player.kittens){ k.roamT=0; k.rx=undefined; k.aimAngle=undefined; }
+}
+let lastTouchFire=0;
+fireBtn.addEventListener('touchstart',e=>{ input.fire=true; lastTouchFire=Date.now(); onFireTap(); e.preventDefault();},{passive:false});
 fireBtn.addEventListener('touchend',e=>{ input.fire=false; e.preventDefault();},{passive:false});
-fireBtn.addEventListener('mousedown',()=>input.fire=true);
+fireBtn.addEventListener('mousedown',()=>{ input.fire=true; if(Date.now()-lastTouchFire>700) onFireTap(); });
 fireBtn.addEventListener('mouseup',()=>input.fire=false);
+// desktop: Cキーでも出撃/帰還
+window.addEventListener('keydown',e=>{ if((e.key==='c'||e.key==='C') && state==='play') toggleKittenDeploy(); });
 
 // ============================================================
 //  UTILS
@@ -501,13 +514,14 @@ const player={
   bombs:3, magnet:0, rapid:0,
   matatabi:0, // またたび無敵の残り時間
   kittens:[], // 子猫の子機（最大10機）
+  kittensDeployed:false, // キジトラ: 子猫を前方に出撃させているか
   laserOn:false, laserSfxCd:0, laserPts:[], // 黒ネコの連続ビーム(うねる軌跡)
 };
 function resetPlayer(){
   player.x=W/2; player.y=H*0.8; player.hp=100; player.maxhp=100; player.alive=true;
   player.wpLevel=1; player.fireCd=0; player.invuln=1.2; player.shield=0;
   player.bombs=3; player.magnet=0; player.rapid=0;
-  player.matatabi=0; player.kittens=[];
+  player.matatabi=0; player.kittens=[]; player.kittensDeployed=false;
   player.laserOn=false; player.laserSfxCd=0; player.laserPts=[];
 }
 
@@ -701,6 +715,21 @@ function updateKittens(dt, wantFire){
   for(let idx=0; idx<n; idx++){
     const k=kits[idx];
     k.wob+=dt*4;
+    // キジトラ: 出撃中は前方を飛び回り四方八方に攻撃
+    if(skin==='kijitora' && player.kittensDeployed){
+      k.roamT=(k.roamT||0)-dt;
+      if(k.roamT<=0 || k.rx===undefined){ k.rx=rnd(36,W-36); k.ry=rnd(70,H*0.5); k.roamT=rnd(0.7,1.6); }
+      k.x += (k.rx-k.x)*Math.min(1,dt*3.2);
+      k.y += (k.ry-k.y)*Math.min(1,dt*3.2);
+      k.aimAngle=(k.aimAngle===undefined?idx*2.399:k.aimAngle)+dt*4.5;
+      k.fireCd-=dt;
+      if(k.fireCd<=0){
+        k.fireCd=0.22;
+        const a=k.aimAngle, sp=560;
+        bullets.push({x:k.x, y:k.y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, dmg:1.0, r:3, color:'#ffd85e', kitten:true});
+      }
+      continue;
+    }
     if(skin==='white'){
       // 自機の周りをクルクル回るバリア
       const R = 42 + (n>6 ? (idx%2)*15 : 0);
@@ -1319,7 +1348,7 @@ function updateBullets(dt){
     b.x+=b.vx*dt; b.y+=b.vy*dt;
     if(b.pawbomb) b.sa=(b.sa||0)+(b.spin||6)*dt;
     const margin = b.homing?70:20;
-    if(b.y<-margin || b.x<-margin || b.x>W+margin || (b.homing && b.y>H+margin)){ bullets.splice(i,1); continue; }
+    if(b.y<-margin || b.y>H+margin || b.x<-margin || b.x>W+margin){ bullets.splice(i,1); continue; }
     // collide enemies
     let hit=false;
     for(let j=0;j<enemies.length;j++){

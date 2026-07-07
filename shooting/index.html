@@ -604,7 +604,7 @@ function drawTexts(){
 //  PLAYER
 // ============================================================
 const player={
-  x:W/2, y:H*0.8, r:14, speed:340,
+  x:W/2, y:H*0.8, r:14, speed:136,
   hp:100, maxhp:100, alive:true,
   weapon:1, wpLevel:1, // weapon level 1..5
   fireCd:0, fireRate:0.14,
@@ -645,7 +645,7 @@ function updatePlayer(dt){
     const tx=input.px, ty=input.py;
     const ddx=tx-player.x, ddy=ty-player.y;
     const d=Math.hypot(ddx,ddy);
-    if(d>1){ const mv=Math.min(d, player.speed*1.4*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; }
+    if(d>1){ const mv=Math.min(d, 520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; }
     player.thrust=clamp(d/30,0,1);
   } else {
     const len=Math.hypot(dx,dy)||1;

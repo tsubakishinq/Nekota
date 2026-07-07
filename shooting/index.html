@@ -41,6 +41,8 @@
     color:var(--gold); -webkit-text-fill-color:var(--gold); filter:drop-shadow(0 0 6px rgba(255,216,94,.6));
   }
   .cat-emblem{font-size:clamp(52px,18vw,96px); filter:drop-shadow(0 0 22px rgba(255,94,201,.7)); animation:bob 2.6s ease-in-out infinite;}
+  .cat-emblem svg{width:clamp(120px,40vw,190px); height:auto; display:block;
+    filter:drop-shadow(0 0 20px rgba(87,246,255,.45));}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
   .btn{
     font:inherit; font-weight:800; letter-spacing:2px; font-size:clamp(15px,4.6vw,20px);
@@ -194,7 +196,57 @@
 
   <!-- Title -->
   <div class="overlay" id="titleScreen">
-    <div class="cat-emblem">🐱</div>
+    <div class="cat-emblem" title="ネコタ">
+      <svg viewBox="0 0 220 212" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="fur" cx="50%" cy="40%" r="68%">
+            <stop offset="0%" stop-color="#d3cdc6"/><stop offset="58%" stop-color="#9d968d"/><stop offset="100%" stop-color="#6c655c"/>
+          </radialGradient>
+          <linearGradient id="ear" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#867f76"/><stop offset="1" stop-color="#b6afa6"/>
+          </linearGradient>
+        </defs>
+        <!-- 耳 -->
+        <path d="M58 68 L34 8 Q62 24 90 48 Z" fill="url(#ear)" stroke="#57504780" stroke-width="2"/>
+        <path d="M162 68 L186 8 Q158 24 130 48 Z" fill="url(#ear)" stroke="#57504780" stroke-width="2"/>
+        <path d="M62 60 L48 24 Q64 36 82 50 Z" fill="#e7b2bc"/>
+        <path d="M158 60 L172 24 Q156 36 138 50 Z" fill="#e7b2bc"/>
+        <!-- 頭 -->
+        <ellipse cx="110" cy="120" rx="82" ry="76" fill="url(#fur)" stroke="#57504760" stroke-width="2"/>
+        <!-- ほっぺ/マズルの白 -->
+        <ellipse cx="74" cy="152" rx="33" ry="25" fill="#ece6df" opacity=".92"/>
+        <ellipse cx="146" cy="152" rx="33" ry="25" fill="#ece6df" opacity=".92"/>
+        <ellipse cx="110" cy="150" rx="40" ry="30" fill="#f2ede6"/>
+        <!-- 額のトラ縞(M) -->
+        <g stroke="#4a443c" stroke-width="6" stroke-linecap="round" fill="none" opacity=".82">
+          <path d="M110 62 L110 92"/><path d="M92 66 L98 98"/><path d="M128 66 L122 98"/>
+          <path d="M76 76 L88 102"/><path d="M144 76 L132 102"/>
+        </g>
+        <!-- ほほのトラ縞 -->
+        <g stroke="#4a443c" stroke-width="5" stroke-linecap="round" fill="none" opacity=".65">
+          <path d="M40 122 Q60 124 72 130"/><path d="M40 140 Q60 142 72 148"/>
+          <path d="M180 122 Q160 124 148 130"/><path d="M180 140 Q160 142 148 148"/>
+        </g>
+        <!-- 目(大きめ) -->
+        <ellipse cx="80" cy="120" rx="22" ry="24" fill="#22322b"/>
+        <ellipse cx="140" cy="120" rx="22" ry="24" fill="#22322b"/>
+        <circle cx="80" cy="121" r="15" fill="#0c100e"/>
+        <circle cx="140" cy="121" r="15" fill="#0c100e"/>
+        <circle cx="86" cy="113" r="6" fill="#ffffff" opacity=".92"/>
+        <circle cx="146" cy="113" r="6" fill="#ffffff" opacity=".92"/>
+        <circle cx="75" cy="127" r="3" fill="#ffffff" opacity=".5"/>
+        <circle cx="135" cy="127" r="3" fill="#ffffff" opacity=".5"/>
+        <!-- 鼻 -->
+        <path d="M110 141 l-9 9 q9 7 18 0 z" fill="#dd7d8b" stroke="#b5626e" stroke-width="1.5"/>
+        <!-- 口 -->
+        <path d="M110 151 q-8 10 -18 4 M110 151 q8 10 18 4" stroke="#6b625a" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- ヒゲ -->
+        <g stroke="#ffffff" stroke-width="2" opacity=".85" stroke-linecap="round">
+          <path d="M66 148 L10 138"/><path d="M66 154 L12 158"/><path d="M66 160 L16 174"/>
+          <path d="M154 148 L210 138"/><path d="M154 154 L208 158"/><path d="M154 160 L204 174"/>
+        </g>
+      </svg>
+    </div>
     <div class="logo">NEKOTA<small>S T A R L I G H T</small></div>
     <div class="panel">
       銀河の平和を守る猫パイロット <b>ネコタ</b> の物語。<br>
@@ -604,7 +656,7 @@ function drawTexts(){
 //  PLAYER
 // ============================================================
 const player={
-  x:W/2, y:H*0.8, r:14, speed:136,
+  x:W/2, y:H*0.8, r:14, speed:68,
   hp:100, maxhp:100, alive:true,
   weapon:1, wpLevel:1, // weapon level 1..5
   fireCd:0, fireRate:0.14,

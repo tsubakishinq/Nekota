@@ -215,7 +215,7 @@
       <div class="grpLabel">■ 強化・パワーアップ</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">P</div><div class="itemTxt"><div class="itemName">パワーアップ（P）</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化＋FIREダブルタップ(PCはC)で必殺展開：キジトラ=左右で援護→前方出撃し四方八方に攻撃（もう一度で帰還）／白ネコ=周回バリア＋ホーミング→バリアの輪が拡大（もう一度で収束）／黒ネコ=肉球ボム→横に広がって一回ホーミングレーザーを発射</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化＋FIREダブルタップ(PCはC)で必殺展開：キジトラ=左右で援護→前方出撃し四方八方に攻撃（もう一度で帰還）／白ネコ=周回バリア＋ホーミング→バリアの輪が拡大（もう一度で収束）／黒ネコ=肉球ボム→横に広がって3秒間ホーミングレーザーを連射</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">S</div><div class="itemTxt"><div class="itemName">スピードアップ（S）</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
@@ -402,13 +402,11 @@ let lastFireTapT=0;
 function onFireTap(){ const now=performance.now(); if(now-lastFireTapT<360){ toggleKittenDeploy(); lastFireTapT=0; } else { lastFireTapT=now; } }
 function toggleKittenDeploy(){
   if(state!=='play' || player.kittens.length===0) return;
-  // 黒ネコ: 横に広がって一回だけホーミングレーザーを撃つ(単発)
+  // 黒ネコ: 横に広がって3秒間ホーミングレーザーを撃ち続ける
   if(selectedSkin==='black'){
-    player.kittenBurst=1.4;
-    Audio2.sfx.laser(); screenShake(5,0.12); showToast('🐱 ホーミングレーザー！','#b46bff');
-    for(const k of player.kittens){
-      bullets.push({x:k.x, y:k.y-8, vx:0, vy:-560, homing:true, hlaser:true, speed:560, turn:6, life:2.8, dmg:3, r:5, color:'#b46bff', trailT:0});
-    }
+    player.kittenBurst=3.0;
+    Audio2.sfx.laser(); screenShake(5,0.12); showToast('🐱 ホーミングレーザー 3秒！','#b46bff');
+    for(const k of player.kittens){ k.fireCd=0; }
     return;
   }
   // 白・キジトラ: 展開のトグル
@@ -746,13 +744,19 @@ function updateKittens(dt, wantFire){
       }
       continue;
     }
-    // 黒ネコ: バースト中は横一列に広がる(発射はtoggle時に一回だけ実施)
+    // 黒ネコ: バースト中は横一列に広がり、各子猫が3秒間ホーミングレーザーを連射
     if(skin==='black' && player.kittenBurst>0){
       const margin=28;
       const tx = n<=1 ? W/2 : margin + (idx/(n-1))*(W-2*margin);
       const ty = player.y - 8;
       k.x += (tx-k.x)*Math.min(1,dt*10);
       k.y += (ty-k.y)*Math.min(1,dt*10);
+      k.fireCd-=dt;
+      if(k.fireCd<=0){
+        k.fireCd=0.35;
+        bullets.push({x:k.x, y:k.y-8, vx:0, vy:-560, homing:true, hlaser:true, speed:560, turn:6, life:2.6, dmg:2.0, r:5, color:'#b46bff', trailT:0});
+        if(idx===0) Audio2.sfx.laser();
+      }
       continue;
     }
     if(skin==='white'){

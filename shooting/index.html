@@ -226,7 +226,7 @@
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">🐾</div><div class="itemTxt"><div class="itemName">肉球エネルギー</div><div class="itemDesc">スコア +120。集めてハイスコアを狙おう</div></div></div>
       <div class="grpLabel">■ ネコごとのメイン武器</div>
       <div class="itemRow"><div class="itemIco" style="color:#c98a3f">🟠</div><div class="itemTxt"><div class="itemName">キジトラ ＝ 拡散ショット</div><div class="itemDesc">前方に広く弾をばらまくバランス型</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#b46bff">⚫</div><div class="itemTxt"><div class="itemName">黒ネコ ＝ 連続レーザー</div><div class="itemDesc">押している間ずっと伸びる1本の極太ビーム。当たり続けた敵を貫通して溶かす</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#b46bff">⚫</div><div class="itemTxt"><div class="itemName">黒ネコ ＝ 連続レーザー</div><div class="itemDesc">押している間ずっと伸びる1本の極太ビーム。動くとうねる。当たり続けた敵を貫通して溶かす。MAX(LV5)で斜め前に細いレーザーが放射状に追加</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ff7ab0">⚪</div><div class="itemTxt"><div class="itemName">白ネコ ＝ ホーミング</div><div class="itemDesc">最寄りの敵を自動で追尾して着弾で爆発</div></div></div>
     </div>
     <button class="btn" id="helpCloseBtn">✕ とじる</button>
@@ -632,6 +632,8 @@ function fireSpread(){
 
 // --- 黒ネコ: 自機の動きでうねる連続ビーム ---
 const LASER_SPEED=1750; // ビームが上へ伝わる速さ(うねりの伝播)
+// MAX(LV5)時に斜め前へ放射する細レーザーの角度(真上=0基準の左右オフセット degrees)
+const LASER_SIDE_OFFS=[-60,-45,-30,30,45,60];
 function laserHalfWidth(){ return 4 + player.wpLevel*3.6; } // パワーアップで太くなる
 // 高さ ey におけるビームのx座標（軌跡を補間）
 function beamXAt(ey){
@@ -667,6 +669,20 @@ function fireLaserBeam(dt){
       if(e.hp<=0) killEnemy(e);
     }
   }
+  // MAX: 斜め前へ放射する細レーザーのダメージ判定
+  if(lv>=5){
+    const ox=player.x, oy=top, sHalf=4, sDps=11, maxLen=1100;
+    for(const off of LASER_SIDE_OFFS){
+      const ang=(-90+off)*Math.PI/180, dx=Math.cos(ang), dy=Math.sin(ang);
+      for(let j=enemies.length-1;j>=0;j--){
+        const e=enemies[j]; if(e.kicked) continue;
+        const rx=e.x-ox, ry=e.y-oy, tp=rx*dx+ry*dy;
+        if(tp<=0 || tp>maxLen) continue;
+        const px=rx-tp*dx, py=ry-tp*dy, rr=sHalf+e.r;
+        if(px*px+py*py < rr*rr){ e.hp-=sDps*dt; e.hitFlash=1; if(e.hp<=0) killEnemy(e); }
+      }
+    }
+  }
   if(Math.random()<0.5) spawnParticles(player.x+rnd(-halfW,halfW), top, '#c9a8ff', 1, 70, 0.2);
   player.laserSfxCd-=dt;
   if(player.laserSfxCd<=0){ player.laserSfxCd=0.10; Audio2.sfx.laser(); }
@@ -674,11 +690,25 @@ function fireLaserBeam(dt){
 }
 function drawLaserBeam(){
   if(!player.alive || !player.laserOn) return;
-  const pts=player.laserPts; if(pts.length<2) return;
   const halfW=laserHalfWidth();
   const flick=0.82+Math.random()*0.18;
   ctx.save();
   ctx.globalCompositeOperation='lighter'; ctx.lineJoin='round'; ctx.lineCap='round';
+  // MAX: 斜め前へ放射する細レーザー
+  if(player.wpLevel>=5){
+    const ox=player.x, oy=player.y-player.r-2, len=1100;
+    for(const off of LASER_SIDE_OFFS){
+      const ang=(-90+off)*Math.PI/180, ex=ox+Math.cos(ang)*len, ey=oy+Math.sin(ang)*len;
+      ctx.shadowColor='#b46bff'; ctx.shadowBlur=12;
+      ctx.strokeStyle=`rgba(160,95,255,${0.5*flick})`; ctx.lineWidth=6;
+      ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,ey); ctx.stroke();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle=`rgba(255,255,255,${0.85*flick})`; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,ey); ctx.stroke();
+    }
+  }
+  const pts=player.laserPts;
+  if(pts.length<2){ ctx.restore(); return; }
   const path=()=>{ ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); };
   ctx.shadowColor='#b46bff'; ctx.shadowBlur=20;
   ctx.strokeStyle=`rgba(150,90,255,${0.30*flick})`; ctx.lineWidth=halfW*3.2; path(); ctx.stroke();

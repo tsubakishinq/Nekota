@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="腸活にゃんこ">
-<title>腸活にゃんこ｜腸活で子猫を育てよう</title>
+<meta name="apple-mobile-web-app-title" content="腸活ガーデン">
+<title>腸活ガーデン｜腸活でお花を育てよう</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -26,13 +26,12 @@
   main{max-width:470px;margin:0 auto;padding:12px 14px 0;}
   .section-title{font-size:12px;font-weight:900;color:var(--leaf-deep);letter-spacing:.06em;margin:0 0 10px;}
 
-  /* header: wooden sign */
   header{position:sticky;top:0;z-index:100;padding:10px 14px 8px;background:linear-gradient(#f2e8cd,rgba(242,232,205,.85));backdrop-filter:blur(4px);
     display:flex;align-items:center;justify-content:space-between;}
   .sign{position:relative;background:linear-gradient(180deg,#e7b477,var(--wood));border:3px solid #fff;border-radius:18px;
     box-shadow:0 4px 0 var(--wood-d);padding:7px 18px;}
   .sign h1{font-size:16px;color:#fff;letter-spacing:.03em;text-shadow:0 2px 0 rgba(120,80,40,.35);}
-  .sign:before,.sign:after{content:"🍃";position:absolute;top:50%;font-size:15px;}
+  .sign:before,.sign:after{content:"🌷";position:absolute;top:50%;font-size:15px;}
   .sign:before{left:-8px;transform:translateY(-50%) rotate(-20deg);}
   .sign:after{right:-8px;transform:translateY(-50%) scaleX(-1) rotate(-20deg);}
   .coin-chip{display:flex;align-items:center;gap:5px;background:#fff;border:3px solid var(--cream-d);border-radius:22px;
@@ -43,7 +42,6 @@
   @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .card{background:#fff;border:3px solid var(--cream-d);border-radius:20px;padding:15px;margin-bottom:13px;box-shadow:0 4px 0 var(--cream-d);}
 
-  /* bottom nav pill */
   .tabbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:100;display:flex;gap:4px;
     background:#fff;border:3px solid var(--cream-d);border-radius:26px;padding:6px;box-shadow:0 5px 0 var(--cream-d),0 8px 14px rgba(120,90,40,.16);}
   .tab{border:none;background:none;font-family:inherit;font-weight:800;font-size:10.5px;color:var(--ink-light);
@@ -51,7 +49,7 @@
   .tab .ic{font-size:19px;line-height:1;}
   .tab.active{background:linear-gradient(180deg,#c9f0a0,#a9dd7a);color:var(--leaf-deep);}
 
-  /* ===== room / forest scene ===== */
+  /* ===== garden scene ===== */
   .room{position:relative;width:100%;aspect-ratio:1/1;border-radius:26px;overflow:hidden;border:5px solid #fff;
     box-shadow:0 6px 0 var(--cream-d),0 10px 16px rgba(120,90,40,.16);}
   .room-wall{position:absolute;inset:0;transition:background .4s;}
@@ -72,23 +70,19 @@
     background:radial-gradient(circle at 8px 10px,var(--grass) 6px,transparent 7px) 0 0/16px 12px repeat-x;}
   .room.night .sun,.room.night .cloud,.room.night .hill{display:none;}
   .furni{position:absolute;transform:translate(-50%,-50%);z-index:3;filter:drop-shadow(0 3px 3px rgba(0,0,0,.14));display:flex;align-items:flex-end;justify-content:center;pointer-events:none;}
-  .rug{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:60%;height:14%;border-radius:50%;z-index:2;opacity:.92;}
-  .cat-in-room{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);width:50%;z-index:5;cursor:pointer;}
+  .rug{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);width:58%;height:13%;border-radius:50%;z-index:2;opacity:.92;}
+  .cat-in-room{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);width:52%;z-index:5;cursor:pointer;}
   #catFace{transition:transform .25s ease;}
   .cat-in-room svg{width:100%;height:auto;display:block;overflow:visible;}
-  .cat-bounce{animation:bob 2.8s ease-in-out infinite;transform-origin:50% 92%;}
-  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5%) rotate(-.6deg)}}
-  .cat-bounce.walking{animation:walk .42s ease-in-out infinite;}
-  @keyframes walk{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-5%) rotate(1deg)}}
-  .cat-bounce.still{animation:none;}
+  .cat-bounce{transform-origin:50% 96%;}
   .cat-pet{animation:wiggle .5s ease;}
-  @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.03)}75%{transform:rotate(5deg) scale(1.03)}}
+  @keyframes wiggle{0%,100%{transform:scale(1)}30%{transform:scale(1.05) translateY(-3%)}}
   .pet-hint{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:6;font-size:11px;font-weight:800;color:#fff;
     background:rgba(107,86,54,.5);border-radius:20px;padding:4px 13px;pointer-events:none;}
-  .purr{position:absolute;z-index:7;font-size:13px;font-weight:900;color:var(--accent-dark);pointer-events:none;animation:purr .9s ease forwards;text-shadow:0 1px 3px #fff;}
+  .purr{position:absolute;z-index:7;font-size:13px;font-weight:900;color:var(--leaf-deep);pointer-events:none;animation:purr .9s ease forwards;text-shadow:0 1px 3px #fff;}
   @keyframes purr{0%{opacity:0;transform:translateY(6px) scale(.6)}30%{opacity:1;transform:translateY(-4px) scale(1.1)}100%{opacity:0;transform:translateY(-30px)}}
-  .heart-p{position:absolute;z-index:7;pointer-events:none;font-size:19px;animation:heartUp 1s ease forwards;}
-  @keyframes heartUp{0%{opacity:0;transform:translateY(0) scale(.4)}25%{opacity:1;transform:translateY(-10px) scale(1.1)}100%{opacity:0;transform:translateY(-56px) scale(.9)}}
+  .water-p{position:absolute;z-index:7;pointer-events:none;font-size:16px;animation:drop .85s ease-in forwards;}
+  @keyframes drop{0%{opacity:0;transform:translateY(-8px) scale(.5)}25%{opacity:1}100%{opacity:0;transform:translateY(34px) scale(1)}}
 
   .catbar{display:flex;align-items:center;justify-content:space-between;margin:14px 4px 10px;}
   .catbar .cn{font-family:'Mochiy Pop One',sans-serif;font-size:18px;}
@@ -96,12 +90,12 @@
   .catbar .stg{font-size:11px;font-weight:900;color:#fff;background:var(--leaf-d);border-radius:20px;padding:5px 13px;box-shadow:0 2px 0 var(--leaf-deep);}
 
   .bond-card{display:flex;align-items:center;gap:12px;}
-  .bond-hearts{font-size:18px;letter-spacing:1px;line-height:1;}
+  .bond-hearts{font-size:17px;letter-spacing:1px;line-height:1;}
   .bond-info{flex:1;}
   .bond-info .bl{font-size:14px;font-weight:900;}
   .bond-info .bs{font-size:11px;color:var(--ink-light);font-weight:700;margin-top:1px;}
   .bond-bar{height:9px;background:#f1e6c9;border-radius:20px;overflow:hidden;margin-top:6px;}
-  .bond-fill{height:100%;background:linear-gradient(90deg,#ffb0c2,var(--heart));border-radius:20px;transition:width .6s;}
+  .bond-fill{height:100%;background:linear-gradient(90deg,#a9dd7a,var(--leaf-d));border-radius:20px;transition:width .6s;}
 
   .lvl-wrap{margin-top:2px;}
   .lvl-row{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--ink-light);margin-bottom:5px;}
@@ -162,7 +156,7 @@
   .shop-item{background:#fff;border:3px solid var(--cream-d);border-radius:16px;padding:11px;text-align:center;position:relative;box-shadow:0 3px 0 var(--cream-d);}
   .shop-item.equipped{border-color:var(--leaf-d);box-shadow:0 3px 0 var(--leaf-d);}
   .shop-preview{height:66px;display:flex;align-items:center;justify-content:center;font-size:38px;line-height:1;}
-  .shop-preview svg{height:64px;width:auto;overflow:visible;}
+  .shop-preview svg{height:66px;width:auto;overflow:visible;}
   .shop-name{font-size:12.5px;font-weight:800;margin-top:2px;}
   .shop-price{font-family:'Mochiy Pop One';font-size:12px;color:var(--coin);margin-top:3px;}
   .shop-btn{margin-top:8px;width:100%;border:none;border-radius:12px;padding:9px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;}
@@ -262,12 +256,12 @@
 </head>
 <body>
 <header>
-  <div class="sign"><h1>腸活にゃんこ</h1></div>
+  <div class="sign"><h1>腸活ガーデン</h1></div>
   <span class="coin-chip">✨ <span id="hdrCoin">0</span></span>
 </header>
 
 <main>
-  <!-- ============ HOME ============ -->
+  <!-- ============ HOME (GARDEN) ============ -->
   <section class="screen active" id="scr-home">
     <div class="room" id="room">
       <div class="room-wall" id="roomWall"></div>
@@ -277,18 +271,18 @@
       <div class="rug" id="rug" style="display:none"></div>
       <div id="furniLayer"></div>
       <div class="cat-in-room" id="catHome"><div id="catFace"><div class="cat-bounce" id="catArtHome"></div></div></div>
-      <div class="pet-hint">タップしてなでる 🐾</div>
+      <div class="pet-hint">タップして水やり 💧</div>
     </div>
 
     <div class="catbar">
-      <div class="cn"><span id="homeName">ネコタ</span><span class="edit" id="renameBtn">なまえ変更</span></div>
-      <div class="stg" id="homeStage">生まれたて</div>
+      <div class="cn"><span id="homeName">はなこ</span><span class="edit" id="renameBtn">なまえ変更</span></div>
+      <div class="stg" id="homeStage">たね</div>
     </div>
 
     <div class="card bond-card">
       <div class="bond-hearts" id="bondHearts"></div>
       <div class="bond-info">
-        <div class="bl" id="bondLabel">よそよそしい</div>
+        <div class="bl" id="bondLabel">元気度</div>
         <div class="bs" id="bondSub"></div>
         <div class="bond-bar"><div class="bond-fill" id="bondFill"></div></div>
       </div>
@@ -320,7 +314,7 @@
       <div class="brow"><span class="t">🌱 腸内フローラ 測定</span><span class="s" id="balanceMsg">今日のごはんを記録しよう</span></div>
       <div class="meter"><div class="mf l" id="mfLacto" style="width:0"></div><div class="mf f" id="mfFiber" style="width:0"></div></div>
       <div class="legend"><span><b style="background:var(--lacto)"></b>乳酸菌（善玉菌）</span><span><b style="background:var(--fiber)"></b>食物繊維（エサ）</span></div>
-      <div class="synbio" id="synbio">🎉 シンバイオティクス達成！ 善玉菌とエサが両方そろって、子猫がごきげん（＋40P・なつき度UP）</div>
+      <div class="synbio" id="synbio">🎉 シンバイオティクス達成！ 善玉菌とエサが両方そろって、お花がぐんぐん育つ（＋40P・元気度UP）</div>
     </div>
     <button class="add-btn" id="foodAdd" style="margin-bottom:13px;">＋ 食べたものを記録する</button>
     <div class="card">
@@ -332,8 +326,8 @@
   <!-- ============ SHOP ============ -->
   <section class="screen" id="scr-shop">
     <div class="subtabs">
-      <button class="subtab active" data-sub="wear">👒 きせかえ</button>
-      <button class="subtab" data-sub="room">🌳 おにわ・部屋</button>
+      <button class="subtab active" data-sub="wear">🌸 おはな・プランター</button>
+      <button class="subtab" data-sub="room">🌳 ガーデン雑貨</button>
     </div>
     <div id="shopBody"></div>
   </section>
@@ -350,11 +344,11 @@
       <div class="cal-grid" id="calGrid"></div>
       <div id="calDetail"></div>
     </div>
-    <div class="card"><div class="section-title">🐾 せいちょうの道のり</div><div id="growthList"></div></div>
+    <div class="card"><div class="section-title">🌱 せいちょうの道のり</div><div id="growthList"></div></div>
     <div class="card"><div class="section-title">📖 記録の履歴</div><div id="histList"></div></div>
     <div class="info">
-      <b>腸活のヒント 🍃</b><br>
-      善玉菌を含む<b>ヨーグルト・納豆・キムチ</b>などの発酵食品（乳酸菌）と、そのエサになる<b>野菜・海藻・きのこ・豆</b>などの食物繊維を<b>両方</b>とると、腸内の善玉菌が元気に。この組み合わせを<b>シンバイオティクス</b>と呼びます。毎日ごはんを記録して子猫をなでると、少しずつなついてくれます 🐾
+      <b>腸活のヒント 🌷</b><br>
+      善玉菌を含む<b>ヨーグルト・納豆・キムチ</b>などの発酵食品（乳酸菌）と、そのエサになる<b>野菜・海藻・きのこ・豆</b>などの食物繊維を<b>両方</b>とると、腸内の善玉菌が元気に。この組み合わせを<b>シンバイオティクス</b>と呼びます。毎日ごはんを記録して水やりすると、お花がすくすく育ちます 🌱
     </div>
     <button class="btn-ghost" id="resetBtn" style="margin-top:13px;">データをリセット</button>
     <div style="text-align:center;font-size:10.5px;color:var(--ink-light);padding:10px;line-height:1.6;font-weight:700;">※ 栄養値はおおよその目安です。医療・栄養指導を目的としたものではありません。</div>
@@ -362,7 +356,7 @@
 </main>
 
 <nav class="tabbar">
-  <button class="tab active" data-scr="home"><span class="ic">🏡</span>おうち</button>
+  <button class="tab active" data-scr="home"><span class="ic">🌱</span>おにわ</button>
   <button class="tab" data-scr="food"><span class="ic">🍽️</span>ごはん</button>
   <button class="tab" data-scr="shop"><span class="ic">🛍️</span>おみせ</button>
   <button class="tab" data-scr="hist"><span class="ic">📖</span>きろく</button>
@@ -423,7 +417,6 @@ const FOODS=[
   {id:'ryebread',n:'ライ麦パン',e:'🍞',c:'主食',lacto:0,fiber:3},
   {id:'soba',n:'そば',e:'🍜',c:'主食',lacto:0,fiber:2},
 ];
-// 料理（レシピ）辞書：料理名を入れると材料から乳酸菌・食物繊維を推定して記録
 const DISHES=[
   {id:'d_misoshiru',n:'味噌汁',e:'🍲',c:'料理',lacto:2,fiber:2,ing:'味噌・わかめ・豆腐'},
   {id:'d_tonjiru',n:'豚汁',e:'🍲',c:'料理',lacto:2,fiber:4.5,ing:'味噌・ごぼう・大根・にんじん・こんにゃく'},
@@ -455,7 +448,6 @@ const DISHES=[
   {id:'d_cornsoup',n:'コーンスープ',e:'🌽',c:'料理',lacto:0,fiber:2,ing:'とうもろこし・牛乳・玉ねぎ'},
 ];
 DISHES.forEach(d=>FOODS.push(d));
-// おおよそのカロリー（kcal / 1食・1品あたりの目安）
 const KCAL={
   yogurt:65,drinkyogurt:90,lacto:70,kimchi:25,nukazuke:20,natto:100,miso:40,cheese:60,amazake:80,kraut:20,
   gobo:40,broccoli:25,spinach:15,kabocha:60,mushroom:15,corn:90,avocado:190,konnyaku:8,carrot:25,cabbage:20,
@@ -472,64 +464,63 @@ const FOOD_CATS=['すべて','料理','発酵','野菜','果物','豆・海藻',
 const FOOD_MAP=Object.fromEntries(FOODS.map(f=>[f.id,f]));
 const FIBER_TARGET=18;
 
-//=============================== 成長ステージ ===============================
+//=============================== 成長ステージ（お花） ===============================
 const STAGES=[
-  {n:'生まれたて子猫',min:0},{n:'やんちゃ子猫',min:80},{n:'げんき子猫',min:220},
-  {n:'わかねこ',min:450},{n:'成猫',min:800},{n:'もふもふ猫',min:1400},{n:'貫禄マスター猫',min:2400},
+  {n:'たね',min:0},{n:'め（芽）',min:80},{n:'わかば',min:220},
+  {n:'つぼみ',min:450},{n:'かいか',min:800},{n:'まんかい',min:1400},{n:'フラワーガーデン',min:2400},
 ];
 
-//=============================== ショップ ===============================
-const COSTUMES=[
-  {id:'h_ribbon',n:'ねこリボン',slot:'hat',price:40},
-  {id:'h_straw', n:'むぎわらぼうし',slot:'hat',price:130},
-  {id:'h_santa', n:'サンタぼうし',slot:'hat',price:220},
-  {id:'h_witch', n:'まじょのぼうし',slot:'hat',price:280},
-  {id:'h_crown', n:'おうかん',slot:'hat',price:600},
-  {id:'g_round', n:'まるめがね',slot:'glasses',price:80},
-  {id:'g_sun',   n:'サングラス',slot:'glasses',price:150},
-  {id:'g_heart', n:'ハートめがね',slot:'glasses',price:230},
-  {id:'c_bell',  n:'すず首輪',slot:'collar',price:60},
-  {id:'c_bow',   n:'ちょうネクタイ',slot:'collar',price:110},
-  {id:'c_scarf', n:'マフラー',slot:'collar',price:150},
-  {id:'c_lei',   n:'花の首かざり',slot:'collar',price:200},
-  {id:'o_hoodie',n:'パーカー',slot:'outfit',price:170},
-  {id:'o_kimono',n:'きもの',slot:'outfit',price:320},
-  {id:'o_hero',  n:'ヒーロースーツ',slot:'outfit',price:360},
-  {id:'b_cape',  n:'マント',slot:'back',price:250},
-  {id:'b_wings', n:'てんしのはね',slot:'back',price:450},
+//=============================== ショップ（お花・プランター・雑貨） ===============================
+const FLOWERS=[
+  {id:'fl_daisy', n:'デイジー',   price:0,   type:'daisy'},
+  {id:'fl_dande', n:'たんぽぽ',   price:90,  type:'dandelion'},
+  {id:'fl_tulip', n:'チューリップ',price:140, type:'tulip'},
+  {id:'fl_cosmos',n:'コスモス',   price:170, type:'cosmos'},
+  {id:'fl_sun',   n:'ひまわり',   price:200, type:'sunflower'},
+  {id:'fl_sakura',n:'さくら',     price:240, type:'sakura'},
+  {id:'fl_rose',  n:'バラ',       price:360, type:'rose'},
 ];
-const COSTUME_MAP=Object.fromEntries(COSTUMES.map(c=>[c.id,c]));
-const SLOT_LABEL={hat:'👒 ぼうし・かぶりもの',glasses:'🕶️ メガネ',collar:'🎀 首かざり',outfit:'👕 ふく',back:'🪽 せなか'};
+const POTS=[
+  {id:'pot_terra',n:'テラコッタ',price:0,  color:'#cf8b5c',dark:'#a86c3e'},
+  {id:'pot_white',n:'しろ',      price:100,color:'#eef0f2',dark:'#c9ccd0'},
+  {id:'pot_blue', n:'あお',      price:100,color:'#7bb0e0',dark:'#5188bf'},
+  {id:'pot_wood', n:'きばこ',    price:120,color:'#c08a4e',dark:'#8f6330'},
+  {id:'pot_pink', n:'ももいろ',  price:100,color:'#ff9db8',dark:'#e5789a'},
+];
+const FLOWER_MAP=Object.fromEntries(FLOWERS.map(f=>[f.id,f]));
+const POT_MAP=Object.fromEntries(POTS.map(p=>[p.id,p]));
+const WEAR=[...FLOWERS.map(f=>({...f,slot:'flower'})),...POTS.map(p=>({...p,slot:'pot'}))];
+const WEAR_MAP=Object.fromEntries(WEAR.map(x=>[x.id,x]));
+const SLOT_LABEL={flower:'🌸 おはなの種類',pot:'🪴 プランター'};
 
 const FURNITURE=[
-  {id:'f_window',  n:'まど',       price:0,  pos:[20,26], size:60, html:'<div style="width:56px;height:52px;background:linear-gradient(160deg,#bfe4ff,#e9f6ff);border:5px solid #fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.12);position:relative"><div style="position:absolute;inset:0;background:linear-gradient(#8fbf6a,#8fbf6a) center/4px 100% no-repeat,linear-gradient(#fff,#fff) center/100% 4px no-repeat"></div></div>'},
-  {id:'f_fence',   n:'しろいさく', price:50, pos:[50,60], size:80, html:'<div style="display:flex;gap:4px;align-items:flex-end">'+Array(4).fill('<div style=\'width:9px;height:26px;background:#fff;border-radius:3px 3px 0 0;box-shadow:0 2px 3px rgba(0,0,0,.12)\'></div>').join('')+'<div style="position:absolute;bottom:8px;left:0;right:0;height:5px;background:#fff;border-radius:3px"></div></div>'},
-  {id:'f_clock',   n:'かべ時計',   price:60, pos:[80,17], emoji:'🕐', size:30},
-  {id:'f_poster',  n:'ポスター',   price:70, pos:[82,40], emoji:'🖼️', size:32},
-  {id:'f_garland', n:'ガーランド', price:90, pos:[50,6],  emoji:'🎏', size:28},
-  {id:'f_shelf',   n:'本だな',     price:160,pos:[13,50], emoji:'📚', size:38},
-  {id:'f_tv',      n:'テレビ',     price:240,pos:[86,50], emoji:'📺', size:42},
-  {id:'f_plant',   n:'かんようしょくぶつ',price:80,pos:[9,57], emoji:'🪴', size:38},
-  {id:'f_cactus',  n:'サボテン',   price:60, pos:[91,60], emoji:'🌵', size:32},
-  {id:'f_flower',  n:'おはなばたけ',price:70, pos:[28,64], emoji:'🌷', size:26},
-  {id:'f_mushroom',n:'きのこ',     price:50, pos:[70,63], emoji:'🍄', size:24},
-  {id:'f_bed',     n:'ねこベッド', price:200,pos:[76,64], size:60, html:'<div style="width:66px;height:34px;background:radial-gradient(circle at 50% 30%,#ffd0dd,#ff9db8);border-radius:50%/60% 60% 100% 100%;box-shadow:inset 0 -4px 6px rgba(0,0,0,.08),0 3px 4px rgba(0,0,0,.14)"></div>'},
-  {id:'f_tower',   n:'キャットタワー',price:340,pos:[90,42], size:70, html:'<div style="position:relative;width:34px;height:108px"><div style="position:absolute;left:12px;top:0;width:10px;height:108px;background:#cbb18f;border-radius:4px"></div><div style="position:absolute;left:-4px;top:6px;width:42px;height:12px;background:#a9d18e;border-radius:6px"></div><div style="position:absolute;left:0;top:48px;width:34px;height:11px;background:#a9d18e;border-radius:6px"></div></div>'},
-  {id:'f_ball',    n:'けだま',     price:40, pos:[32,74], emoji:'🧶', size:26},
-  {id:'f_fish',    n:'おさかな',   price:50, pos:[66,76], emoji:'🐟', size:24},
-  {id:'f_teddy',   n:'ぬいぐるみ', price:90, pos:[24,72], emoji:'🧸', size:30},
-  {id:'f_mouse',   n:'おもちゃネズミ',price:40,pos:[74,73], emoji:'🐭', size:22},
-  {id:'f_bowl',    n:'ごはんボウル',price:70,pos:[40,80], emoji:'🍚', size:24},
+  {id:'f_fence',   n:'しろい柵',   price:0,  pos:[50,60], size:80, html:'<div style="position:relative;display:flex;gap:4px;align-items:flex-end">'+Array(4).fill('<div style=\'width:9px;height:26px;background:#fff;border-radius:3px 3px 0 0;box-shadow:0 2px 3px rgba(0,0,0,.12)\'></div>').join('')+'<div style="position:absolute;bottom:8px;left:0;right:0;height:5px;background:#fff;border-radius:3px"></div></div>'},
+  {id:'f_butterfly',n:'ちょうちょ',price:60, pos:[74,28], emoji:'🦋', size:28},
+  {id:'f_bee',     n:'みつばち',   price:60, pos:[24,30], emoji:'🐝', size:24},
+  {id:'f_bird',    n:'ことり',     price:70, pos:[82,17], emoji:'🐦', size:24},
+  {id:'f_can',     n:'じょうろ',   price:80, pos:[13,58], emoji:'🚿', size:30},
+  {id:'f_tulips',  n:'チューリップ畑',price:70,pos:[27,64], emoji:'🌷', size:26},
+  {id:'f_sunf',    n:'ひまわり',   price:80, pos:[90,56], emoji:'🌻', size:32},
+  {id:'f_mush',    n:'きのこ',     price:50, pos:[68,63], emoji:'🍄', size:24},
+  {id:'f_snail',   n:'かたつむり', price:40, pos:[64,76], emoji:'🐌', size:22},
+  {id:'f_lantern', n:'ランタン',   price:90, pos:[12,42], emoji:'🏮', size:28},
+  {id:'f_bench',   n:'ベンチ',     price:160,pos:[87,49], emoji:'🪑', size:38},
+  {id:'f_rainbow', n:'にじ',       price:130,pos:[50,13], emoji:'🌈', size:40},
+  {id:'f_furin',   n:'ふうりん',   price:80, pos:[16,25], emoji:'🎐', size:26},
+  {id:'f_mailbox', n:'ポスト',     price:110,pos:[15,52], emoji:'📮', size:30},
+  {id:'f_pot',     n:'うえきばち', price:60, pos:[9,58],  emoji:'🪴', size:34},
+  {id:'f_watermelon',n:'すいか',   price:70, pos:[72,74], emoji:'🍉', size:26},
+  {id:'f_stone',   n:'ふみいし',   price:40, pos:[60,74], size:40, html:'<div style="width:34px;height:15px;background:radial-gradient(#cfc6bb,#a99e90);border-radius:50%;box-shadow:0 2px 3px rgba(0,0,0,.15)"></div>'},
 ];
 const FURNI_MAP=Object.fromEntries(FURNITURE.map(f=>[f.id,f]));
 
 const RUGS=[
-  {id:'r_pink', n:'ピンクラグ', price:60, color:'radial-gradient(#ffd0dd,#ff9db8)'},
-  {id:'r_green',n:'クローバー', price:60, color:'radial-gradient(#cfeecf,#8fce8f)'},
-  {id:'r_blue', n:'ブルーラグ', price:60, color:'radial-gradient(#cfe4ff,#8fb8ee)'},
+  {id:'r_soil', n:'花だんの土', price:60, color:'radial-gradient(#a9794e,#7c5732)'},
+  {id:'r_grass',n:'しばふ',     price:60, color:'radial-gradient(#cfeecf,#8fce8f)'},
+  {id:'r_stone',n:'石だたみ',   price:60, color:'radial-gradient(#dcd6cb,#b3aa9c)'},
+  {id:'r_pink', n:'花のじゅうたん',price:80,color:'radial-gradient(#ffd0dd,#ff9db8)'},
 ];
 const RUG_MAP=Object.fromEntries(RUGS.map(r=>[r.id,r]));
-// wallpaper = 空のいろ
 const WALLS=[
   {id:'w_mori', n:'はれた空',   price:0,  bg:'linear-gradient(180deg,#bfeaf0 0%,#dff5ee 58%,#e9f8dd 100%)'},
   {id:'w_yugure',n:'ゆうやけ',  price:90, bg:'linear-gradient(180deg,#ffd9a8,#ffb0a0 60%,#ffd8b0)'},
@@ -544,15 +535,23 @@ const KEY='nyanko_mori_v1';
 let state=load();
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.logs)return migrate(s);}catch(e){}
-  return {logs:{},catName:'ネコタ',bond:0,spent:0,petPoints:0,
-    owned:['w_mori'],equipped:{hat:null,glasses:null,collar:null,outfit:null,back:null},
-    placed:[],wallpaper:'w_mori',rug:null,pet:{date:'',count:0},feedBondDate:'',synbioBondDate:''};
+  return {logs:{},catName:'はなこ',bond:0,spent:0,petPoints:0,
+    owned:['w_mori','fl_daisy','pot_terra'],equipped:{flower:'fl_daisy',pot:'pot_terra'},
+    placed:['f_fence'],wallpaper:'w_mori',rug:'r_soil',pet:{date:'',count:0},feedBondDate:'',synbioBondDate:''};
 }
 function migrate(s){
-  s.equipped=s.equipped||{hat:null,glasses:null,collar:null,outfit:null,back:null};
-  s.owned=s.owned||['w_mori'];s.placed=s.placed||[];s.pet=s.pet||{date:'',count:0};
+  // 旧・猫版データからの移行も安全に
+  s.equipped=s.equipped||{};
+  if(!s.equipped.flower||!FLOWER_MAP[s.equipped.flower])s.equipped.flower='fl_daisy';
+  if(!s.equipped.pot||!POT_MAP[s.equipped.pot])s.equipped.pot='pot_terra';
+  s.owned=Array.isArray(s.owned)?s.owned.filter(id=>WEAR_MAP[id]||FURNI_MAP[id]||WALL_MAP[id]||RUG_MAP[id]):[];
+  ['w_mori','fl_daisy','pot_terra'].forEach(id=>{if(!s.owned.includes(id))s.owned.push(id);});
+  s.placed=Array.isArray(s.placed)?s.placed.filter(id=>FURNI_MAP[id]):['f_fence'];
+  s.pet=s.pet||{date:'',count:0};
   if(s.bond==null)s.bond=0;if(s.spent==null)s.spent=0;if(s.petPoints==null)s.petPoints=0;
-  if(!s.wallpaper||!WALL_MAP[s.wallpaper])s.wallpaper='w_mori';if(!s.rug)s.rug=null;
+  if(!s.wallpaper||!WALL_MAP[s.wallpaper])s.wallpaper='w_mori';
+  if(s.rug&&!RUG_MAP[s.rug])s.rug='r_soil';if(s.rug==null)s.rug='r_soil';
+  if(!s.catName||s.catName==='ネコタ')s.catName='はなこ';
   return s;
 }
 function save(){localStorage.setItem(KEY,JSON.stringify(state));}
@@ -572,276 +571,109 @@ function earned(){let t=0;for(const k in state.logs)t+=daySummary(k).points;retu
 function wallet(){return earned()+state.petPoints-state.spent;}
 function stageFor(pt){let s=0;for(let i=0;i<STAGES.length;i++)if(pt>=STAGES[i].min)s=i;return s;}
 
-//=============================== なつき度 ===============================
-const BOND_LEVELS=[
-  {min:0,l:'よそよそしい',s:'まだ様子見中…ごはんとなでなでで仲良くなろう'},
-  {min:20,l:'きょうみしんしん',s:'ちょっと近づいてきた！'},
-  {min:40,l:'なかよし',s:'すっかり慣れてきたみたい 🐾'},
-  {min:60,l:'だいすき',s:'あなたが大好き！そばにいたがる'},
-  {min:85,l:'メロメロ',s:'いつもゴロゴロ甘えん坊 💕'},
-  {min:100,l:'きずなMAX',s:'ずっと一緒だよ 🌟'},
+//=============================== 元気度 ===============================
+const VITAL=[
+  {min:0,l:'ちょっと元気ない',s:'水やりとごはん記録で元気にしよう 💧'},
+  {min:20,l:'ふつう',s:'すこしずつ育ってきた'},
+  {min:40,l:'げんき',s:'葉っぱがいきいき 🌿'},
+  {min:60,l:'いきいき',s:'ぐんぐん育ってる！'},
+  {min:85,l:'つやつや',s:'お花もよろこんでる 🌸'},
+  {min:100,l:'さいこう',s:'最高のコンディション ✨'},
 ];
-function bondLevel(b){let r=BOND_LEVELS[0];for(const x of BOND_LEVELS)if(b>=x.min)r=x;return r;}
+function vitalityLevel(b){let r=VITAL[0];for(const x of VITAL)if(b>=x.min)r=x;return r;}
 function addBond(n){state.bond=Math.min(100,state.bond+n);}
 
-//=============================== 猫SVG ===============================
-const FOREST_LEAF='<g transform="translate(112 46) rotate(24)"><path d="M0 0 Q15 -9 28 2 Q15 9 0 0 Z" fill="#7cc242"/><path d="M2 0 H24" stroke="#5fa32e" stroke-width="1.6"/></g>';
-function catSVG(stage,mood,eq){
-  const scale=Math.min(0.62+stage*0.075,1);
-  const coat=stage>=6?'#ffd873':'#ffd9a8', coatDark=stage>=6?'#f0b93b':'#f2b982';
-  const fluff=stage>=5, sparkle=stage>=4; eq=eq||{};
-  let eyes,mouth;
-  if(mood==='great'){
-    eyes='<path d="M78 96 q7 -11 14 0" stroke="#6b5636" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M108 96 q7 -11 14 0" stroke="#6b5636" stroke-width="4" fill="none" stroke-linecap="round"/>';
-    mouth='<path d="M92 112 q8 9 16 0" stroke="#6b5636" stroke-width="3" fill="none" stroke-linecap="round"/>';
-  }else if(mood==='good'){
-    eyes='<circle cx="85" cy="97" r="6.5" fill="#6b5636"/><circle cx="115" cy="97" r="6.5" fill="#6b5636"/><circle cx="87" cy="94" r="2" fill="#fff"/><circle cx="117" cy="94" r="2" fill="#fff"/>';
-    mouth='<path d="M94 110 q6 6 12 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
-  }else if(mood==='meh'){
-    eyes='<circle cx="85" cy="97" r="6" fill="#6b5636"/><circle cx="115" cy="97" r="6" fill="#6b5636"/>';
-    mouth='<path d="M93 111 h14" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
-  }else{
-    eyes='<path d="M79 99 q6 -7 13 -2" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M108 97 q7 -5 13 2" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/>';
-    mouth='<path d="M93 113 q7 -5 14 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+//=============================== お花SVG ===============================
+function flowerHead(type,cx,cy,r){
+  const P=(col,n,ry)=>{let s='';for(let i=0;i<n;i++){const a=(i*360/n).toFixed(1);s+=`<ellipse cx="${cx}" cy="${(cy-r*0.58).toFixed(1)}" rx="${(r*0.32).toFixed(1)}" ry="${(ry||r*0.56).toFixed(1)}" fill="${col}" transform="rotate(${a} ${cx} ${cy})"/>`;}return s;};
+  const C=(col,rr)=>`<circle cx="${cx}" cy="${cy}" r="${(rr).toFixed(1)}" fill="${col}"/>`;
+  switch(type){
+    case 'tulip':return `<path d="M${cx-r} ${cy+r*0.3} Q${cx-r*1.05} ${cy-r*0.85} ${cx-r*0.32} ${cy-r*0.68} Q${cx} ${cy-r*1.15} ${cx+r*0.32} ${cy-r*0.68} Q${cx+r*1.05} ${cy-r*0.85} ${cx+r} ${cy+r*0.3} Q${cx} ${cy+r} ${cx-r} ${cy+r*0.3} Z" fill="#ff5c7a"/><path d="M${cx} ${cy-r*0.7} L${cx} ${cy+r*0.75}" stroke="#e0466b" stroke-width="1.5"/><path d="M${cx-r*0.5} ${cy-r*0.55} L${cx-r*0.55} ${cy+r*0.55}" stroke="#e0466b" stroke-width="1.1" opacity=".6"/>`;
+    case 'sunflower':return P('#ffce3b',12)+C('#8a5a2b',r*0.5);
+    case 'dandelion':return P('#ffd23f',16,r*0.5)+C('#f2b400',r*0.4);
+    case 'cosmos':return P('#ff8fab',8)+C('#ffe08a',r*0.34);
+    case 'sakura':return P('#ffd3e2',5,r*0.62)+C('#ffe08a',r*0.3);
+    case 'rose':return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#e0466b"/><circle cx="${cx}" cy="${cy}" r="${(r*0.72).toFixed(1)}" fill="#cf3a5e"/><circle cx="${cx}" cy="${cy}" r="${(r*0.44).toFixed(1)}" fill="#b83156"/><path d="M${cx} ${cy} m ${(-r*0.42).toFixed(1)} 0 a ${(r*0.42).toFixed(1)} ${(r*0.42).toFixed(1)} 0 1 1 ${(r*0.84).toFixed(1)} 0" fill="none" stroke="#f2a0b8" stroke-width="1.4"/>`;
+    default:return P('#ffffff',10)+C('#ffd23f',r*0.42);
   }
-  const back=COSTUME_BACK(eq.back),outfit=COSTUME_OUTFIT(eq.outfit,coat),collar=COSTUME_COLLAR(eq.collar),
-        glasses=COSTUME_GLASSES(eq.glasses),hat=COSTUME_HAT(eq.hat)||FOREST_LEAF;
-  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
-    <ellipse cx="100" cy="184" rx="46" ry="9" fill="rgba(80,60,30,.10)"/>
-    ${back}
-    <path d="M142 170 q34 6 30 -30 q-3 -20 -18 -18" fill="none" stroke="${coatDark}" stroke-width="13" stroke-linecap="round"/>
-    <path d="M58 184 C50 132 66 120 100 120 C134 120 150 132 142 184 Z" fill="${coat}"/>
-    <ellipse cx="80" cy="182" rx="12" ry="7.5" fill="${coatDark}"/><ellipse cx="120" cy="182" rx="12" ry="7.5" fill="${coatDark}"/>
-    ${outfit}
-    <path d="M60 72 L54 28 L96 58 Z" fill="${coat}"/><path d="M140 72 L146 28 L104 58 Z" fill="${coat}"/>
-    <path d="M64 64 L61 40 L86 58 Z" fill="#ffb3c6"/><path d="M136 64 L139 40 L114 58 Z" fill="#ffb3c6"/>
-    ${fluff?`<circle cx="100" cy="94" r="50" fill="${coat}" opacity=".5"/>`:''}
-    <circle cx="100" cy="94" r="42" fill="${coat}"/>
-    <ellipse cx="70" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/><ellipse cx="130" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/>
-    ${eyes}
-    <path d="M96 106 h8 l-4 5 Z" fill="#ff9db0"/>
-    ${mouth}
-    <path d="M64 102 h-22 M66 110 h-20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
-    <path d="M136 102 h22 M134 110 h20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
-    ${collar}${glasses}${hat}
-    ${sparkle?'<text x="150" y="58" font-size="18" opacity=".9">✨</text><text x="30" y="118" font-size="15" opacity=".8">✨</text>':''}
-  </g></svg>`;
 }
-// お散歩ちゅうの横向きの猫（4本の脚が交互に動く）。右向きが基準
-function catWalkSVG(stage,eq){
-  const scale=Math.min(0.62+stage*0.075,1);
-  const coat=stage>=6?'#ffd873':'#ffd9a8', coatDark=stage>=6?'#f0b93b':'#f2b982';
+function plantSVG(stage,vitality,eq){
   eq=eq||{};
-  // 脚：hip(回転中心)で前後にスイング。phase で位相を反転
-  const leg=(x,near,phase)=>{
-    const cx=x+5.5, cy=131, col=near?coat:coatDark;
-    const v=phase?`16 ${cx} ${cy};-18 ${cx} ${cy};16 ${cx} ${cy}`:`-18 ${cx} ${cy};16 ${cx} ${cy};-18 ${cx} ${cy}`;
-    return `<g><rect x="${x}" y="128" width="11" height="40" rx="5.5" fill="${col}"/><ellipse cx="${cx}" cy="167" rx="7.5" ry="4.5" fill="${col}"/>`
-      +`<animateTransform attributeName="transform" type="rotate" values="${v}" dur="0.5s" repeatCount="indefinite"/></g>`;
-  };
-  const farLegs=leg(70,false,true)+leg(132,false,false);
-  const nearLegs=leg(56,true,false)+leg(120,true,true);
-  const hat=WALK_HAT(eq.hat), collar=WALK_COLLAR(eq.collar), glasses=WALK_GLASSES(eq.glasses), outfit=WALK_OUTFIT(eq.outfit), back=WALK_BACK(eq.back);
-  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
-    <ellipse cx="98" cy="176" rx="54" ry="8" fill="rgba(80,60,30,.10)"/>
-    ${back}
-    <path d="M50 116 q-26 -4 -24 -34 q1 -16 15 -14" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round">
-      <animateTransform attributeName="transform" type="rotate" values="-5 50 116;6 50 116;-5 50 116" dur="1.1s" repeatCount="indefinite"/></path>
-    ${farLegs}
-    <ellipse cx="96" cy="116" rx="52" ry="28" fill="${coat}"/>
-    ${outfit}
-    ${nearLegs}
-    ${collar}
-    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -2;0 0" dur="0.5s" repeatCount="indefinite"/>
-      <path d="M138 78 L133 54 L153 72 Z" fill="${coat}"/><path d="M158 76 L170 54 L175 76 Z" fill="${coat}"/>
-      <path d="M140 72 L138 60 L150 71 Z" fill="#ffb3c6"/><path d="M161 72 L168 58 L172 74 Z" fill="#ffb3c6"/>
-      <circle cx="154" cy="96" r="26" fill="${coat}"/>
-      <ellipse cx="150" cy="104" rx="7" ry="5" fill="#ffc9d8" opacity=".6"/>
-      <circle cx="163" cy="93" r="4" fill="#3a2b2e"/><circle cx="164.5" cy="91.5" r="1.3" fill="#fff"/>
-      <path d="M178 98 l7 2 -6 4 Z" fill="#ff9db0"/>
-      <path d="M179 104 q-4 4 -9 1" stroke="#6b5636" stroke-width="2" fill="none" stroke-linecap="round"/>
-      <path d="M172 97 h16 M172 102 h15" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
-      ${glasses}${hat}
-    </g>
+  const pot=POT_MAP[eq.pot]||POTS[0];
+  const ftype=(FLOWER_MAP[eq.flower]||FLOWERS[0]).type;
+  const stem='#5fa32e', leaf='#6bbf3e';
+  const soilY=150;
+  const H=[0,20,48,74,92,108,120][stage];
+  const drB=(vitality!=null&&vitality<25&&stage>0)?7:0; // 元気ないと少しうつむく
+  const top=soilY-H+drB;
+  const leafAt=(ly,sz)=>`<path d="M100 ${ly} q-${sz} -${(sz*0.5).toFixed(1)} -${(sz*1.3).toFixed(1)} 0 q ${(sz*0.6).toFixed(1)} ${(sz*0.55).toFixed(1)} ${(sz*1.3).toFixed(1)} 0 Z" fill="${leaf}"/><path d="M100 ${ly} q${sz} -${(sz*0.5).toFixed(1)} ${(sz*1.3).toFixed(1)} 0 q -${(sz*0.6).toFixed(1)} ${(sz*0.55).toFixed(1)} -${(sz*1.3).toFixed(1)} 0 Z" fill="${leaf}"/>`;
+  let plant='';
+  if(stage===0){
+    plant=`<ellipse cx="100" cy="147" rx="7" ry="9" fill="#7a5230"/><path d="M97 143 q3 -3 6 0" stroke="#5a3a20" stroke-width="1.5" fill="none"/>`;
+  }else{
+    plant+=`<path d="M100 ${soilY} Q108 ${((soilY+top)/2).toFixed(1)} 100 ${top}" fill="none" stroke="${stem}" stroke-width="5" stroke-linecap="round"/>`;
+    if(stage>=2)plant+=leafAt((soilY-H*0.42).toFixed(1),13);
+    if(stage>=3)plant+=leafAt((soilY-H*0.72).toFixed(1),11);
+    if(stage===1){
+      plant+=`<ellipse cx="92" cy="${top}" rx="9" ry="6" fill="${leaf}" transform="rotate(-25 92 ${top})"/><ellipse cx="108" cy="${top}" rx="9" ry="6" fill="${leaf}" transform="rotate(25 108 ${top})"/>`;
+    }else if(stage===2){
+      plant+=`<ellipse cx="93" cy="${top}" rx="12" ry="7" fill="${leaf}" transform="rotate(-25 93 ${top})"/><ellipse cx="107" cy="${top}" rx="12" ry="7" fill="${leaf}" transform="rotate(25 107 ${top})"/>`;
+    }else if(stage===3){
+      plant+=`<path d="M100 ${top+15} Q91 ${top} 100 ${top-11} Q109 ${top} 100 ${top+15} Z" fill="#8fce6a"/><ellipse cx="100" cy="${top-2}" rx="7" ry="10" fill="#ff9db8"/>`;
+    }else{
+      if(stage>=5){
+        plant+=`<path d="M100 ${(soilY-H*0.5).toFixed(1)} Q80 ${(soilY-H*0.62).toFixed(1)} 73 ${(soilY-H*0.78).toFixed(1)}" fill="none" stroke="${stem}" stroke-width="4"/>${flowerHead(ftype,73,(soilY-H*0.8).toFixed(1),11)}`;
+        plant+=`<path d="M100 ${(soilY-H*0.55).toFixed(1)} Q120 ${(soilY-H*0.67).toFixed(1)} 127 ${(soilY-H*0.83).toFixed(1)}" fill="none" stroke="${stem}" stroke-width="4"/>${flowerHead(ftype,127,(soilY-H*0.85).toFixed(1),11)}`;
+      }
+      if(stage>=6){
+        plant+=`<path d="M100 ${(soilY-H*0.38).toFixed(1)} Q86 ${(soilY-H*0.4).toFixed(1)} 82 ${(soilY-H*0.54).toFixed(1)}" fill="none" stroke="${stem}" stroke-width="4"/>${flowerHead(ftype,82,(soilY-H*0.56).toFixed(1),10)}`;
+        plant+=`<path d="M100 ${(soilY-H*0.4).toFixed(1)} Q114 ${(soilY-H*0.42).toFixed(1)} 118 ${(soilY-H*0.56).toFixed(1)}" fill="none" stroke="${stem}" stroke-width="4"/>${flowerHead(ftype,118,(soilY-H*0.58).toFixed(1),10)}`;
+      }
+      plant+=`<g>${flowerHead(ftype,100,top,16)}</g>`;
+    }
+  }
+  const sway=`<animateTransform attributeName="transform" type="rotate" values="-2 100 150;2 100 150;-2 100 150" dur="4.2s" repeatCount="indefinite"/>`;
+  const spark=stage>=6?'<text x="150" y="58" font-size="15" opacity=".9">✨</text><text x="34" y="86" font-size="12" opacity=".8">✨</text>':'';
+  const bfly=stage>=6?'<text x="146" y="70" font-size="18">🦋<animateTransform attributeName="transform" type="translate" values="0 0;-6 -8;0 0" dur="3s" repeatCount="indefinite"/></text>':'';
+  return `<svg viewBox="0 0 200 200"><g>
+    <ellipse cx="100" cy="188" rx="46" ry="8" fill="rgba(80,60,30,.10)"/>
+    ${bfly}${spark}
+    <g>${sway}${plant}</g>
+    <path d="M76 ${soilY} L124 ${soilY} L118 184 L82 184 Z" fill="${pot.color}"/>
+    <path d="M82 184 L118 184 L116 189 L84 189 Z" fill="${pot.dark}"/>
+    <rect x="72" y="${soilY-6}" width="56" height="11" rx="3" fill="${pot.dark}"/>
+    <ellipse cx="100" cy="${soilY-1}" rx="25" ry="4" fill="#5b3d22"/>
   </g></svg>`;
 }
-function WALK_HAT(id){switch(id){
-  case 'h_ribbon':return '<g transform="translate(150 70)"><path d="M0 0 L-13 -7 L-13 9 Z" fill="#ff6f91"/><path d="M0 0 L13 -7 L13 9 Z" fill="#ff6f91"/><circle r="5" fill="#e84c74"/></g>';
-  case 'h_straw':return '<g><ellipse cx="152" cy="76" rx="34" ry="9" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M136 76 a17 20 0 0 1 34 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/></g>';
-  case 'h_santa':return '<g><path d="M132 74 Q152 42 176 72 Z" fill="#e5484d"/><ellipse cx="153" cy="73" rx="27" ry="6" fill="#fff"/><circle cx="132" cy="46" r="6" fill="#fff"/></g>';
-  case 'h_witch':return '<g><ellipse cx="152" cy="74" rx="32" ry="8" fill="#4b3a63"/><path d="M138 74 Q160 34 168 72 Z" fill="#5a4780"/><rect x="142" y="66" width="26" height="6" rx="2" fill="#7a5cff"/></g>';
-  case 'h_crown':return '<g><path d="M134 72 L140 52 L154 66 L168 52 L174 72 Z" fill="#ffd23f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><rect x="134" y="70" width="40" height="6" rx="2" fill="#f0b93b"/></g>';
-  default:return '';}}
-function WALK_COLLAR(id){switch(id){
-  case 'c_bell':return '<path d="M126 108 q6 12 16 12" fill="none" stroke="#e5484d" stroke-width="6"/><circle cx="132" cy="120" r="6" fill="#ffcf33" stroke="#e0a500" stroke-width="1.3"/>';
-  case 'c_bow':return '<g transform="translate(131 110)"><path d="M0 0 L-11 -6 L-11 6 Z" fill="#5b8def"/><path d="M0 0 L11 -6 L11 6 Z" fill="#5b8def"/><rect x="-3" y="-5" width="6" height="10" rx="2" fill="#3a6fd6"/></g>';
-  case 'c_scarf':return '<path d="M118 104 q14 18 30 14 l-3 12 q-16 2 -30 -12 Z" fill="#3fa66b"/><path d="M140 116 l12 4 -4 16 -10 -8 Z" fill="#2e8c58"/>';
-  case 'c_lei':return '<g>'+[120,128,136,144].map((x,i)=>`<circle cx="${x}" cy="${112+ (i%2?3:0)}" r="5" fill="${['#ff8fab','#ffd23f','#7ee081','#ff8fab'][i]}"/>`).join('')+'</g>';
-  default:return '';}}
-function WALK_GLASSES(id){switch(id){
-  case 'g_round':return '<circle cx="163" cy="93" r="10" fill="#fff" fill-opacity=".15" stroke="#5a4632" stroke-width="2.6"/><path d="M173 90 l8 -3" stroke="#5a4632" stroke-width="2.6" stroke-linecap="round"/>';
-  case 'g_sun':return '<rect x="152" y="86" width="23" height="14" rx="6" fill="#2b2b3a"/><path d="M175 88 l8 -3" stroke="#2b2b3a" stroke-width="3" stroke-linecap="round"/><path d="M157 90 l6 -3" stroke="#fff" stroke-width="2" opacity=".5" stroke-linecap="round"/>';
-  case 'g_heart':return '<path d="M163 88 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z" fill="#ff5c8a" fill-opacity=".85"/>';
-  default:return '';}}
-function WALK_OUTFIT(id){switch(id){
-  case 'o_hoodie':return '<path d="M46 116 a50 28 0 0 0 100 0 Z" fill="#f2a154"/><path d="M120 100 q16 -8 26 4 q-6 12 -22 9 q-8 -9 -4 -13 Z" fill="#dd8b3a"/>';
-  case 'o_kimono':return '<path d="M46 116 a50 28 0 0 0 100 0 Z" fill="#f2ece0"/><rect x="80" y="112" width="12" height="30" fill="#c0455e"/>';
-  case 'o_hero':return '<path d="M46 116 a50 28 0 0 0 100 0 Z" fill="#3a6fd6"/><path d="M96 120 l3 9 10 0 -8 6 3 10 -8 -6 -8 6 3 -10 -8 -6 10 0 Z" fill="#ffd23f"/>';
-  default:return '';}}
-function WALK_BACK(id){switch(id){
-  case 'b_wings':return '<g fill="#fff" stroke="#e6ecf5" stroke-width="1.5"><path d="M84 96 q-30 -30 -56 -12 q22 2 26 20 q-20 6 -16 26 q18 -14 36 -6 Z"/><path d="M100 94 q-22 -32 -46 -18 q20 0 24 20 q-16 8 -12 26 q16 -16 32 -6 Z"/></g>';
-  case 'b_cape':return '<path d="M124 100 q-44 2 -80 42 q42 -8 84 2 Z" fill="#c0392b"/>';
-  default:return '';}}
 
-// ===== しぐさ用スプライト =====
-// 寝る（横向きの香箱・目を閉じて💤）
-function catSleepSVG(stage){
-  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';
-  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
-    <ellipse cx="102" cy="176" rx="66" ry="9" fill="rgba(80,60,30,.10)"/>
-    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -2.5;0 0" dur="2.6s" repeatCount="indefinite"/>
-      <path d="M150 160 q30 8 30 -16" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round"/>
-      <path d="M44 170 Q42 122 100 122 Q160 122 160 170 Z" fill="${coat}"/>
-      <circle cx="58" cy="150" r="27" fill="${coat}"/>
-      <path d="M40 132 L34 110 L54 128 Z" fill="${coat}"/><path d="M62 128 L70 108 L80 130 Z" fill="${coat}"/>
-      <path d="M42 130 L38 114 L52 127 Z" fill="#ffb3c6"/><path d="M64 127 L70 112 L78 128 Z" fill="#ffb3c6"/>
-      <ellipse cx="50" cy="158" rx="7" ry="5" fill="#ffc9d8" opacity=".55"/>
-      <path d="M40 150 q6 5 12 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-      <path d="M58 150 q6 5 12 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-      <path d="M52 160 l7 0 -3.5 4 Z" fill="#ff9db0"/>
-    </g>
-    <text x="116" y="118" font-size="16" opacity="0">💤<animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 8;10 -16;20 -34" dur="3s" repeatCount="indefinite"/></text>
-  </g></svg>`;
-}
-// のび（前足を伸ばすプレイバウ）
-function catStretchSVG(stage){
-  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';
-  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
-    <ellipse cx="100" cy="176" rx="64" ry="8" fill="rgba(80,60,30,.10)"/>
-    <path d="M150 116 q34 -4 30 -42" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round"/>
-    <ellipse cx="134" cy="118" rx="30" ry="27" fill="${coat}"/>
-    <rect x="119" y="130" width="11" height="40" rx="5.5" fill="${coatDark}"/>
-    <rect x="140" y="130" width="11" height="40" rx="5.5" fill="${coat}"/>
-    <path d="M56 152 Q104 100 152 120 Q150 152 104 158 Q72 160 56 152 Z" fill="${coat}"/>
-    <g><animateTransform attributeName="transform" type="translate" values="0 0;-7 1;0 0" dur="2.2s" repeatCount="indefinite"/>
-      <rect x="26" y="150" width="44" height="10" rx="5" fill="${coatDark}"/>
-      <rect x="30" y="158" width="44" height="10" rx="5" fill="${coat}"/>
-      <ellipse cx="28" cy="155" rx="6" ry="5" fill="${coat}"/><ellipse cx="32" cy="163" rx="6" ry="5" fill="${coat}"/>
-    </g>
-    <circle cx="60" cy="142" r="23" fill="${coat}"/>
-    <path d="M44 126 L39 106 L58 124 Z" fill="${coat}"/><path d="M64 122 L72 104 L82 126 Z" fill="${coat}"/>
-    <path d="M46 124 L43 110 L56 123 Z" fill="#ffb3c6"/><path d="M66 123 L72 108 L80 124 Z" fill="#ffb3c6"/>
-    <path d="M48 144 q5 5 11 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>
-    <path d="M40 148 l7 2 -6 4 Z" fill="#ff9db0"/>
-    <path d="M56 148 h12" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
-  </g></svg>`;
-}
-// あそぶ（前足でボールをちょいちょい）
-function catPlaySVG(stage){
-  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';
-  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
-    <ellipse cx="108" cy="176" rx="58" ry="8" fill="rgba(80,60,30,.10)"/>
-    <path d="M148 130 q30 -2 30 -34" fill="none" stroke="${coatDark}" stroke-width="12" stroke-linecap="round">
-      <animateTransform attributeName="transform" type="rotate" values="6 148 130;-10 148 130;6 148 130" dur="0.6s" repeatCount="indefinite"/></path>
-    <rect x="118" y="134" width="11" height="36" rx="5.5" fill="${coatDark}"/>
-    <rect x="134" y="136" width="11" height="34" rx="5.5" fill="${coat}"/>
-    <ellipse cx="112" cy="134" rx="46" ry="26" fill="${coat}"/>
-    <path d="M136 88 L131 66 L151 84 Z" fill="${coat}"/><path d="M156 86 L168 64 L173 86 Z" fill="${coat}"/>
-    <circle cx="152" cy="108" r="24" fill="${coat}"/>
-    <circle cx="160" cy="105" r="4" fill="#3a2b2e"/><circle cx="161.5" cy="103.5" r="1.3" fill="#fff"/>
-    <path d="M175 110 l7 2 -6 4 Z" fill="#ff9db0"/>
-    <path d="M170 109 h14 M170 114 h13" stroke="${coatDark}" stroke-width="1.6" stroke-linecap="round"/>
-    <g><animateTransform attributeName="transform" type="rotate" values="-8 118 132;20 118 132;-8 118 132" dur="0.5s" repeatCount="indefinite"/>
-      <rect x="90" y="130" width="10" height="34" rx="5" fill="${coat}"/><ellipse cx="95" cy="162" rx="7" ry="4.5" fill="${coat}"/></g>
-    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -20;0 0" dur="0.5s" repeatCount="indefinite"/>
-      <circle cx="62" cy="160" r="13" fill="#ff8fab"/><path d="M53 156 q9 -8 18 2 M55 164 q9 8 17 -2" stroke="#e05c86" stroke-width="1.6" fill="none"/></g>
-  </g></svg>`;
-}
-// 毛づくろい（正面すわりで前足をペロペロ・着せ替え反映）
-function catGroomSVG(stage,eq){
-  const scale=Math.min(0.62+stage*0.075,1);const coat=stage>=6?'#ffd873':'#ffd9a8',coatDark=stage>=6?'#f0b93b':'#f2b982';const fluff=stage>=5;eq=eq||{};
-  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
-    <ellipse cx="100" cy="184" rx="46" ry="9" fill="rgba(80,60,30,.10)"/>
-    ${COSTUME_BACK(eq.back)}
-    <path d="M142 170 q34 6 30 -30 q-3 -20 -18 -18" fill="none" stroke="${coatDark}" stroke-width="13" stroke-linecap="round"/>
-    <path d="M58 184 C50 132 66 120 100 120 C134 120 150 132 142 184 Z" fill="${coat}"/>
-    <ellipse cx="120" cy="182" rx="12" ry="7.5" fill="${coatDark}"/>
-    ${COSTUME_OUTFIT(eq.outfit)}
-    <path d="M60 72 L54 28 L96 58 Z" fill="${coat}"/><path d="M140 72 L146 28 L104 58 Z" fill="${coat}"/>
-    <path d="M64 64 L61 40 L86 58 Z" fill="#ffb3c6"/><path d="M136 64 L139 40 L114 58 Z" fill="#ffb3c6"/>
-    ${fluff?`<circle cx="100" cy="94" r="50" fill="${coat}" opacity=".5"/>`:''}
-    <circle cx="100" cy="94" r="42" fill="${coat}"/>
-    <ellipse cx="70" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/><ellipse cx="130" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/>
-    <path d="M78 96 q7 -8 14 0" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M108 96 q7 -8 14 0" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-    <path d="M96 106 h8 l-4 5 Z" fill="#ff9db0"/>
-    <path d="M99 112 q4 7 -2 9 q-4 -3 -3 -9 Z" fill="#ff7a9c"/>
-    <path d="M136 102 h22 M134 110 h20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
-    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -3.5;0 0" dur="0.55s" repeatCount="indefinite"/>
-      <path d="M78 184 q-4 -42 12 -54 q10 -7 18 3" fill="none" stroke="${coat}" stroke-width="15" stroke-linecap="round"/>
-      <ellipse cx="98" cy="120" rx="9.5" ry="7.5" fill="${coat}"/></g>
-    ${COSTUME_COLLAR(eq.collar)}${COSTUME_HAT(eq.hat)}
-  </g></svg>`;
-}
-function COSTUME_HAT(id){switch(id){
-  case 'h_ribbon':return '<g transform="translate(100 50)"><path d="M0 0 L-16 -9 L-16 11 Z" fill="#ff6f91"/><path d="M0 0 L16 -9 L16 11 Z" fill="#ff6f91"/><circle r="6" fill="#e84c74"/></g>';
-  case 'h_straw':return '<g><ellipse cx="100" cy="54" rx="52" ry="13" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M74 54 a26 30 0 0 1 52 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/><rect x="74" y="47" width="52" height="7" rx="3" fill="#c26b6b"/></g>';
-  case 'h_santa':return '<g><path d="M62 52 Q100 -14 140 46 Z" fill="#e5484d"/><ellipse cx="101" cy="50" rx="43" ry="9" fill="#fff"/><circle cx="140" cy="26" r="8" fill="#fff"/></g>';
-  case 'h_witch':return '<g><ellipse cx="100" cy="52" rx="50" ry="12" fill="#4b3a63"/><path d="M76 52 Q112 -26 118 48 Z" fill="#5a4780"/><rect x="80" y="42" width="42" height="8" rx="2" fill="#7a5cff"/><path d="M118 48 q10 -2 12 -10" stroke="#5a4780" stroke-width="7" fill="none" stroke-linecap="round"/></g>';
-  case 'h_crown':return '<g><path d="M70 48 L78 20 L100 40 L122 20 L130 48 Z" fill="#ffd23f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><rect x="70" y="46" width="60" height="8" rx="3" fill="#f0b93b"/><circle cx="78" cy="20" r="4" fill="#ff6b8a"/><circle cx="122" cy="20" r="4" fill="#6ac0ff"/><circle cx="100" cy="40" r="4" fill="#7ee081"/></g>';
-  default:return '';}}
-function COSTUME_GLASSES(id){switch(id){
-  case 'g_round':return '<g fill="#fff" fill-opacity=".2" stroke="#5a4632" stroke-width="3"><circle cx="85" cy="96" r="12"/><circle cx="115" cy="96" r="12"/></g><path d="M97 96 h6 M73 92 l-10 -4 M127 92 l10 -4" stroke="#5a4632" stroke-width="3" fill="none" stroke-linecap="round"/>';
-  case 'g_sun':return '<g fill="#2b2b3a"><rect x="71" y="88" width="27" height="16" rx="7"/><rect x="102" y="88" width="27" height="16" rx="7"/></g><path d="M98 91 h6 M71 90 l-9 -3 M129 90 l9 -3" stroke="#2b2b3a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M76 92 l6 -3 M107 92 l6 -3" stroke="#fff" stroke-width="2" opacity=".55" stroke-linecap="round"/>';
-  case 'g_heart':return '<g fill="#ff5c8a" fill-opacity=".85"><path d="M85 90 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z"/><path d="M115 90 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z"/></g><path d="M97 94 h6" stroke="#ff5c8a" stroke-width="3" stroke-linecap="round"/>';
-  default:return '';}}
-function COSTUME_COLLAR(id){switch(id){
-  case 'c_bell':return '<path d="M72 126 q28 12 56 0" fill="none" stroke="#e5484d" stroke-width="7"/><circle cx="100" cy="134" r="7" fill="#ffcf33" stroke="#e0a500" stroke-width="1.5"/><path d="M96 134 h8" stroke="#c98f00" stroke-width="1.5"/>';
-  case 'c_bow':return '<path d="M72 126 q28 10 56 0" fill="none" stroke="#5b8def" stroke-width="4"/><g transform="translate(100 128)"><path d="M0 0 L-14 -8 L-14 8 Z" fill="#5b8def"/><path d="M0 0 L14 -8 L14 8 Z" fill="#5b8def"/><rect x="-4" y="-6" width="8" height="12" rx="2" fill="#3a6fd6"/></g>';
-  case 'c_scarf':return '<path d="M66 122 q34 20 68 0 l-4 15 q-30 13 -60 0 Z" fill="#3fa66b"/><path d="M118 133 l15 6 -5 20 -13 -9 Z" fill="#2e8c58"/>';
-  case 'c_lei':return '<g>'+[68,80,92,104,116,128].map((x,i)=>{const y=126+Math.sin((i-2.5)*0.5)*6;const col=['#ff8fab','#ffd23f','#ff8fab','#7ee081','#ff8fab','#ffd23f'][i];return `<circle cx="${x}" cy="${y}" r="5.5" fill="${col}"/><circle cx="${x}" cy="${y}" r="2" fill="#fff"/>`;}).join('')+'</g>';
-  default:return '';}}
-function COSTUME_OUTFIT(id){switch(id){
-  case 'o_hoodie':return '<path d="M60 184 C54 138 70 128 100 128 C130 128 146 138 140 184 Z" fill="#f2a154"/><path d="M72 130 q28 -13 56 0 q-7 15 -28 15 q-21 0 -28 -15 Z" fill="#dd8b3a"/><path d="M86 158 h28 v16 h-28 Z" fill="#dd8b3a"/><path d="M96 132 v10 M104 132 v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>';
-  case 'o_kimono':return '<path d="M60 184 C56 140 70 128 100 128 C130 128 144 140 140 184 Z" fill="#f2ece0"/><path d="M100 130 L82 184 M100 130 L118 184" stroke="#c0455e" stroke-width="6" fill="none"/><rect x="62" y="158" width="76" height="12" fill="#c0455e"/><path d="M100 130 l-9 24 18 0 Z" fill="#e2c4cb"/>';
-  case 'o_hero':return '<path d="M60 184 C54 138 70 128 100 128 C130 128 146 138 140 184 Z" fill="#3a6fd6"/><path d="M100 138 l4 12 13 0 -10 8 4 13 -11 -8 -11 8 4 -13 -10 -8 13 0 Z" fill="#ffd23f"/><rect x="62" y="166" width="76" height="9" fill="#ffd23f"/>';
-  default:return '';}}
-function COSTUME_BACK(id){switch(id){
-  case 'b_wings':return '<g fill="#fff" stroke="#e6ecf5" stroke-width="1.5"><path d="M72 132 q-42 -24 -56 4 q28 -4 36 14 q-26 2 -22 24 q24 -12 36 4 Z"/><path d="M128 132 q42 -24 56 4 q-28 -4 -36 14 q26 2 22 24 q-24 -12 -36 4 Z"/></g>';
-  case 'b_cape':return '<path d="M66 128 q34 -12 68 0 l8 62 q-42 -14 -84 0 Z" fill="#c0392b"/><path d="M78 124 q22 -9 44 0 l-3 11 q-19 -8 -38 0 Z" fill="#9e2c1e"/>';
-  default:return '';}}
-
-//=============================== 気分 ===============================
+//=============================== 気分（内部・簡易） ===============================
 function moodOf(sum){
-  if(sum.synbio)return {key:'great',msg:'ごきげん！ 腸内フローラばっちり 😻'};
-  if(sum.lacto>0&&sum.fiber>0)return {key:'good',msg:'うれしい！ この調子 😺'};
-  if(sum.lacto>0||sum.fiber>0)return {key:'meh',msg:'もうちょっと！ 反対の栄養もほしいな'};
-  if(state.bond>=60)return {key:'meh',msg:'ごはんまだかな？ でもそばにいるよ'};
-  return {key:'hungry',msg:'おなかすいた… ごはん記録してね 😿'};
+  if(sum.synbio)return {key:'great',msg:''};
+  if(sum.lacto>0&&sum.fiber>0)return {key:'good',msg:''};
+  return {key:'meh',msg:''};
 }
 
 //=============================== 描画 ===============================
 let petJustNow=false;
 function render(){
   const sum=daySummary(TODAY),total=earned(),stage=stageFor(total),st=STAGES[stage];
-  const mood=petJustNow?{key:'great',msg:''}:moodOf(sum);
   document.getElementById('hdrCoin').textContent=wallet();
   document.getElementById('homeName').textContent=state.catName;
   document.getElementById('homeStage').textContent=st.n;
-  if(typeof homeSprite==='function')document.getElementById('catArtHome').innerHTML=homeSprite();
-  else document.getElementById('catArtHome').innerHTML=catSVG(stage,mood.key,state.equipped);
+  document.getElementById('catArtHome').innerHTML=plantSVG(stage,state.bond,state.equipped);
   renderRoom();
-  const bl=bondLevel(state.bond);
-  document.getElementById('bondLabel').textContent=bl.l;
+  const bl=vitalityLevel(state.bond);
+  document.getElementById('bondLabel').textContent='元気度：'+bl.l;
   document.getElementById('bondSub').textContent=bl.s;
   document.getElementById('bondFill').style.width=state.bond+'%';
-  const hearts=Math.round(state.bond/20);
-  document.getElementById('bondHearts').innerHTML=Array.from({length:5},(_,i)=>i<hearts?'❤️':'🤍').join('');
+  const drops=Math.round(state.bond/20);
+  document.getElementById('bondHearts').innerHTML=Array.from({length:5},(_,i)=>i<drops?'💚':'🤍').join('');
   const nextMin=stage<STAGES.length-1?STAGES[stage+1].min:st.min;
   document.getElementById('lvlNum').textContent=stage+1;
   if(stage<STAGES.length-1){
     document.getElementById('lvlFill').style.width=Math.min(100,(total-st.min)/(nextMin-st.min)*100)+'%';
-    document.getElementById('lvlNext').textContent=`次の姿まで あと ${nextMin-total}P`;
-  }else{document.getElementById('lvlFill').style.width='100%';document.getElementById('lvlNext').textContent='最終形態！ 🏆';}
+    document.getElementById('lvlNext').textContent=`次のすがたまで あと ${nextMin-total}P`;
+  }else{document.getElementById('lvlFill').style.width='100%';document.getElementById('lvlNext').textContent='満開！ 🌸';}
   document.getElementById('mLacto').textContent=sum.lacto;
   document.getElementById('mFiber').textContent=sum.fiber+'g';
   document.getElementById('mPoint').textContent=sum.points;
@@ -875,7 +707,7 @@ function renderRoom(){
 }
 function renderLog(){
   const el=document.getElementById('todayLog'),items=entries(TODAY);
-  if(!items.length){el.innerHTML='<div class="empty">まだ記録がありません。<br>「＋ 食べたものを記録する」からどうぞ 🐾</div>';return;}
+  if(!items.length){el.innerHTML='<div class="empty">まだ記録がありません。<br>「＋ 食べたものを記録する」からどうぞ 🌱</div>';return;}
   const sum=daySummary(TODAY);
   el.innerHTML=items.map((it,i)=>{
     const f=FOOD_MAP[it.id];if(!f)return '';
@@ -900,8 +732,8 @@ function renderHistory(){
   const total=earned(),stage=stageFor(total);
   document.getElementById('growthList').innerHTML=STAGES.map((s,i)=>{
     const reached=total>=s.min,cur=i===stage;
-    return `<div class="growth-item ${reached?'reached':''} ${cur?'current':''}"><div class="gem">${catSVG(i,'good',{})}</div>
-      <div style="flex:1"><div class="gn">${s.n}</div><div class="gr">${cur?'いまここ 🐾':reached?'到達ずみ':'これから'}</div></div>
+    return `<div class="growth-item ${reached?'reached':''} ${cur?'current':''}"><div class="gem">${plantSVG(i,100,state.equipped)}</div>
+      <div style="flex:1"><div class="gn">${s.n}</div><div class="gr">${cur?'いまここ 🌱':reached?'到達ずみ':'これから'}</div></div>
       <div class="gpt">${s.min}P${reached?' ✓':''}</div></div>`;
   }).join('');
   const keys=Object.keys(state.logs).filter(k=>entries(k).length).sort().reverse();
@@ -952,19 +784,19 @@ function renderShop(){
   const w=wallet(),body=document.getElementById('shopBody');
   if(shopSub==='wear'){
     let html='';
-    ['hat','glasses','collar','outfit','back'].forEach(slot=>{
+    ['flower','pot'].forEach(slot=>{
       html+=`<div class="shop-group-title">${SLOT_LABEL[slot]}</div><div class="shop-grid">`+
-        COSTUMES.filter(c=>c.slot===slot).map(c=>shopCard('costume',c,w)).join('')+'</div>';
+        WEAR.filter(c=>c.slot===slot).map(c=>shopCard('costume',c,w)).join('')+'</div>';
     });
     body.innerHTML=html;
   }else{
-    body.innerHTML=`<div class="shop-group-title">🌤️ そらのいろ（かべがみ）</div><div class="shop-grid">`+WALLS.map(x=>shopCard('wall',x,w)).join('')+'</div>'+
-      `<div class="shop-group-title">🟢 ラグ</div><div class="shop-grid">`+RUGS.map(x=>shopCard('rug',x,w)).join('')+'</div>'+
-      `<div class="shop-group-title">🪑 かぐ・こもの</div><div class="shop-grid">`+FURNITURE.map(x=>shopCard('furni',x,w)).join('')+'</div>';
+    body.innerHTML=`<div class="shop-group-title">🌤️ そらのいろ（背景）</div><div class="shop-grid">`+WALLS.map(x=>shopCard('wall',x,w)).join('')+'</div>'+
+      `<div class="shop-group-title">🟫 じめん（花だん）</div><div class="shop-grid">`+RUGS.map(x=>shopCard('rug',x,w)).join('')+'</div>'+
+      `<div class="shop-group-title">🦋 ガーデン雑貨</div><div class="shop-grid">`+FURNITURE.map(x=>shopCard('furni',x,w)).join('')+'</div>';
   }
 }
 function shopPreview(type,x){
-  if(type==='costume'){const eq={};eq[x.slot]=x.id;return catSVG(3,'good',eq);}
+  if(type==='costume'){const eq=Object.assign({},state.equipped);eq[x.slot]=x.id;return plantSVG(x.slot==='flower'?4:5,100,eq);}
   if(type==='wall')return `<div style="width:56px;height:56px;border-radius:12px;background:${x.bg};border:2px solid var(--cream-d)"></div>`;
   if(type==='rug')return `<div style="width:56px;height:30px;border-radius:50%;background:${x.color}"></div>`;
   if(type==='furni')return x.html?x.html:`<span style="font-size:40px">${x.emoji}</span>`;
@@ -983,7 +815,7 @@ function shopCard(type,x,w){
       <button class="shop-btn buy" data-type="${type}" data-id="${x.id}" ${can?'':'disabled'}>${can?'買う':'P不足'}</button></div>`;
   }
   let label,cls;
-  if(type==='costume'){label=active?'ぬぐ':'きる';cls=active?'off':'use';}
+  if(type==='costume'){label=active?'えらび中':'えらぶ';cls=active?'off':'use';}
   else if(type==='furni'){label=active?'しまう':'かざる';cls=active?'off':'use';}
   else{label=active?'つかってる':'つかう';cls=active?'off':'use';}
   return `<div class="shop-item ${active?'equipped':''}">${active?'<span class="badge">つかってる</span>':''}<div class="shop-preview">${shopPreview(type,x)}</div>
@@ -993,7 +825,7 @@ function shopCard(type,x,w){
 document.getElementById('shopBody').addEventListener('click',e=>{
   const b=e.target.closest('.shop-btn');if(!b)return;
   const type=b.dataset.type,id=b.dataset.id,toggle=b.dataset.toggle;
-  const x={costume:COSTUME_MAP,wall:WALL_MAP,rug:RUG_MAP,furni:FURNI_MAP}[type][id];
+  const x={costume:WEAR_MAP,wall:WALL_MAP,rug:RUG_MAP,furni:FURNI_MAP}[type][id];
   if(!toggle){
     if(wallet()<x.price)return;
     state.spent+=x.price;state.owned.push(id);applyItem(type,id,true);addBond(1);
@@ -1001,7 +833,7 @@ document.getElementById('shopBody').addEventListener('click',e=>{
   }else{applyItem(type,id,'toggle');save();render();}
 });
 function applyItem(type,id,mode){
-  if(type==='costume'){const slot=COSTUME_MAP[id].slot;state.equipped[slot]=(mode===true)?id:(state.equipped[slot]===id?null:id);}
+  if(type==='costume'){const slot=WEAR_MAP[id].slot;state.equipped[slot]=id;} // 花・鉢は必ず選択（外さない）
   else if(type==='wall'){state.wallpaper=id;}
   else if(type==='rug'){state.rug=(mode==='toggle'&&state.rug===id)?null:id;}
   else if(type==='furni'){if(mode===true){if(!state.placed.includes(id))state.placed.push(id);}else{const i=state.placed.indexOf(id);if(i>=0)state.placed.splice(i,1);else state.placed.push(id);}}
@@ -1013,10 +845,10 @@ function addFood(id){
   const list=state.logs[TODAY],first=list.length===0;
   const beforeSyn=daySummary(TODAY).synbio,beforeP=daySummary(TODAY).points;
   const ex=list.find(it=>it.id===id);if(ex)ex.qty++;else list.push({id,qty:1});
-  if(first&&state.feedBondDate!==TODAY){state.feedBondDate=TODAY;addBond(3);toast('ごはんをあげた！ 少しなついた 🐾');}
+  if(first&&state.feedBondDate!==TODAY){state.feedBondDate=TODAY;addBond(3);toast('記録した！ お花が少し元気に 🌱');}
   const after=daySummary(TODAY);
   if(!beforeSyn&&after.synbio&&state.synbioBondDate!==TODAY){state.synbioBondDate=TODAY;addBond(3);toast('🎉 シンバイオティクス達成！ ボーナス＋40P');}
-  save();const gained=after.points-beforeP;petJustNow=false;render();
+  save();const gained=after.points-beforeP;render();
   document.querySelectorAll('.stat').forEach(s=>{s.classList.remove('measuring');void s.offsetWidth;s.classList.add('measuring');});
   if(gained>0)flyPoint('+'+gained+'P');
 }
@@ -1025,77 +857,27 @@ function changeQty(i,delta){
   list[i].qty+=delta;if(list[i].qty<=0)list.splice(i,1);if(!list.length)delete state.logs[TODAY];
   save();render();
 }
-function pet(ev){
+function water(ev){
   const room=document.getElementById('room'),r=room.getBoundingClientRect();
   let x,y;
   if(ev.touches&&ev.touches[0]){x=ev.touches[0].clientX-r.left;y=ev.touches[0].clientY-r.top;}
   else{x=ev.clientX-r.left;y=ev.clientY-r.top;}
-  if(isNaN(x)){x=r.width/2;y=r.height*0.5;}
-  const h=document.createElement('div');h.className='heart-p';h.textContent=['💚','💛','💕','🍃'][Math.floor(Math.random()*4)];
-  h.style.left=(x-9)+'px';h.style.top=(y-9)+'px';room.appendChild(h);setTimeout(()=>h.remove(),1000);
-  pauseBehave();
-  const art=document.getElementById('catArtHome');art.classList.remove('cat-pet','cat-bounce','walking');void art.offsetWidth;art.classList.add('cat-pet');
-  setTimeout(()=>{art.classList.remove('cat-pet');art.classList.add('cat-bounce');},520);
+  if(isNaN(x)){x=r.width/2;y=r.height*0.4;}
+  for(let i=0;i<4;i++){const d=document.createElement('div');d.className='water-p';d.textContent='💧';
+    d.style.left=(x-8+(i-1.5)*11)+'px';d.style.top=(y-28)+'px';d.style.animationDelay=(i*60)+'ms';room.appendChild(d);setTimeout(()=>d.remove(),950);}
+  const art=document.getElementById('catArtHome');art.classList.remove('cat-pet');void art.offsetWidth;art.classList.add('cat-pet');
+  setTimeout(()=>art.classList.remove('cat-pet'),520);
   if(state.pet.date!==TODAY)state.pet={date:TODAY,count:0};
   if(state.pet.count<5){
     state.pet.count++;addBond(1);state.petPoints+=2;
-    const p=document.createElement('div');p.className='purr';p.textContent='ゴロゴロ♪';p.style.left=(x-24)+'px';p.style.top=(y-30)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
-    petJustNow=true;save();render();setTimeout(()=>{petJustNow=false;render();},1400);
+    const p=document.createElement('div');p.className='purr';p.textContent='ぐんぐん♪';p.style.left=(x-24)+'px';p.style.top=(y-32)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
+    save();render();
   }else{
-    const p=document.createElement('div');p.className='purr';p.textContent='まんぞく♪';p.style.left=(x-22)+'px';p.style.top=(y-30)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
+    const p=document.createElement('div');p.className='purr';p.textContent='たっぷり♪';p.style.left=(x-22)+'px';p.style.top=(y-32)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
   }
 }
-document.getElementById('catHome').addEventListener('click',pet);
-// ===== 猫のしぐさ（歩く・すわる・寝る・のび・毛づくろい・あそぶ）=====
-let behaveTimer=null,catAct='sit';
-function homeSprite(){
-  const stage=stageFor(earned());
-  const mood=petJustNow?'great':moodOf(daySummary(TODAY)).key;
-  switch(catAct){
-    case 'walk':   return catWalkSVG(stage,state.equipped);
-    case 'sleep':  return catSleepSVG(stage);
-    case 'stretch':return catStretchSVG(stage);
-    case 'play':   return catPlaySVG(stage);
-    case 'groom':  return catGroomSVG(stage,state.equipped);
-    default:       return catSVG(stage,mood,state.equipped);
-  }
-}
-function paintHomeCat(){const el=document.getElementById('catArtHome');if(el)el.innerHTML=homeSprite();}
-function setActClass(){const art=document.getElementById('catArtHome');if(!art)return;
-  art.classList.remove('walking','still');
-  if(catAct==='walk')art.classList.add('walking');
-  else if(catAct==='sleep'||catAct==='stretch'||catAct==='play')art.classList.add('still');}
-function freezeCat(){
-  const cat=document.getElementById('catHome'),room=document.getElementById('room');if(!cat||!room)return;
-  const rr=room.getBoundingClientRect(),cr=cat.getBoundingClientRect();
-  if(rr.width>0){const pct=((cr.left+cr.width/2)-rr.left)/rr.width*100;cat.style.transition='none';cat.style.left=Math.max(26,Math.min(74,pct))+'%';}
-}
-function startWalk(){
-  const cat=document.getElementById('catHome'),face=document.getElementById('catFace');if(!cat)return;
-  catAct='walk';
-  const cur=parseFloat(cat.style.left)||50;
-  let target=26+Math.random()*48;
-  if(Math.abs(target-cur)<16)target=cur<50?cur+20:cur-20;
-  target=Math.max(26,Math.min(74,target));
-  const dur=Math.max(1.6,Math.abs(target-cur)*0.17);        // ゆっくりめの歩き
-  face.style.transform='scaleX('+(target>cur?1:-1)+')';
-  paintHomeCat();setActClass();
-  cat.style.transition='left '+dur+'s linear';cat.style.left=target+'%';
-  clearTimeout(behaveTimer);behaveTimer=setTimeout(behave,dur*1000+(500+Math.random()*900));
-}
-function startIdle(act){
-  catAct=act;freezeCat();paintHomeCat();setActClass();
-  const hold=act==='sleep'?(4500+Math.random()*4000):(1800+Math.random()*2400);
-  clearTimeout(behaveTimer);behaveTimer=setTimeout(behave,hold);
-}
-function behave(){
-  if(Math.random()<0.5)startWalk();
-  else{const acts=['sit','sleep','groom','play','stretch'];startIdle(acts[Math.floor(Math.random()*acts.length)]);}
-}
-function pauseBehave(){clearTimeout(behaveTimer);catAct='sit';freezeCat();setActClass();behaveTimer=setTimeout(behave,2600);}
-document.getElementById('catHome').style.left='50%';
-paintHomeCat();
-behaveTimer=setTimeout(behave,1600);
+document.getElementById('catHome').addEventListener('click',water);
+
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
@@ -1124,11 +906,11 @@ function renderFoods(){
   el.innerHTML=list.length?list.map(f=>{const tags=[];if(f.lacto)tags.push(`<span class="tag l">乳酸菌 +${f.lacto}</span>`);if(f.fiber)tags.push(`<span class="tag f">食物繊維 ${f.fiber}g</span>`);
     const ing=f.ing?`<div class="fing">🥕 ${f.ing}</div>`:'';
     return `<div class="food-card" data-id="${f.id}"><span class="fem">${f.e}</span><div style="flex:1"><div class="fn">${f.n}</div>${ing}<div class="ft">${tags.join('')}</div></div><button class="fadd">＋</button></div>`;
-  }).join(''):'<div class="empty">見つかりませんでした<br><span style="font-size:11px">単品の食材で記録してみてね 🐾</span></div>';
+  }).join(''):'<div class="empty">見つかりませんでした<br><span style="font-size:11px">単品の食材で記録してみてね 🌱</span></div>';
 }
 document.getElementById('foodList').addEventListener('click',e=>{const card=e.target.closest('.food-card');if(!card)return;addFood(card.dataset.id);});
-document.getElementById('renameBtn').onclick=()=>{const nm=prompt('猫のなまえ',state.catName);if(nm&&nm.trim()){state.catName=nm.trim().slice(0,12);save();render();}};
-document.getElementById('resetBtn').onclick=()=>{if(confirm('すべての記録・猫・アイテムをリセットします。よろしいですか？')){localStorage.removeItem(KEY);state=load();save();render();}};
+document.getElementById('renameBtn').onclick=()=>{const nm=prompt('お花のなまえ',state.catName);if(nm&&nm.trim()){state.catName=nm.trim().slice(0,12);save();render();}};
+document.getElementById('resetBtn').onclick=()=>{if(confirm('すべての記録・お花・アイテムをリセットします。よろしいですか？')){localStorage.removeItem(KEY);state=load();save();render();}};
 function flyPoint(txt){const pop=document.getElementById('pop');const el=document.createElement('div');el.className='pt-fly';el.textContent=txt;if(txt[0]==='-')el.style.color='var(--accent-dark)';pop.appendChild(el);setTimeout(()=>el.remove(),1100);}
 let toastT;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
 render();

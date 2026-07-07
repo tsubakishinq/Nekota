@@ -813,21 +813,60 @@ function updateFlames(dt){
     const dmg=f.dps*dt;
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.kicked) continue;
       if(dist2(e.x,e.y,f.x,f.y) < (f.r+e.r)*(f.r+e.r)){ e.hp-=dmg; e.hitFlash=1; if(e.hp<=0) killEnemy(e); } }
-    // 火の粉
-    if(Math.random()<0.6) spawnParticles(f.x+rnd(-f.r*0.5,f.r*0.5), f.y+rnd(-f.r*0.4,f.r*0.4), Math.random()<0.5?'#ff8a3c':'#ffd85e', 1, 70, 0.35);
+    // 舞い上がる火の粉
+    for(let k=0;k<2;k++){ if(Math.random()<0.8){
+      particles.push({x:f.x+rnd(-f.r*0.5,f.r*0.5), y:f.y+rnd(-f.r*0.2,f.r*0.3),
+        vx:rnd(-30,30), vy:rnd(-160,-50), life:rnd(0.35,0.7), max:0.7,
+        color:Math.random()<0.5?'#ffb43c':(Math.random()<0.5?'#ff6a1e':'#fff2b0'), size:rnd(1.5,3.4), grav:-40});
+    }}
   }
 }
+// 燃える肉球（立ち上る炎の舌つき）
 function drawFlames(){
   ctx.save(); ctx.globalCompositeOperation='lighter';
+  const now=performance.now()*0.001;
   for(const f of flames){
     const a=clamp(f.life/f.max,0,1);
-    const flick=0.85+Math.sin(f.seed*3)*0.15;
-    const s=f.r*(0.72+0.28*a)*flick;
-    ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=a;
-    ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=18;
-    drawPaw(0,0, s*1.15, `rgba(255,110,40,${0.5*a})`, 1);
-    drawPaw(0,0, s*0.9,  `rgba(255,180,70,${0.7*a})`, 1);
-    drawPaw(0,0, s*0.55, `rgba(255,240,190,${0.85*a})`, 1);
+    const flick=0.86+Math.sin(f.seed*5+now*9)*0.14;
+    const base=f.r*(0.8+0.2*a)*flick;
+    ctx.save(); ctx.translate(f.x,f.y);
+    // 外側の熱グロー
+    ctx.globalAlpha=a;
+    let g=ctx.createRadialGradient(0,0,base*0.15,0,0,base*1.5);
+    g.addColorStop(0,'rgba(255,180,60,0.55)'); g.addColorStop(0.5,'rgba(255,80,15,0.28)'); g.addColorStop(1,'rgba(120,20,0,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,base*1.5,0,TAU); ctx.fill();
+    // 燃える肉球本体(赤→橙→黄→白の多層)
+    ctx.shadowColor='#ff7a1e'; ctx.shadowBlur=22;
+    drawPaw(0,0, base*1.12, `rgba(210,40,8,${0.6*a})`, 1);
+    drawPaw(0,0, base*0.92, `rgba(255,120,30,${0.72*a})`, 1);
+    drawPaw(0,0, base*0.68, `rgba(255,200,80,${0.82*a})`, 1);
+    drawPaw(0,0, base*0.42, `rgba(255,248,215,${0.9*a})`, 1);
+    ctx.shadowBlur=0;
+    // 立ち上る炎の舌（手のひら＋4つの肉球から）
+    const roots=[[0,-base*0.1,base*0.52],[-base*0.48,-base*0.62,base*0.24],[-base*0.16,-base*0.7,base*0.26],[base*0.16,-base*0.7,base*0.26],[base*0.48,-base*0.62,base*0.24]];
+    for(let bi=0;bi<roots.length;bi++){
+      const bx=roots[bi][0], by=roots[bi][1], bw=roots[bi][2];
+      const h = bw*(1.5 + (Math.sin(f.seed*8+now*13+bi*1.7)*0.5+0.5)*2.0);
+      const sway = Math.sin(f.seed*11+now*11+bi*2.1)*bw*0.35;
+      const fg=ctx.createLinearGradient(0,by,0,by-h);
+      fg.addColorStop(0,`rgba(255,90,15,0)`);
+      fg.addColorStop(0.2,`rgba(255,110,20,${0.75*a})`);
+      fg.addColorStop(0.6,`rgba(255,205,80,${0.8*a})`);
+      fg.addColorStop(1,`rgba(255,255,220,0)`);
+      ctx.fillStyle=fg;
+      ctx.beginPath();
+      ctx.moveTo(bx-bw*0.5, by);
+      ctx.quadraticCurveTo(bx-bw*0.45, by-h*0.55, bx+sway, by-h);
+      ctx.quadraticCurveTo(bx+bw*0.45, by-h*0.55, bx+bw*0.5, by);
+      ctx.closePath(); ctx.fill();
+      // 白い芯
+      ctx.fillStyle=`rgba(255,250,220,${0.5*a})`;
+      ctx.beginPath();
+      ctx.moveTo(bx-bw*0.2, by);
+      ctx.quadraticCurveTo(bx-bw*0.15, by-h*0.5, bx+sway*0.6, by-h*0.7);
+      ctx.quadraticCurveTo(bx+bw*0.15, by-h*0.5, bx+bw*0.2, by);
+      ctx.closePath(); ctx.fill();
+    }
     ctx.restore();
   }
   ctx.restore(); ctx.globalAlpha=1;

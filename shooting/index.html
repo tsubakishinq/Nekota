@@ -695,32 +695,38 @@ function drawLaserBeam(){
   const flick=0.82+Math.random()*0.18;
   ctx.save();
   ctx.globalCompositeOperation='lighter'; ctx.lineJoin='round'; ctx.lineCap='round';
-  // MAX: 斜め前へ放射するレーザー(細い根元→少し先で楕円ビームになり膨らむ)
+  // MAX: 斜め前へ放射(細い根元→楕円の輪っかが大きくなりながら迫る)
   if(player.wpLevel>=5){
-    const ox=player.x, oy=player.y-player.r-2, len=1000, throat=len*0.28;
-    const now=performance.now()*0.001;
+    const ox=player.x, oy=player.y-player.r-2, len=1000, throat=len*0.2;
+    const now=performance.now()*0.001, range=len-throat, spacing=165, speed=300;
+    const count=Math.ceil(range/spacing)+1;
     for(const off of LASER_SIDE_OFFS){
       const ang=(-90+off)*Math.PI/180, dx=Math.cos(ang), dy=Math.sin(ang);
       const tx=ox+dx*throat, ty=oy+dy*throat;
-      const grow=0.7+0.3*(0.5+0.5*Math.sin(now*5+off*0.09)); // 大きくなりながら
-      const wF=30*grow;
       // 細い根元
       ctx.shadowColor='#b46bff'; ctx.shadowBlur=10;
-      ctx.strokeStyle=`rgba(160,95,255,${0.5*flick})`; ctx.lineWidth=6;
+      ctx.strokeStyle=`rgba(160,95,255,${0.5*flick})`; ctx.lineWidth=5;
       ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(tx,ty); ctx.stroke();
       ctx.shadowBlur=0;
-      ctx.strokeStyle=`rgba(255,255,255,${0.85*flick})`; ctx.lineWidth=2;
+      ctx.strokeStyle=`rgba(255,255,255,${0.8*flick})`; ctx.lineWidth=2;
       ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(tx,ty); ctx.stroke();
-      // 楕円ビーム(throatから先で膨らむ)
-      const mx=ox+dx*(throat+(len-throat)*0.5), my=oy+dy*(throat+(len-throat)*0.5);
-      const rx=(len-throat)*0.5;
-      ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
-      ctx.shadowColor='#b46bff'; ctx.shadowBlur=16;
-      ctx.fillStyle=`rgba(150,90,255,${0.30*flick})`; ctx.beginPath(); ctx.ellipse(0,0,rx,wF*1.3,0,0,TAU); ctx.fill();
-      ctx.fillStyle=`rgba(201,168,255,${0.5*flick})`; ctx.beginPath(); ctx.ellipse(0,0,rx*0.95,wF*0.85,0,0,TAU); ctx.fill();
+      // 外へ流れて大きくなる楕円リング
+      const phase=(now*speed + off*20) % spacing;
+      ctx.shadowColor='#b46bff'; ctx.shadowBlur=13;
+      for(let ri=0; ri<count; ri++){
+        const d=throat+phase+ri*spacing;
+        if(d<throat || d>len) continue;
+        const t=(d-throat)/range;             // 0(近)〜1(遠)
+        const rw=7+t*36;                       // 迫るほど大きく
+        const al=(0.9-t*0.25)*flick;
+        ctx.save(); ctx.translate(ox+dx*d, oy+dy*d); ctx.rotate(ang);
+        ctx.strokeStyle=`rgba(201,168,255,${0.75*al})`; ctx.lineWidth=3.5;
+        ctx.beginPath(); ctx.ellipse(0,0, rw*0.4, rw, 0,0,TAU); ctx.stroke();
+        ctx.strokeStyle=`rgba(255,255,255,${0.55*al})`; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.ellipse(0,0, rw*0.4, rw, 0,0,TAU); ctx.stroke();
+        ctx.restore();
+      }
       ctx.shadowBlur=0;
-      ctx.fillStyle=`rgba(255,255,255,${0.7*flick})`; ctx.beginPath(); ctx.ellipse(0,0,rx*0.9,wF*0.4,0,0,TAU); ctx.fill();
-      ctx.restore();
     }
   }
   const pts=player.laserPts;

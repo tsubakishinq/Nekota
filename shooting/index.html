@@ -119,19 +119,22 @@
     display:flex; align-items:center; justify-content:center; font-weight:900; color:#fff;
     letter-spacing:1px; font-size:15px; border:2px solid rgba(255,255,255,.35);
   }
+  #fireBtn{flex-direction:column;}
+  #fireBtn small{font-size:8.5px; letter-spacing:1px; font-weight:800; opacity:.85; margin-top:1px;}
   #fireBtn:active{transform:scale(.92);}
-  #bombBtn{
-    pointer-events:auto;
-    position:absolute; left:20px; bottom:34px; width:74px; height:74px; border-radius:50%;
-    background:radial-gradient(circle at 40% 35%, #ffe0b0, #ff8a3c 70%);
-    box-shadow:0 0 22px rgba(255,138,60,.6), inset 0 0 18px rgba(255,255,255,.3);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    color:#3a1c00; border:2px solid rgba(255,255,255,.4); line-height:1;
+  /* 左下の十字キー */
+  #dpad{
+    pointer-events:auto; position:absolute; left:16px; bottom:24px; width:118px; height:118px;
+    border-radius:50%; background:radial-gradient(circle at 50% 45%, rgba(30,38,72,.6), rgba(9,12,34,.5));
+    border:2px solid rgba(87,246,255,.28); box-shadow:0 0 18px rgba(87,246,255,.15), inset 0 0 22px rgba(0,0,0,.4);
+    touch-action:none;
   }
-  #bombBtn span{font-weight:900; font-size:18px; margin-top:1px;}
-  #bombBtn small{font-size:8px; letter-spacing:1px; font-weight:800; opacity:.8;}
-  #bombBtn:active{transform:scale(.92);}
-  #bombBtn.empty{opacity:.38; filter:grayscale(.6);}
+  #dpad .arm{position:absolute; left:50%; top:50%; color:var(--neon); font-size:15px; font-weight:900;
+    transform:translate(-50%,-50%); opacity:.85;}
+  #dpad .arm.u{top:15%;} #dpad .arm.d{top:85%;} #dpad .arm.l{left:15%;} #dpad .arm.r{left:85%;}
+  #dpad .nub{position:absolute; left:50%; top:50%; width:44px; height:44px; margin:-22px 0 0 -22px;
+    border-radius:50%; background:radial-gradient(circle at 40% 35%,#8be9ff,#2b7bd6);
+    box-shadow:0 0 16px rgba(87,246,255,.55); transition:transform .04s;}
   .pauseBtn{position:absolute; top:10px; right:12px; z-index:16; width:40px; height:40px; border-radius:10px;
     background:rgba(9,12,34,.55); border:1px solid rgba(87,246,255,.3); color:var(--neon); font-size:18px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;}
@@ -140,6 +143,38 @@
   .toast{position:absolute; left:50%; top:16%; transform:translateX(-50%); z-index:14;
     font-weight:900; letter-spacing:2px; font-size:clamp(16px,5vw,24px); pointer-events:none;
     opacity:0; text-shadow:0 0 14px currentColor;}
+
+  /* ===== あそびかた 動画(アニメ) ===== */
+  #tutoStage{position:relative; width:min(300px,82vw); height:360px; border-radius:18px; overflow:hidden;
+    background:radial-gradient(circle at 50% 18%, #161c40, #06081c 75%); border:1px solid rgba(87,246,255,.28);
+    box-shadow:0 0 30px rgba(87,246,255,.12) inset;}
+  #tShip{position:absolute; bottom:64px; left:50%; margin-left:-16px; font-size:30px; line-height:1;
+    transition:left .9s ease, bottom .5s ease; filter:drop-shadow(0 0 8px rgba(87,246,255,.6));}
+  #tShip.mLeft{left:28%;} #tShip.mRight{left:72%;}
+  .tDpad{position:absolute; left:16px; bottom:16px; width:74px; height:74px; border-radius:50%;
+    border:2px solid rgba(87,246,255,.4); background:rgba(9,12,34,.5); display:flex; align-items:center; justify-content:center;
+    color:var(--neon); font-size:26px;}
+  .tFire{position:absolute; right:18px; bottom:20px; width:58px; height:58px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%, #ffd0ee, var(--neon2) 70%); display:flex; align-items:center;
+    justify-content:center; color:#fff; font-weight:900; font-size:11px; box-shadow:0 0 14px rgba(255,94,201,.5);}
+  #tFinger{position:absolute; width:36px; height:36px; border-radius:50%; z-index:5;
+    background:rgba(255,255,255,.28); border:2px solid rgba(255,255,255,.85); box-shadow:0 0 14px rgba(255,255,255,.5);
+    left:53px; bottom:53px; transform:translate(-50%,50%); pointer-events:none;
+    transition:left .5s cubic-bezier(.5,0,.3,1), bottom .5s cubic-bezier(.5,0,.3,1), transform .12s;}
+  #tFinger.onDpad{left:53px; bottom:53px;}
+  #tFinger.onFire{left:calc(100% - 47px); bottom:49px;}
+  #tFinger.swipeUp{left:calc(100% - 47px); bottom:150px;}
+  #tFinger.press{transform:translate(-50%,50%) scale(.7);}
+  .tBullet{position:absolute; width:5px; height:14px; border-radius:3px; background:#ffd85e; box-shadow:0 0 8px #ffd85e;
+    z-index:4; animation:tbUp .6s linear forwards;}
+  @keyframes tbUp{from{opacity:1;} to{transform:translateY(-150px); opacity:0;}}
+  #tFlash{position:absolute; inset:0; background:radial-gradient(circle,#57f6ff,transparent 70%); opacity:0; z-index:6;}
+  #tFlash.go{animation:tflash .5s ease-out;}
+  @keyframes tflash{0%{opacity:.85;} 100%{opacity:0;}}
+  #tutoCap{font-size:clamp(13px,4.2vw,17px); font-weight:800; color:#eaf6ff; letter-spacing:1px; min-height:1.6em;
+    text-shadow:0 0 10px rgba(87,246,255,.4);}
+  .tutoList{font-size:11.5px; color:#9fb4de; line-height:1.7; max-width:320px;}
+  .tutoList b{color:var(--neon);}
 </style>
 
 <div id="wrap">
@@ -150,8 +185,11 @@
   <div class="toast" id="toast"></div>
 
   <div id="touch">
-    <div id="fireBtn">FIRE</div>
-    <div id="bombBtn">🐾<span id="bombCount">3</span><small>BOMB</small></div>
+    <div id="dpad">
+      <span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span>
+      <div class="nub" id="dnub"></div>
+    </div>
+    <div id="fireBtn"><span>FIRE</span><small id="fireBomb">↑ボム3</small></div>
   </div>
 
   <!-- Title -->
@@ -178,11 +216,12 @@
       </div>
     </div>
     <button class="btn" id="startBtn">▶ START</button>
+    <button class="btn ghost" id="tutoBtn">🎬 あそびかた</button>
     <button class="btn ghost" id="helpBtn">📖 アイテム説明</button>
     <div class="panel" id="ctrlPanel">
-      <b>操作</b>　移動：<span class="key">← →</span><span class="key">↑ ↓</span> / マウス / タッチ<br>
-      ショット：<span class="key">Space</span> or <span class="key">Z</span>（押しっぱなしOK）<br>
-      ポーズ：<span class="key">P</span>
+      <b>操作</b>　移動：左下の <span class="key">十字キー</span> / <span class="key">← →↑↓</span><br>
+      ショット：右下の <span class="key">FIRE</span>（<span class="key">Space</span>/<span class="key">Z</span>）<br>
+      ボム：FIREを <b>上にスワイプ</b>（PCは <span class="key">X</span>）／子猫展開：FIRE<b>2回タップ</b>
     </div>
     <div class="hs" id="titleHigh"></div>
   </div>
@@ -222,7 +261,7 @@
       <div class="itemRow"><div class="itemIco" style="color:#ff5ec9">✦</div><div class="itemTxt"><div class="itemName">マグネット</div><div class="itemDesc">アイテムを引き寄せる（約6秒）</div></div></div>
       <div class="grpLabel">■ 回復・その他</div>
       <div class="itemRow"><div class="itemIco" style="color:#ff3b4e;background:#fff">✚</div><div class="itemTxt"><div class="itemName">回復（救急マーク）</div><div class="itemDesc">HPが30回復する</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム（必殺技）</div><div class="itemDesc">ストック+1（最初は3個）。発動＝左下のBOMBボタン / Xキー。ネコで技が変化：キジトラ🐾ネコパンチで押しつぶし／黒ネコ🌀ネコキックで敵を吹き飛ばし／白ネコ🐱敵を全部15秒 味方の子猫にする</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ff8a5e">✹</div><div class="itemTxt"><div class="itemName">ボム（必殺技）</div><div class="itemDesc">ストック+1（最初は3個）。発動＝FIREを上にスワイプ / Xキー。ネコで技が変化：キジトラ🐾ネコパンチで押しつぶし／黒ネコ🌀ネコキックで敵を吹き飛ばし／白ネコ🐱敵を全部15秒 味方の子猫にする</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">🐾</div><div class="itemTxt"><div class="itemName">肉球エネルギー</div><div class="itemDesc">スコア +120。集めてハイスコアを狙おう</div></div></div>
       <div class="grpLabel">■ ネコごとのメイン武器</div>
       <div class="itemRow"><div class="itemIco" style="color:#c98a3f">🟠</div><div class="itemTxt"><div class="itemName">キジトラ ＝ 拡散ショット</div><div class="itemDesc">前方に広く弾をばらまくバランス型</div></div></div>
@@ -230,6 +269,25 @@
       <div class="itemRow"><div class="itemIco" style="color:#ff7ab0">⚪</div><div class="itemTxt"><div class="itemName">白ネコ ＝ ホーミング</div><div class="itemDesc">最寄りの敵を自動で追尾して着弾で爆発</div></div></div>
     </div>
     <button class="btn" id="helpCloseBtn">✕ とじる</button>
+  </div>
+
+  <!-- あそびかた 動画(アニメ) -->
+  <div class="overlay hidden" id="tutoScreen">
+    <div class="guideTitle">🎬 あそびかた</div>
+    <div id="tutoStage">
+      <div class="tDpad">✚</div>
+      <div class="tFire">FIRE</div>
+      <div id="tShip">🐱</div>
+      <div id="tFinger"></div>
+      <div id="tFlash"></div>
+    </div>
+    <div id="tutoCap">　</div>
+    <div class="tutoList">
+      <b>移動</b>＝左下の十字キー　／　<b>ショット</b>＝右下のFIRE<br>
+      <b>ボム</b>＝FIREを上にスワイプ　／　<b>子猫展開</b>＝FIRE2回タップ
+    </div>
+    <button class="btn" id="tutoStartBtn">▶ この設定ではじめる</button>
+    <button class="btn ghost" id="tutoCloseBtn" style="font-size:14px;padding:9px 22px">✕ とじる</button>
   </div>
 </div>
 
@@ -417,11 +475,42 @@ function toggleKittenDeploy(){
   showToast(msg,'#ffd85e');
   for(const k of player.kittens){ k.roamT=0; k.rx=undefined; k.aimAngle=undefined; }
 }
-let lastTouchFire=0;
-fireBtn.addEventListener('touchstart',e=>{ input.fire=true; lastTouchFire=Date.now(); onFireTap(); e.preventDefault();},{passive:false});
+let lastTouchFire=0, fireStartY=0, fireSwiped=false;
+fireBtn.addEventListener('touchstart',e=>{ input.fire=true; lastTouchFire=Date.now(); fireStartY=e.changedTouches[0].clientY; fireSwiped=false; onFireTap(); e.preventDefault();},{passive:false});
+fireBtn.addEventListener('touchmove',e=>{
+  // 上にスワイプでボム
+  if(!fireSwiped && (fireStartY - e.changedTouches[0].clientY) > 34){ fireSwiped=true; input.fire=false; useBomb(); }
+  e.preventDefault();
+},{passive:false});
 fireBtn.addEventListener('touchend',e=>{ input.fire=false; e.preventDefault();},{passive:false});
 fireBtn.addEventListener('mousedown',()=>{ input.fire=true; if(Date.now()-lastTouchFire>700) onFireTap(); });
 fireBtn.addEventListener('mouseup',()=>input.fire=false);
+// 右下FIREの下ラベルにボム残数を表示
+const fireBombEl=document.getElementById('fireBomb');
+
+// ===== 左下 十字キー(バーチャルパッド) =====
+const dpad={active:false, dx:0, dy:0};
+const dpadEl=document.getElementById('dpad');
+const dnub=document.getElementById('dnub');
+let dpadTouchId=null;
+function dpadSet(clientX, clientY){
+  const r=dpadEl.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  let vx=clientX-cx, vy=clientY-cy;
+  const mag=Math.hypot(vx,vy), dead=6;
+  if(mag<dead){ dpad.dx=0; dpad.dy=0; dnub.style.transform='translate(0,0)'; }
+  else{ dpad.dx=vx/mag; dpad.dy=vy/mag;
+    const nm=Math.min(mag, r.width*0.32);
+    dnub.style.transform=`translate(${dpad.dx*nm}px,${dpad.dy*nm}px)`; }
+  dpad.active=true;
+}
+function dpadEnd(){ dpad.active=false; dpad.dx=0; dpad.dy=0; dpadTouchId=null; dnub.style.transform='translate(0,0)'; }
+dpadEl.addEventListener('touchstart',e=>{ Audio2.init();Audio2.resume(); const t=e.changedTouches[0]; dpadTouchId=t.identifier; dpadSet(t.clientX,t.clientY); e.preventDefault();},{passive:false});
+dpadEl.addEventListener('touchmove',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId) dpadSet(t.clientX,t.clientY);} e.preventDefault();},{passive:false});
+dpadEl.addEventListener('touchend',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId) dpadEnd();} e.preventDefault();},{passive:false});
+dpadEl.addEventListener('mousedown',e=>{ dpadSet(e.clientX,e.clientY); dpadTouchId='m'; e.preventDefault();});
+window.addEventListener('mousemove',e=>{ if(dpadTouchId==='m' && (e.buttons&1)) dpadSet(e.clientX,e.clientY);});
+window.addEventListener('mouseup',()=>{ if(dpadTouchId==='m') dpadEnd(); });
 // desktop: Cキーでも出撃/帰還
 window.addEventListener('keydown',e=>{ if((e.key==='c'||e.key==='C') && state==='play') toggleKittenDeploy(); });
 
@@ -547,9 +636,12 @@ function updatePlayer(dt){
   if(keys['arrowup']||keys['w']) dy-=1;
   if(keys['arrowdown']||keys['s']) dy+=1;
   const kbMove = dx||dy;
-  if(kbMove){ input.usePointer=false; }
+  // 十字キー（バーチャルパッド）を優先
+  if(dpad.active && (dpad.dx||dpad.dy)){ dx=dpad.dx; dy=dpad.dy; input.usePointer=false; }
+  else if(kbMove){ input.usePointer=false; }
 
-  if(input.usePointer){
+  const dirMove = (dpad.active && (dpad.dx||dpad.dy)) || kbMove;
+  if(input.usePointer && !dirMove){
     const tx=input.px, ty=input.py;
     const ddx=tx-player.x, ddy=ty-player.y;
     const d=Math.hypot(ddx,ddy);
@@ -558,7 +650,7 @@ function updatePlayer(dt){
   } else {
     const len=Math.hypot(dx,dy)||1;
     player.x+=dx/len*player.speed*dt; player.y+=dy/len*player.speed*dt;
-    player.thrust=kbMove?1:0.3;
+    player.thrust=dirMove?1:0.3;
   }
   player.x=clamp(player.x,player.r,W-player.r);
   player.y=clamp(player.y,player.r+10,H-player.r-10);
@@ -1516,19 +1608,14 @@ function drawBombFx(){
   }
 }
 document.addEventListener('keydown',e=>{ if((e.key==='x'||e.key==='X'||e.key==='Shift') && state==='play'){ useBomb(); }});
-// dedicated bomb button (bottom-left)
-const bombBtn=document.getElementById('bombBtn');
-const bombCountEl=document.getElementById('bombCount');
+// FIREボタン下のボム残数ラベルを更新
 let lastBombShown=-1;
 function refreshBombBtn(){
   if(player.bombs!==lastBombShown){
     lastBombShown=player.bombs;
-    bombCountEl.textContent=player.bombs;
-    bombBtn.classList.toggle('empty', player.bombs<=0);
+    if(fireBombEl) fireBombEl.textContent='↑ボム'+player.bombs;
   }
 }
-bombBtn.addEventListener('touchstart',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); useBomb(); },{passive:false});
-bombBtn.addEventListener('mousedown',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); useBomb(); });
 
 // ============================================================
 //  BULLETS UPDATE / COLLISIONS
@@ -1941,7 +2028,9 @@ function startGame(){
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; allies.length=0; flames.length=0;
   boss=null; bossActive=false; waveQueue.length=0; bombFx=null;
   resetPlayer(); initStars();
-  input.usePointer=false;
+  input.usePointer=false; input.fire=false;
+  if(typeof dpad!=='undefined') dpadEnd();
+  if(typeof closeTuto==='function') closeTuto();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden');
   pauseBtn.style.display='flex';
   state='play';
@@ -1974,6 +2063,34 @@ document.getElementById('resumeBtn').addEventListener('click', togglePause);
 const helpScreen=document.getElementById('helpScreen');
 document.getElementById('helpBtn').addEventListener('click',()=>{ Audio2.init();Audio2.resume(); Audio2.sfx.select(); helpScreen.classList.remove('hidden'); helpScreen.scrollTop=0; });
 document.getElementById('helpCloseBtn').addEventListener('click',()=>{ Audio2.sfx.select(); helpScreen.classList.add('hidden'); });
+
+// ===== あそびかた 動画(アニメ) =====
+const tutoScreen=document.getElementById('tutoScreen');
+const tFinger=document.getElementById('tFinger'), tShip=document.getElementById('tShip'),
+      tCap=document.getElementById('tutoCap'), tStage=document.getElementById('tutoStage'), tFlash=document.getElementById('tFlash');
+let tutoTimer=null, tutoStep=0;
+const TUTO_CAPS=['① 左下の十字キーで移動','② 右下のFIREでショット','③ FIREを上にスワイプでボム！','④ FIREを2回タップで子猫パワー'];
+function tShoot(){ const bx=(tShip.offsetLeft||150); const el=document.createElement('div'); el.className='tBullet';
+  el.style.left=(tShip.offsetLeft+13)+'px'; el.style.bottom=(tStage.clientHeight-tShip.offsetTop+2)+'px';
+  tStage.appendChild(el); setTimeout(()=>el.remove(),650); }
+function tPress(){ tFinger.classList.add('press'); setTimeout(()=>tFinger.classList.remove('press'),160); }
+function tutoTick(){
+  const s=tutoStep%4; tCap.textContent=TUTO_CAPS[s];
+  tFinger.className=''; tShip.className='';
+  if(s===0){ tFinger.classList.add('onDpad'); tShip.classList.add('mLeft');
+    setTimeout(()=>{ if(tutoStep%4===1-1){ tShip.classList.remove('mLeft'); tShip.classList.add('mRight'); } },1100); }
+  else if(s===1){ tFinger.classList.add('onFire'); tPress(); tShoot(); setTimeout(tShoot,400); setTimeout(()=>{tPress();tShoot();},800); }
+  else if(s===2){ tFinger.classList.add('onFire'); setTimeout(()=>{ tFinger.classList.remove('onFire'); tFinger.classList.add('swipeUp'); tFlash.classList.remove('go'); void tFlash.offsetWidth; tFlash.classList.add('go'); },550); }
+  else { tFinger.classList.add('onFire'); tPress(); setTimeout(tPress,240); }
+  tutoStep++;
+}
+function openTuto(){ Audio2.init();Audio2.resume(); Audio2.sfx.select(); tutoScreen.classList.remove('hidden'); tutoStep=0; tutoTick(); if(tutoTimer) clearInterval(tutoTimer); tutoTimer=setInterval(tutoTick,2400); }
+function closeTuto(){ tutoScreen.classList.add('hidden'); if(tutoTimer){ clearInterval(tutoTimer); tutoTimer=null; } }
+document.getElementById('tutoBtn').addEventListener('click', openTuto);
+document.getElementById('tutoCloseBtn').addEventListener('click',()=>{ Audio2.sfx.select(); closeTuto(); });
+document.getElementById('tutoStartBtn').addEventListener('click',()=>{ Audio2.sfx.select(); closeTuto(); startGame(); });
+// 初回は自動でチュートリアルを表示
+if(!localStorage.getItem('nekota_seen_tuto')){ localStorage.setItem('nekota_seen_tuto','1'); setTimeout(openTuto, 400); }
 document.getElementById('quitBtn').addEventListener('click',()=>{ state='title'; pauseScreen.classList.add('hidden'); pauseBtn.style.display='none'; titleScreen.classList.remove('hidden'); Audio2.stopMusic(); showTitleHigh(); });
 pauseBtn.addEventListener('click', togglePause);
 

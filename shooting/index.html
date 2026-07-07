@@ -215,7 +215,7 @@
       <div class="grpLabel">■ 強化・パワーアップ</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">P</div><div class="itemTxt"><div class="itemName">パワーアップ（P）</div><div class="itemDesc">武器のレベルが1つUP（最大5）。弾数・威力が上がる。MAX時は+500点</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#8fe36b">🍃</div><div class="itemTxt"><div class="itemName">またたび</div><div class="itemDesc">15秒間 完全無敵！ 虹色オーラをまとい、敵に体当たりで撃破できる</div></div></div>
-      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化＋FIREダブルタップ(PCはC)で必殺展開：キジトラ=左右で援護→前方出撃し四方八方に攻撃（もう一度で帰還）／白ネコ=周回バリア＋ホーミング→バリアの輪が拡大（もう一度で収束）／黒ネコ=肉球ボム→横に広がって3秒間ホーミングレーザーを連射</div></div></div>
+      <div class="itemRow"><div class="itemIco" style="color:#ffd0ee">🔓</div><div class="itemTxt"><div class="itemName">檻入りの子猫</div><div class="itemDesc">檻を撃って壊すと子猫が仲間に（最大10機。体当たりでも解放）。ネコで挙動変化＋FIREダブルタップ(PCはC)で必殺展開：キジトラ=左右で援護→前方出撃し四方八方に攻撃（もう一度で帰還）／白ネコ=周回バリア＋ホーミング→バリアの輪が拡大（もう一度で収束）／黒ネコ=肉球ボム(命中で1秒の肉球型 爆炎が残りダメージ)→横に広がって3秒間ホーミングレーザーを連射</div></div></div>
       <div class="grpLabel">■ サポート（時間制）</div>
       <div class="itemRow"><div class="itemIco" style="color:#57f6ff">❂</div><div class="itemTxt"><div class="itemName">シールド</div><div class="itemDesc">ダメージを1回ぶん防ぐバリア（約8秒）</div></div></div>
       <div class="itemRow"><div class="itemIco" style="color:#ffd85e">S</div><div class="itemTxt"><div class="itemName">スピードアップ（S）</div><div class="itemDesc">連射速度がアップ（約7秒）</div></div></div>
@@ -435,7 +435,7 @@ const dist2=(ax,ay,bx,by)=>{const dx=ax-bx,dy=ay-by;return dx*dx+dy*dy;};
 const TAU=Math.PI*2;
 
 // object pools
-const stars=[], bullets=[], enemies=[], eBullets=[], particles=[], powerups=[], texts=[], allies=[];
+const stars=[], bullets=[], enemies=[], eBullets=[], particles=[], powerups=[], texts=[], allies=[], flames=[];
 let bombFx=null; // 猫パンチ/猫キックの演出
 
 // ============================================================
@@ -799,14 +799,38 @@ function updateKittens(dt, wantFire){
     }
   }
 }
-// 肉球ボムの爆発（黒ネコの子猫）
+// 肉球ボムの命中: 1秒間ダメージ判定のある肉球型の爆炎を残す
 function pawBombExplode(b){
-  const R=68;
   Audio2.sfx.explode(); screenShake(4,.1);
-  spawnParticles(b.x,b.y,'#b46bff',14,220,0.5); spawnParticles(b.x,b.y,'#fff',5,150,0.4);
-  for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j];
-    if(e.kicked) continue;
-    if(dist2(e.x,e.y,b.x,b.y) < (R+e.r)*(R+e.r)){ e.hp-=b.dmg*2.2; e.hitFlash=1; if(e.t!=='boss'&&e.hp<=0) killEnemy(e); else if(e.hp<=0) killEnemy(e); } }
+  spawnParticles(b.x,b.y,'#ff8a3c',14,200,0.5); spawnParticles(b.x,b.y,'#fff',5,150,0.4);
+  flames.push({x:b.x, y:b.y, life:1.0, max:1.0, r:46, seed:Math.random()*TAU, dps:24});
+}
+function updateFlames(dt){
+  for(let i=flames.length-1;i>=0;i--){
+    const f=flames[i]; f.life-=dt; f.seed+=dt*7;
+    if(f.life<=0){ flames.splice(i,1); continue; }
+    // 炎の中の敵に継続ダメージ
+    const dmg=f.dps*dt;
+    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.kicked) continue;
+      if(dist2(e.x,e.y,f.x,f.y) < (f.r+e.r)*(f.r+e.r)){ e.hp-=dmg; e.hitFlash=1; if(e.hp<=0) killEnemy(e); } }
+    // 火の粉
+    if(Math.random()<0.6) spawnParticles(f.x+rnd(-f.r*0.5,f.r*0.5), f.y+rnd(-f.r*0.4,f.r*0.4), Math.random()<0.5?'#ff8a3c':'#ffd85e', 1, 70, 0.35);
+  }
+}
+function drawFlames(){
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  for(const f of flames){
+    const a=clamp(f.life/f.max,0,1);
+    const flick=0.85+Math.sin(f.seed*3)*0.15;
+    const s=f.r*(0.72+0.28*a)*flick;
+    ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=a;
+    ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=18;
+    drawPaw(0,0, s*1.15, `rgba(255,110,40,${0.5*a})`, 1);
+    drawPaw(0,0, s*0.9,  `rgba(255,180,70,${0.7*a})`, 1);
+    drawPaw(0,0, s*0.55, `rgba(255,240,190,${0.85*a})`, 1);
+    ctx.restore();
+  }
+  ctx.restore(); ctx.globalAlpha=1;
 }
 function drawKittens(){
   if(!player.alive) return;
@@ -1832,7 +1856,7 @@ showTitleHigh();
 
 function startGame(){
   score=0; coins=0; combo=0; maxCombo=0; enemiesKilled=0; wave=0;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; allies.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; allies.length=0; flames.length=0;
   boss=null; bossActive=false; waveQueue.length=0; bombFx=null;
   resetPlayer(); initStars();
   input.usePointer=false;
@@ -1930,6 +1954,7 @@ function loop(now){
     updateDirector(dt);
     updateEnemies(dt);
     updateAllies(dt);
+    updateFlames(dt);
     updateBullets(dt);
     updateEBullets(dt);
     updatePowerups(dt);
@@ -1957,6 +1982,7 @@ function loop(now){
   drawParticles();
   drawBullets();
   for(const e of enemies) drawEnemy(e);
+  drawFlames();
   drawAllies();
   drawLaserBeam();
   drawKittens();
@@ -2018,7 +2044,7 @@ document.addEventListener('touchend',e=>{
 if(location.search.indexOf('debug')>=0){
   window.__nk={ spawn:(t)=>spawnPowerup(player.x, player.y-160, t), player,
     enemy:(t)=>spawnEnemy(t||'grunt'), bomb:()=>{ player.bombs++; useBomb(); },
-    boss:()=>spawnBoss(), allies, enemies };
+    boss:()=>spawnBoss(), pawflame:(x,y)=>pawBombExplode({x:x??player.x,y:y??player.y-200}), flames, allies, enemies };
 }
 
 })();

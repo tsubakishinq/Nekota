@@ -4,192 +4,538 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>にゃんこの森｜腸活（試作・森テーマ）</title>
+<meta name="apple-mobile-web-app-title" content="にゃんこの森">
+<title>にゃんこの森｜腸活で子猫を育てよう</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   :root{
-    --cream:#fdf5e3; --cream-d:#efe1bd; --wood:#c98b52; --wood-d:#a86c38;
-    --ink:#6b5636; --ink-soft:#a08a63;
+    --bg:#f3ead0; --cream:#fdf6e6; --cream-d:#ecdcb6; --wood:#c98b52; --wood-d:#a86c38;
+    --ink:#6b5636; --ink-light:#a08a63;
     --leaf:#7cc242; --leaf-d:#5fa32e; --leaf-deep:#4f7a2a;
-    --sky1:#bfeaf0; --sky2:#e6f7 ; --grass:#9bd36b; --grass-d:#7cbb4f;
-    --bell:#f4c430; --bell-d:#e0a800;
-    --heart:#ff7a9c; --pink:#ffd3df;
+    --grass:#9bd36b; --grass-d:#7cbb4f;
+    --lacto:#8a63d2; --lacto-light:#eee6fb;
+    --fiber:#4f9e46; --fiber-light:#e6f4e2;
+    --coin:#e0a800; --coin-light:#fdefc9;
+    --heart:#ff7a9c; --accent:#ff8fab; --accent-dark:#ef6a8e; --accent-light:#ffe1ea;
+    --border:#ecdcb6;
   }
-  body{font-family:'M PLUS Rounded 1c',sans-serif;background:
-    radial-gradient(circle at 20% 0%,#fef7e6,transparent 60%),
-    #f3ead0;
-    color:var(--ink);min-height:100vh;padding:0 0 92px;font-weight:700;}
-  main{max-width:460px;margin:0 auto;padding:14px 14px 0;}
+  body{font-family:'M PLUS Rounded 1c',sans-serif;font-weight:700;color:var(--ink);min-height:100vh;padding:0 0 96px;
+    background:radial-gradient(circle at 15% 0%,#fdf5df,transparent 55%),#f2e8cd;}
+  h1,h2,.mochi{font-family:'Mochiy Pop One',sans-serif;font-weight:400;}
+  main{max-width:470px;margin:0 auto;padding:12px 14px 0;}
+  .section-title{font-size:12px;font-weight:900;color:var(--leaf-deep);letter-spacing:.06em;margin:0 0 10px;}
 
-  /* wooden sign header */
-  .sign{position:relative;margin:6px auto 14px;max-width:300px;background:linear-gradient(180deg,#e7b477,var(--wood));
-    border:4px solid #fff;border-radius:22px;box-shadow:0 5px 0 var(--wood-d),0 8px 12px rgba(120,80,40,.25);
-    text-align:center;padding:11px 20px;}
-  .sign h1{font-family:'Mochiy Pop One',sans-serif;font-size:20px;color:#fff;letter-spacing:.04em;text-shadow:0 2px 0 rgba(120,80,40,.35);}
-  .sign:before,.sign:after{content:"🍃";position:absolute;top:50%;transform:translateY(-50%);font-size:20px;}
-  .sign:before{left:-6px;transform:translateY(-50%) rotate(-20deg);}
-  .sign:after{right:-6px;transform:translateY(-50%) scaleX(-1) rotate(-20deg);}
+  /* header: wooden sign */
+  header{position:sticky;top:0;z-index:100;padding:10px 14px 8px;background:linear-gradient(#f2e8cd,rgba(242,232,205,.85));backdrop-filter:blur(4px);
+    display:flex;align-items:center;justify-content:space-between;}
+  .sign{position:relative;background:linear-gradient(180deg,#e7b477,var(--wood));border:3px solid #fff;border-radius:18px;
+    box-shadow:0 4px 0 var(--wood-d);padding:7px 18px;}
+  .sign h1{font-size:16px;color:#fff;letter-spacing:.03em;text-shadow:0 2px 0 rgba(120,80,40,.35);}
+  .sign:before,.sign:after{content:"🍃";position:absolute;top:50%;font-size:15px;}
+  .sign:before{left:-8px;transform:translateY(-50%) rotate(-20deg);}
+  .sign:after{right:-8px;transform:translateY(-50%) scaleX(-1) rotate(-20deg);}
+  .coin-chip{display:flex;align-items:center;gap:5px;background:#fff;border:3px solid var(--cream-d);border-radius:22px;
+    padding:5px 13px 5px 10px;font-size:15px;color:var(--coin);font-weight:900;box-shadow:0 3px 0 var(--cream-d);}
 
-  /* bells pouch */
-  .bells{position:fixed;top:12px;right:14px;z-index:20;display:flex;align-items:center;gap:5px;
-    background:#fff;border:3px solid var(--cream-d);border-radius:22px;padding:5px 13px 5px 9px;
-    box-shadow:0 3px 0 var(--cream-d);font-size:15px;color:var(--bell-d);font-weight:900;}
-  .bells .lf{font-size:16px;}
+  .screen{display:none;animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .card{background:#fff;border:3px solid var(--cream-d);border-radius:20px;padding:15px;margin-bottom:13px;box-shadow:0 4px 0 var(--cream-d);}
 
-  /* ===== scene ===== */
-  .scene{position:relative;width:100%;aspect-ratio:1/1;border-radius:26px;overflow:hidden;
-    border:5px solid #fff;box-shadow:0 6px 0 var(--cream-d),0 10px 16px rgba(120,90,40,.16);}
-  .sky{position:absolute;inset:0;background:linear-gradient(180deg,#bfeaf0 0%,#dff5ee 55%,#e9f8dd 72%);}
-  .sun{position:absolute;top:9%;right:12%;width:52px;height:52px;border-radius:50%;
-    background:radial-gradient(circle,#fff3b0,#ffde5c);box-shadow:0 0 0 10px rgba(255,222,92,.28),0 0 34px rgba(255,222,92,.5);}
-  .cloud{position:absolute;background:#fff;border-radius:40px;opacity:.95;filter:drop-shadow(0 3px 4px rgba(150,170,180,.25));}
+  /* bottom nav pill */
+  .tabbar{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:100;display:flex;gap:4px;
+    background:#fff;border:3px solid var(--cream-d);border-radius:26px;padding:6px;box-shadow:0 5px 0 var(--cream-d),0 8px 14px rgba(120,90,40,.16);}
+  .tab{border:none;background:none;font-family:inherit;font-weight:800;font-size:10.5px;color:var(--ink-light);
+    display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 14px;border-radius:20px;cursor:pointer;}
+  .tab .ic{font-size:19px;line-height:1;}
+  .tab.active{background:linear-gradient(180deg,#c9f0a0,#a9dd7a);color:var(--leaf-deep);}
+
+  /* ===== room / forest scene ===== */
+  .room{position:relative;width:100%;aspect-ratio:1/1;border-radius:26px;overflow:hidden;border:5px solid #fff;
+    box-shadow:0 6px 0 var(--cream-d),0 10px 16px rgba(120,90,40,.16);}
+  .room-wall{position:absolute;inset:0;transition:background .4s;}
+  .sun{position:absolute;top:8%;right:11%;width:50px;height:50px;border-radius:50%;z-index:1;
+    background:radial-gradient(circle,#fff3b0,#ffde5c);box-shadow:0 0 0 9px rgba(255,222,92,.28),0 0 30px rgba(255,222,92,.5);}
+  .cloud{position:absolute;background:#fff;border-radius:40px;opacity:.95;z-index:1;}
   .cloud:before,.cloud:after{content:"";position:absolute;background:#fff;border-radius:50%;}
-  .c1{width:66px;height:22px;top:14%;left:10%;animation:drift 22s linear infinite;}
-  .c1:before{width:30px;height:30px;top:-13px;left:10px;}.c1:after{width:24px;height:24px;top:-9px;left:34px;}
-  .c2{width:50px;height:18px;top:28%;left:60%;animation:drift 30s linear infinite;}
-  .c2:before{width:24px;height:24px;top:-11px;left:8px;}.c2:after{width:18px;height:18px;top:-6px;left:26px;}
-  @keyframes drift{from{transform:translateX(-10px)}to{transform:translateX(30px)}}
-
-  .hill{position:absolute;left:50%;border-radius:50%;transform:translateX(-50%);}
-  .hill-b{width:150%;height:46%;bottom:24%;background:#b6e08a;}
-  .hill-a{width:170%;height:40%;bottom:10%;background:#9ed46f;}
-  .grass{position:absolute;left:0;right:0;bottom:0;height:30%;background:linear-gradient(180deg,var(--grass),var(--grass-d));}
-  .grass:before{content:"";position:absolute;top:-6px;left:0;right:0;height:12px;
+  .c1{width:60px;height:20px;top:13%;left:9%;animation:drift 24s linear infinite;}
+  .c1:before{width:28px;height:28px;top:-12px;left:9px;}.c1:after{width:22px;height:22px;top:-8px;left:31px;}
+  .c2{width:44px;height:16px;top:25%;left:62%;animation:drift 32s linear infinite;}
+  .c2:before{width:22px;height:22px;top:-10px;left:7px;}.c2:after{width:16px;height:16px;top:-6px;left:24px;}
+  @keyframes drift{from{transform:translateX(-8px)}to{transform:translateX(26px)}}
+  .hill{position:absolute;left:50%;border-radius:50%;transform:translateX(-50%);z-index:1;}
+  .hill-b{width:155%;height:44%;bottom:26%;background:#b6e08a;}
+  .hill-a{width:175%;height:38%;bottom:14%;background:#9ed46f;}
+  .room-floor{position:absolute;left:0;right:0;bottom:0;height:30%;z-index:1;background:linear-gradient(180deg,var(--grass),var(--grass-d));}
+  .room-floor:before{content:"";position:absolute;top:-6px;left:0;right:0;height:12px;
     background:radial-gradient(circle at 8px 10px,var(--grass) 6px,transparent 7px) 0 0/16px 12px repeat-x;}
-  .tree{position:absolute;bottom:26%;font-size:34px;filter:drop-shadow(0 3px 3px rgba(0,0,0,.12));}
-  .flower{position:absolute;font-size:19px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.1));}
+  .room.night .sun,.room.night .cloud,.room.night .hill{display:none;}
+  .furni{position:absolute;transform:translate(-50%,-50%);z-index:3;filter:drop-shadow(0 3px 3px rgba(0,0,0,.14));display:flex;align-items:flex-end;justify-content:center;pointer-events:none;}
+  .rug{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:60%;height:14%;border-radius:50%;z-index:2;opacity:.92;}
+  .cat-in-room{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);width:50%;z-index:5;cursor:pointer;}
+  .cat-in-room svg{width:100%;height:auto;display:block;overflow:visible;}
+  .cat-bounce{animation:bob 2.8s ease-in-out infinite;transform-origin:50% 92%;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.5%) rotate(-.6deg)}}
+  .cat-pet{animation:wiggle .5s ease;}
+  @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-5deg) scale(1.03)}75%{transform:rotate(5deg) scale(1.03)}}
+  .pet-hint{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);z-index:6;font-size:11px;font-weight:800;color:#fff;
+    background:rgba(107,86,54,.5);border-radius:20px;padding:4px 13px;pointer-events:none;}
+  .purr{position:absolute;z-index:7;font-size:13px;font-weight:900;color:var(--accent-dark);pointer-events:none;animation:purr .9s ease forwards;text-shadow:0 1px 3px #fff;}
+  @keyframes purr{0%{opacity:0;transform:translateY(6px) scale(.6)}30%{opacity:1;transform:translateY(-4px) scale(1.1)}100%{opacity:0;transform:translateY(-30px)}}
+  .heart-p{position:absolute;z-index:7;pointer-events:none;font-size:19px;animation:heartUp 1s ease forwards;}
+  @keyframes heartUp{0%{opacity:0;transform:translateY(0) scale(.4)}25%{opacity:1;transform:translateY(-10px) scale(1.1)}100%{opacity:0;transform:translateY(-56px) scale(.9)}}
 
-  .cat-holder{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);width:48%;z-index:6;cursor:pointer;}
-  .cat-holder svg{width:100%;height:auto;display:block;overflow:visible;}
-  .bob{animation:bob 2.8s ease-in-out infinite;transform-origin:50% 92%;}
-  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3%) rotate(-1deg)}}
-  .pop{animation:pop .5s ease;}
-  @keyframes pop{0%,100%{transform:rotate(0)}30%{transform:rotate(-6deg) scale(1.04)}70%{transform:rotate(6deg) scale(1.04)}}
+  .catbar{display:flex;align-items:center;justify-content:space-between;margin:14px 4px 10px;}
+  .catbar .cn{font-family:'Mochiy Pop One',sans-serif;font-size:18px;}
+  .catbar .cn .edit{font-family:'M PLUS Rounded 1c';font-size:11px;color:var(--ink-light);margin-left:6px;text-decoration:underline;cursor:pointer;font-weight:700;}
+  .catbar .stg{font-size:11px;font-weight:900;color:#fff;background:var(--leaf-d);border-radius:20px;padding:5px 13px;box-shadow:0 2px 0 var(--leaf-deep);}
 
-  /* speech bubble */
-  .bubble{position:absolute;left:50%;top:8%;transform:translateX(-50%);z-index:7;
-    background:#fff;border:3px solid var(--cream-d);border-radius:18px;padding:9px 15px;
-    font-size:13.5px;font-weight:800;color:var(--ink);box-shadow:0 3px 0 var(--cream-d);white-space:nowrap;max-width:88%;}
-  .bubble:after{content:"";position:absolute;bottom:-11px;left:50%;transform:translateX(-50%);
-    border-left:9px solid transparent;border-right:9px solid transparent;border-top:11px solid #fff;}
-  .bubble:before{content:"";position:absolute;bottom:-15px;left:50%;transform:translateX(-50%);
-    border-left:11px solid transparent;border-right:11px solid transparent;border-top:13px solid var(--cream-d);}
-  .heart-p{position:absolute;z-index:8;pointer-events:none;font-size:20px;animation:hp 1s ease forwards;}
-  @keyframes hp{0%{opacity:0;transform:translateY(0) scale(.4)}25%{opacity:1;transform:translateY(-12px) scale(1.1)}100%{opacity:0;transform:translateY(-58px)}}
+  .bond-card{display:flex;align-items:center;gap:12px;}
+  .bond-hearts{font-size:18px;letter-spacing:1px;line-height:1;}
+  .bond-info{flex:1;}
+  .bond-info .bl{font-size:14px;font-weight:900;}
+  .bond-info .bs{font-size:11px;color:var(--ink-light);font-weight:700;margin-top:1px;}
+  .bond-bar{height:9px;background:#f1e6c9;border-radius:20px;overflow:hidden;margin-top:6px;}
+  .bond-fill{height:100%;background:linear-gradient(90deg,#ffb0c2,var(--heart));border-radius:20px;transition:width .6s;}
 
-  /* name plate */
-  .plate{margin:14px auto 0;background:#fff;border:3px solid var(--cream-d);border-radius:20px;
-    box-shadow:0 4px 0 var(--cream-d);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
-  .plate .nm{font-family:'Mochiy Pop One',sans-serif;font-size:18px;color:var(--ink);}
-  .plate .hearts{font-size:16px;letter-spacing:1px;}
-  .plate .friend{font-size:11px;color:var(--ink-soft);font-weight:800;margin-top:2px;}
+  .lvl-wrap{margin-top:2px;}
+  .lvl-row{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--ink-light);margin-bottom:5px;}
+  .lvl-row b{color:var(--leaf-deep);}
+  .lvl-bar{height:10px;background:#f1e6c9;border-radius:20px;overflow:hidden;}
+  .lvl-fill{height:100%;background:linear-gradient(90deg,#a9dd7a,var(--leaf-d));border-radius:20px;transition:width .6s cubic-bezier(.3,1,.4,1);}
+  .mini-stats{display:flex;gap:8px;margin-top:13px;}
+  .mini{flex:1;text-align:center;background:var(--cream);border:2px solid var(--cream-d);border-radius:14px;padding:9px 4px;}
+  .mini .v{font-family:'Mochiy Pop One',sans-serif;font-size:16px;}
+  .mini .l{font-size:9.5px;font-weight:800;color:var(--ink-light);margin-top:2px;}
+  .mini.l1 .v{color:var(--lacto)}.mini.l2 .v{color:var(--fiber)}.mini.l3 .v{color:var(--coin)}
 
-  /* stat leaves */
-  .stats{display:flex;gap:10px;margin-top:12px;}
-  .stat{flex:1;background:#fff;border:3px solid var(--cream-d);border-radius:20px;padding:12px 6px 11px;
-    text-align:center;box-shadow:0 4px 0 var(--cream-d);position:relative;}
-  .stat .cap{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:900;color:#fff;
-    padding:2px 10px;border-radius:20px;white-space:nowrap;}
-  .stat.a .cap{background:#a678e0;}.stat.b .cap{background:var(--leaf-d);}.stat.c .cap{background:var(--bell-d);}
-  .stat .ic{font-size:22px;line-height:1;margin-top:4px;}
-  .stat .v{font-family:'Mochiy Pop One',sans-serif;font-size:19px;margin-top:3px;}
-  .stat.a .v{color:#8a63d2;}.stat.b .v{color:var(--leaf-deep);}.stat.c .v{color:var(--bell-d);}
-  .stat .u{font-size:10px;color:var(--ink-soft);font-weight:800;}
+  .add-btn{width:100%;background:linear-gradient(180deg,#9be05f,var(--leaf-d));color:#fff;border:4px solid #fff;border-radius:22px;
+    padding:15px;font-family:'Mochiy Pop One',sans-serif;font-size:16px;letter-spacing:.03em;cursor:pointer;
+    box-shadow:0 5px 0 var(--leaf-deep),0 8px 12px rgba(80,120,40,.2);text-shadow:0 2px 0 rgba(70,110,30,.3);transition:transform .08s,box-shadow .08s;}
+  .add-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--leaf-deep);}
 
-  .btn{width:100%;margin-top:16px;background:linear-gradient(180deg,#9be05f,var(--leaf-d));color:#fff;
-    border:4px solid #fff;border-radius:22px;padding:15px;font-family:'Mochiy Pop One',sans-serif;font-size:17px;
-    letter-spacing:.04em;cursor:pointer;box-shadow:0 5px 0 var(--leaf-deep),0 8px 12px rgba(80,120,40,.2);
-    text-shadow:0 2px 0 rgba(70,110,30,.3);transition:transform .08s,box-shadow .08s;}
-  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--leaf-deep);}
+  /* food */
+  .stats{display:flex;gap:10px;margin-bottom:13px;}
+  .stat{flex:1;background:#fff;border:3px solid var(--cream-d);border-radius:18px;padding:13px 6px 11px;text-align:center;box-shadow:0 4px 0 var(--cream-d);position:relative;}
+  .stat .cap{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:900;color:#fff;padding:2px 10px;border-radius:20px;white-space:nowrap;}
+  .stat.lacto .cap{background:var(--lacto)}.stat.fiber .cap{background:var(--fiber)}.stat.point .cap{background:var(--coin)}
+  .stat .ic{font-size:20px;margin-top:3px;}
+  .stat .val{font-family:'Mochiy Pop One',sans-serif;font-size:19px;margin-top:2px;}
+  .stat .unit{font-size:11px;color:var(--ink-light);}
+  .stat.lacto .val{color:var(--lacto)}.stat.fiber .val{color:var(--fiber)}.stat.point .val{color:var(--coin)}
+  .measuring .val{animation:meas .6s ease;}
+  @keyframes meas{0%{transform:scale(.6);opacity:.3}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+  .balance .brow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .balance .brow .t{font-size:13px;font-weight:900;}
+  .balance .brow .s{font-size:11px;color:var(--ink-light);}
+  .meter{height:13px;border-radius:20px;background:#f1e6c9;overflow:hidden;display:flex;}
+  .meter .mf{height:100%;transition:width .5s ease;}
+  .meter .mf.l{background:var(--lacto)}.meter .mf.f{background:var(--fiber)}
+  .legend{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--ink-light);font-weight:700;}
+  .legend b{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:middle;}
+  .synbio{margin-top:12px;background:linear-gradient(90deg,var(--lacto-light),var(--fiber-light));border-radius:14px;padding:11px 13px;font-size:12px;font-weight:800;line-height:1.5;display:none;border:2px solid #eadfb8;}
+  .synbio.on{display:block;}
+  .log-item{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:2px dotted var(--cream-d);}
+  .log-item:last-child{border-bottom:none;}
+  .log-item .lem{font-size:23px;width:32px;text-align:center;}
+  .log-item .lname{font-size:14px;font-weight:800;}
+  .log-item .lmeta{font-size:10.5px;color:var(--ink-light);font-weight:700;margin-top:1px;}
+  .log-item .lmeta .lc{color:var(--lacto)}.log-item .lmeta .fc{color:var(--fiber)}
+  .qty{display:flex;align-items:center;gap:7px;}
+  .qty button{width:28px;height:28px;border-radius:50%;border:2px solid var(--cream-d);background:#fff;font-size:16px;font-weight:900;color:var(--ink);cursor:pointer;line-height:1;box-shadow:0 2px 0 var(--cream-d);}
+  .qty span{font-family:'Mochiy Pop One';font-size:13px;min-width:14px;text-align:center;}
+  .empty{text-align:center;color:var(--ink-light);font-size:13px;padding:22px 8px;line-height:1.7;font-weight:700;}
 
-  .note{text-align:center;font-size:11px;color:var(--ink-soft);font-weight:700;margin:14px 4px 0;line-height:1.7;}
+  /* shop */
+  .subtabs{display:flex;gap:8px;margin-bottom:14px;}
+  .subtab{flex:1;padding:12px;border-radius:16px;border:3px solid var(--cream-d);background:#fff;color:var(--ink-light);font-size:13px;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 var(--cream-d);}
+  .subtab.active{background:linear-gradient(180deg,#c9f0a0,#a9dd7a);border-color:#a9dd7a;color:var(--leaf-deep);}
+  .shop-group-title{font-size:12.5px;font-weight:900;margin:16px 2px 9px;display:flex;align-items:center;gap:6px;color:var(--wood-d);}
+  .shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .shop-item{background:#fff;border:3px solid var(--cream-d);border-radius:16px;padding:11px;text-align:center;position:relative;box-shadow:0 3px 0 var(--cream-d);}
+  .shop-item.equipped{border-color:var(--leaf-d);box-shadow:0 3px 0 var(--leaf-d);}
+  .shop-preview{height:66px;display:flex;align-items:center;justify-content:center;font-size:38px;line-height:1;}
+  .shop-preview svg{height:64px;width:auto;overflow:visible;}
+  .shop-name{font-size:12.5px;font-weight:800;margin-top:2px;}
+  .shop-price{font-family:'Mochiy Pop One';font-size:12px;color:var(--coin);margin-top:3px;}
+  .shop-btn{margin-top:8px;width:100%;border:none;border-radius:12px;padding:9px;font-size:12px;font-weight:900;font-family:inherit;cursor:pointer;}
+  .shop-btn.buy{background:var(--coin);color:#fff;box-shadow:0 3px 0 #b98a00;}
+  .shop-btn.buy:disabled{background:#e7dcbf;color:#b3a680;cursor:not-allowed;box-shadow:none;}
+  .shop-btn.use{background:var(--leaf-d);color:#fff;box-shadow:0 3px 0 var(--leaf-deep);}
+  .shop-btn.off{background:var(--cream);color:var(--ink-light);border:2px solid var(--cream-d);}
+  .badge{position:absolute;top:8px;right:8px;font-size:9px;font-weight:900;background:var(--leaf-d);color:#fff;border-radius:8px;padding:2px 7px;}
 
-  /* bottom nav */
-  .nav{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:30;
-    display:flex;gap:6px;background:#fff;border:3px solid var(--cream-d);border-radius:26px;
-    padding:6px;box-shadow:0 5px 0 var(--cream-d),0 8px 14px rgba(120,90,40,.16);}
-  .nav button{border:none;background:none;font-family:inherit;font-weight:800;font-size:10.5px;color:var(--ink-soft);
-    display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 13px;border-radius:20px;cursor:pointer;}
-  .nav button .i{font-size:19px;line-height:1;}
-  .nav button.on{background:linear-gradient(180deg,#c9f0a0,#a9dd7a);color:var(--leaf-deep);}
+  /* history */
+  .streak-card{display:flex;align-items:center;gap:14px;}
+  .streak-card .flame{font-size:34px;}
+  .streak-card .sn{font-family:'Mochiy Pop One';font-size:26px;color:var(--accent-dark);}
+  .streak-card .sl{font-size:12px;color:var(--ink-light);font-weight:800;}
+  .chart{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;height:118px;margin-top:6px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+  .bar{width:70%;max-width:26px;border-radius:7px 7px 0 0;background:linear-gradient(180deg,#ffd85e,var(--coin));min-height:3px;transition:height .5s ease;}
+  .bar.zero{background:#ead8ab;}
+  .bar-lbl{font-size:9.5px;color:var(--ink-light);font-weight:800;}
+  .bar-val{font-size:9px;color:var(--coin);font-family:'Mochiy Pop One';}
+  .hist-item{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:2px dotted var(--cream-d);}
+  .hist-item:last-child{border-bottom:none;}
+  .hist-date{font-family:'Mochiy Pop One';font-size:13px;width:56px;color:var(--ink-light);}
+  .hist-date b{display:block;font-size:16px;color:var(--ink);}
+  .hist-detail{flex:1;font-size:11px;color:var(--ink-light);font-weight:800;}
+  .hist-detail .lc{color:var(--lacto)}.hist-detail .fc{color:var(--fiber)}
+  .hist-pt{font-family:'Mochiy Pop One';font-size:15px;color:var(--coin);}
+  .growth-item{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:2px dotted var(--cream-d);opacity:.42;}
+  .growth-item.reached{opacity:1;}
+  .growth-item.current{opacity:1;background:#f0f8e2;border-radius:14px;padding:10px 12px;border-bottom:none;}
+  .growth-item .gem{width:44px;height:44px;}
+  .growth-item .gem svg{width:100%;height:100%;overflow:visible;}
+  .growth-item .gn{flex:1;font-size:14px;font-weight:900;}
+  .growth-item .gr{font-size:11px;color:var(--ink-light);font-weight:700;}
+  .growth-item .gpt{font-family:'Mochiy Pop One';font-size:12px;color:var(--ink-light);}
+  .growth-item.reached .gpt{color:var(--fiber);}
+  .info{font-size:11.5px;color:var(--ink-light);line-height:1.8;background:#fff;border:3px solid var(--cream-d);border-radius:16px;padding:14px 16px;box-shadow:0 4px 0 var(--cream-d);font-weight:700;}
+  .info b{color:var(--ink);}
+  .btn-ghost{width:100%;background:#fff;border:3px solid var(--cream-d);color:var(--ink-light);border-radius:16px;padding:12px;font-size:13px;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 var(--cream-d);}
 
-  .toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%) translateY(16px);
-    background:var(--wood);color:#fff;font-weight:800;font-size:13px;padding:11px 18px;border-radius:20px;
-    border:3px solid #fff;box-shadow:0 4px 0 var(--wood-d);z-index:40;opacity:0;transition:.3s;pointer-events:none;max-width:86%;text-align:center;}
+  /* sheet */
+  .sheet-bg{position:fixed;inset:0;background:rgba(107,86,54,.4);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;}
+  .sheet-bg.open{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:470px;margin:0 auto;background:var(--bg);border-radius:24px 24px 0 0;z-index:201;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,1,.4,1);max-height:88vh;display:flex;flex-direction:column;border-top:4px solid #fff;}
+  .sheet.open{transform:translateY(0);}
+  .sheet-head{padding:13px 18px 6px;position:sticky;top:0;background:var(--bg);border-radius:24px 24px 0 0;}
+  .sheet-grip{width:40px;height:5px;background:var(--cream-d);border-radius:5px;margin:0 auto 11px;}
+  .sh-row{display:flex;justify-content:space-between;align-items:center;}
+  .sh-row h2{font-size:16px;}
+  .sheet-close{background:none;border:none;font-size:22px;color:var(--ink-light);cursor:pointer;line-height:1;font-weight:900;}
+  .search{width:100%;border:3px solid var(--cream-d);border-radius:14px;padding:10px 14px;font-size:14px;font-family:inherit;font-weight:700;background:#fff;outline:none;margin-top:9px;color:var(--ink);}
+  .search:focus{border-color:var(--leaf);}
+  .cat-chips{display:flex;gap:7px;overflow-x:auto;padding:9px 18px 4px;scrollbar-width:none;}
+  .cat-chips::-webkit-scrollbar{display:none;}
+  .cat-chip{white-space:nowrap;border:3px solid var(--cream-d);background:#fff;color:var(--ink-light);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:800;font-family:inherit;cursor:pointer;flex-shrink:0;}
+  .cat-chip.active{background:var(--leaf-d);border-color:var(--leaf-d);color:#fff;}
+  .food-list{overflow-y:auto;padding:6px 14px 24px;flex:1;}
+  .food-card{display:flex;align-items:center;gap:12px;background:#fff;border:3px solid var(--cream-d);border-radius:16px;padding:11px 13px;margin-bottom:9px;cursor:pointer;transition:transform .08s;box-shadow:0 3px 0 var(--cream-d);}
+  .food-card:active{transform:scale(.98);}
+  .food-card .fem{font-size:27px;width:36px;text-align:center;}
+  .food-card .fn{font-size:14px;font-weight:800;}
+  .food-card .ft{font-size:10.5px;color:var(--ink-light);font-weight:700;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+  .tag{border-radius:7px;padding:1px 7px;font-weight:900;font-size:10px;}
+  .tag.l{background:var(--lacto-light);color:var(--lacto)}.tag.f{background:var(--fiber-light);color:var(--fiber)}
+  .food-card .fadd{background:var(--leaf-d);color:#fff;border:none;border-radius:12px;width:34px;height:34px;font-size:22px;font-weight:900;line-height:1;cursor:pointer;flex-shrink:0;box-shadow:0 3px 0 var(--leaf-deep);}
+
+  #pop{position:fixed;left:50%;top:30%;transform:translateX(-50%);z-index:300;pointer-events:none;}
+  .pt-fly{position:absolute;left:0;top:0;font-family:'Mochiy Pop One';font-size:22px;color:var(--coin);text-shadow:0 2px 6px rgba(224,168,0,.4);white-space:nowrap;animation:fly 1.1s ease forwards;}
+  @keyframes fly{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-50px) scale(1)}}
+  .toast{position:fixed;left:50%;bottom:98px;transform:translateX(-50%) translateY(16px);background:var(--wood);color:#fff;font-size:13px;font-weight:800;padding:11px 18px;border-radius:20px;border:3px solid #fff;box-shadow:0 4px 0 var(--wood-d);z-index:300;opacity:0;transition:.3s;pointer-events:none;max-width:86%;text-align:center;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
-<div class="bells"><span class="lf">🔔</span><span id="bells">1,240</span></div>
+<header>
+  <div class="sign"><h1>にゃんこの森</h1></div>
+  <span class="coin-chip">✨ <span id="hdrCoin">0</span></span>
+</header>
 
 <main>
-  <div class="sign"><h1>にゃんこの森</h1></div>
-
-  <div class="scene" id="scene">
-    <div class="sky"></div>
-    <div class="sun"></div>
-    <div class="cloud c1"></div><div class="cloud c2"></div>
-    <div class="hill hill-b"></div><div class="hill hill-a"></div>
-    <div class="tree" style="left:6%">🌳</div>
-    <div class="tree" style="right:5%;bottom:28%;font-size:30px">🌳</div>
-    <div class="tree" style="left:24%;bottom:29%;font-size:22px">🌲</div>
-    <div class="grass"></div>
-    <div class="flower" style="left:12%;bottom:8%">🌷</div>
-    <div class="flower" style="right:14%;bottom:6%">🌼</div>
-    <div class="flower" style="left:32%;bottom:4%">🌸</div>
-    <div class="flower" style="right:30%;bottom:9%;font-size:16px">🍀</div>
-    <div class="bubble" id="bubble">きょうのごはん なにかな？🍃</div>
-    <div class="cat-holder" id="cat"><div class="bob" id="catArt"></div></div>
-  </div>
-
-  <div class="plate">
-    <div>
-      <div class="nm">ネコタ</div>
-      <div class="friend">なかよし度：だいすき</div>
+  <!-- ============ HOME ============ -->
+  <section class="screen active" id="scr-home">
+    <div class="room" id="room">
+      <div class="room-wall" id="roomWall"></div>
+      <div class="sun"></div><div class="cloud c1"></div><div class="cloud c2"></div>
+      <div class="hill hill-b"></div><div class="hill hill-a"></div>
+      <div class="room-floor"></div>
+      <div class="rug" id="rug" style="display:none"></div>
+      <div id="furniLayer"></div>
+      <div class="cat-in-room" id="catHome"><div class="cat-bounce" id="catArtHome"></div></div>
+      <div class="pet-hint">タップしてなでる 🐾</div>
     </div>
-    <div class="hearts">❤️❤️❤️❤️🤍</div>
-  </div>
 
-  <div class="stats">
-    <div class="stat a"><span class="cap">乳酸菌</span><div class="ic">🦠</div><div class="v">5</div><div class="u">スコア</div></div>
-    <div class="stat b"><span class="cap">食物繊維</span><div class="ic">🌿</div><div class="v">18<span style="font-size:11px">g</span></div><div class="u">きょう</div></div>
-    <div class="stat c"><span class="cap">腸活P</span><div class="ic">✨</div><div class="v">132</div><div class="u">ポイント</div></div>
-  </div>
+    <div class="catbar">
+      <div class="cn"><span id="homeName">ネコタ</span><span class="edit" id="renameBtn">なまえ変更</span></div>
+      <div class="stg" id="homeStage">生まれたて</div>
+    </div>
 
-  <button class="btn" id="feed">🍽 ごはんをあげる</button>
+    <div class="card bond-card">
+      <div class="bond-hearts" id="bondHearts"></div>
+      <div class="bond-info">
+        <div class="bl" id="bondLabel">よそよそしい</div>
+        <div class="bs" id="bondSub"></div>
+        <div class="bond-bar"><div class="bond-fill" id="bondFill"></div></div>
+      </div>
+    </div>
 
-  <div class="note">※ みんなの森（どうぶつの森）風テーマの試作トップ画面です。<br>猫をタップ／ボタンでちょっと反応します 🐾</div>
+    <div class="card">
+      <div class="lvl-wrap">
+        <div class="lvl-row"><span>せいちょう Lv.<b id="lvlNum">1</b></span><span id="lvlNext"></span></div>
+        <div class="lvl-bar"><div class="lvl-fill" id="lvlFill"></div></div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini l1"><div class="v" id="mLacto">0</div><div class="l">乳酸菌</div></div>
+        <div class="mini l2"><div class="v" id="mFiber">0g</div><div class="l">食物繊維</div></div>
+        <div class="mini l3"><div class="v" id="mPoint">0</div><div class="l">今日のP</div></div>
+      </div>
+    </div>
+
+    <button class="add-btn" id="homeAdd">🍽 今日のごはんを記録する</button>
+  </section>
+
+  <!-- ============ FOOD ============ -->
+  <section class="screen" id="scr-food">
+    <div class="stats" style="margin-top:12px;">
+      <div class="stat lacto"><span class="cap">乳酸菌</span><div class="ic">🦠</div><div class="val" id="sLacto">0</div></div>
+      <div class="stat fiber"><span class="cap">食物繊維</span><div class="ic">🌿</div><div class="val" id="sFiber">0<span class="unit">g</span></div></div>
+      <div class="stat point"><span class="cap">腸活P</span><div class="ic">✨</div><div class="val" id="sPoint">0</div></div>
+    </div>
+    <div class="card balance">
+      <div class="brow"><span class="t">🌱 腸内フローラ 測定</span><span class="s" id="balanceMsg">今日のごはんを記録しよう</span></div>
+      <div class="meter"><div class="mf l" id="mfLacto" style="width:0"></div><div class="mf f" id="mfFiber" style="width:0"></div></div>
+      <div class="legend"><span><b style="background:var(--lacto)"></b>乳酸菌（善玉菌）</span><span><b style="background:var(--fiber)"></b>食物繊維（エサ）</span></div>
+      <div class="synbio" id="synbio">🎉 シンバイオティクス達成！ 善玉菌とエサが両方そろって、子猫がごきげん（＋40P・なつき度UP）</div>
+    </div>
+    <button class="add-btn" id="foodAdd" style="margin-bottom:13px;">＋ 食べたものを記録する</button>
+    <div class="card">
+      <div class="section-title">🍴 きょうの食事</div>
+      <div id="todayLog"></div>
+    </div>
+  </section>
+
+  <!-- ============ SHOP ============ -->
+  <section class="screen" id="scr-shop">
+    <div class="subtabs">
+      <button class="subtab active" data-sub="wear">👒 きせかえ</button>
+      <button class="subtab" data-sub="room">🌳 おにわ・部屋</button>
+    </div>
+    <div id="shopBody"></div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="screen" id="scr-hist">
+    <div class="card streak-card">
+      <div class="flame">🔥</div>
+      <div><div class="sn"><span id="streakNum">0</span> <span style="font-size:15px">日</span></div><div class="sl">連続で腸活を記録中！</div></div>
+    </div>
+    <div class="card"><div class="section-title">📊 この7日間の腸活ポイント</div><div class="chart" id="chart"></div></div>
+    <div class="card"><div class="section-title">🐾 せいちょうの道のり</div><div id="growthList"></div></div>
+    <div class="card"><div class="section-title">📖 記録の履歴</div><div id="histList"></div></div>
+    <div class="info">
+      <b>腸活のヒント 🍃</b><br>
+      善玉菌を含む<b>ヨーグルト・納豆・キムチ</b>などの発酵食品（乳酸菌）と、そのエサになる<b>野菜・海藻・きのこ・豆</b>などの食物繊維を<b>両方</b>とると、腸内の善玉菌が元気に。この組み合わせを<b>シンバイオティクス</b>と呼びます。毎日ごはんを記録して子猫をなでると、少しずつなついてくれます 🐾
+    </div>
+    <button class="btn-ghost" id="resetBtn" style="margin-top:13px;">データをリセット</button>
+    <div style="text-align:center;font-size:10.5px;color:var(--ink-light);padding:10px;line-height:1.6;font-weight:700;">※ 栄養値はおおよその目安です。医療・栄養指導を目的としたものではありません。</div>
+  </section>
 </main>
 
-<nav class="nav">
-  <button class="on"><span class="i">🏡</span>おうち</button>
-  <button><span class="i">🍽️</span>ごはん</button>
-  <button><span class="i">🛍️</span>おみせ</button>
-  <button><span class="i">📖</span>きろく</button>
+<nav class="tabbar">
+  <button class="tab active" data-scr="home"><span class="ic">🏡</span>おうち</button>
+  <button class="tab" data-scr="food"><span class="ic">🍽️</span>ごはん</button>
+  <button class="tab" data-scr="shop"><span class="ic">🛍️</span>おみせ</button>
+  <button class="tab" data-scr="hist"><span class="ic">📖</span>きろく</button>
 </nav>
 
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-head">
+    <div class="sheet-grip"></div>
+    <div class="sh-row"><h2>食べたものを選ぶ</h2><button class="sheet-close" id="closeSheet">✕</button></div>
+    <input class="search" id="searchInput" placeholder="食べものを検索（例：ヨーグルト）">
+  </div>
+  <div class="cat-chips" id="catChips"></div>
+  <div class="food-list" id="foodList"></div>
+</div>
+
+<div id="pop"></div>
 <div class="toast" id="toast"></div>
 
 <script>
-// かわいい子猫SVG（頭に葉っぱ＝森テーマ）
-function catSVG(mood){
-  const coat='#ffd9a8',coatDark='#f2b982';
+//=============================== 食べものデータ ===============================
+const FOODS=[
+  {id:'yogurt',n:'ヨーグルト',e:'🥛',c:'発酵',lacto:3,fiber:0},
+  {id:'drinkyogurt',n:'飲むヨーグルト',e:'🥤',c:'発酵',lacto:3,fiber:0},
+  {id:'lacto',n:'乳酸菌飲料',e:'🧴',c:'発酵',lacto:3,fiber:0},
+  {id:'kimchi',n:'キムチ',e:'🌶️',c:'発酵',lacto:3,fiber:1.5},
+  {id:'nukazuke',n:'ぬか漬け',e:'🥒',c:'発酵',lacto:3,fiber:1.5},
+  {id:'natto',n:'納豆',e:'🫘',c:'発酵',lacto:2,fiber:3.3},
+  {id:'miso',n:'味噌汁',e:'🍲',c:'発酵',lacto:2,fiber:1},
+  {id:'cheese',n:'チーズ',e:'🧀',c:'発酵',lacto:2,fiber:0},
+  {id:'amazake',n:'甘酒',e:'🍶',c:'発酵',lacto:2,fiber:0.5},
+  {id:'kraut',n:'ザワークラウト',e:'🥬',c:'発酵',lacto:3,fiber:2},
+  {id:'gobo',n:'ごぼう',e:'🥕',c:'野菜',lacto:0,fiber:5.7},
+  {id:'broccoli',n:'ブロッコリー',e:'🥦',c:'野菜',lacto:0,fiber:2.5},
+  {id:'spinach',n:'ほうれん草',e:'🥬',c:'野菜',lacto:0,fiber:2},
+  {id:'kabocha',n:'かぼちゃ',e:'🎃',c:'野菜',lacto:0,fiber:2.8},
+  {id:'mushroom',n:'きのこ',e:'🍄',c:'野菜',lacto:0,fiber:2.2},
+  {id:'corn',n:'とうもろこし',e:'🌽',c:'野菜',lacto:0,fiber:2.5},
+  {id:'avocado',n:'アボカド',e:'🥑',c:'野菜',lacto:0,fiber:3.5},
+  {id:'konnyaku',n:'こんにゃく',e:'⬜',c:'野菜',lacto:0,fiber:2},
+  {id:'carrot',n:'にんじん',e:'🥕',c:'野菜',lacto:0,fiber:1.4},
+  {id:'cabbage',n:'キャベツ',e:'🥬',c:'野菜',lacto:0,fiber:1.4},
+  {id:'banana',n:'バナナ',e:'🍌',c:'果物',lacto:0,fiber:1.1},
+  {id:'apple',n:'りんご',e:'🍎',c:'果物',lacto:0,fiber:1.5},
+  {id:'kiwi',n:'キウイ',e:'🥝',c:'果物',lacto:0,fiber:2.5},
+  {id:'berry',n:'ベリー',e:'🫐',c:'果物',lacto:0,fiber:2},
+  {id:'mikan',n:'みかん',e:'🍊',c:'果物',lacto:0,fiber:1},
+  {id:'strawberry',n:'いちご',e:'🍓',c:'果物',lacto:0,fiber:1.4},
+  {id:'edamame',n:'枝豆',e:'🫛',c:'豆・海藻',lacto:0,fiber:2.5},
+  {id:'daizu',n:'大豆',e:'🟤',c:'豆・海藻',lacto:0,fiber:3},
+  {id:'hijiki',n:'ひじき',e:'⚫',c:'豆・海藻',lacto:0,fiber:3},
+  {id:'wakame',n:'わかめ',e:'🌿',c:'豆・海藻',lacto:0,fiber:1.5},
+  {id:'kombu',n:'昆布',e:'🟢',c:'豆・海藻',lacto:0,fiber:2},
+  {id:'lentil',n:'レンズ豆',e:'🟠',c:'豆・海藻',lacto:0,fiber:3.5},
+  {id:'genmai',n:'玄米',e:'🍚',c:'主食',lacto:0,fiber:1.4},
+  {id:'oatmeal',n:'オートミール',e:'🥣',c:'主食',lacto:0,fiber:3},
+  {id:'satsumaimo',n:'さつまいも',e:'🍠',c:'主食',lacto:0,fiber:2.8},
+  {id:'ryebread',n:'ライ麦パン',e:'🍞',c:'主食',lacto:0,fiber:3},
+  {id:'soba',n:'そば',e:'🍜',c:'主食',lacto:0,fiber:2},
+];
+const FOOD_CATS=['すべて','発酵','野菜','果物','豆・海藻','主食'];
+const FOOD_MAP=Object.fromEntries(FOODS.map(f=>[f.id,f]));
+const FIBER_TARGET=18;
+
+//=============================== 成長ステージ ===============================
+const STAGES=[
+  {n:'生まれたて子猫',min:0},{n:'やんちゃ子猫',min:80},{n:'げんき子猫',min:220},
+  {n:'わかねこ',min:450},{n:'成猫',min:800},{n:'もふもふ猫',min:1400},{n:'貫禄マスター猫',min:2400},
+];
+
+//=============================== ショップ ===============================
+const COSTUMES=[
+  {id:'h_ribbon',n:'ねこリボン',slot:'hat',price:40},
+  {id:'h_straw', n:'むぎわらぼうし',slot:'hat',price:130},
+  {id:'h_santa', n:'サンタぼうし',slot:'hat',price:220},
+  {id:'h_witch', n:'まじょのぼうし',slot:'hat',price:280},
+  {id:'h_crown', n:'おうかん',slot:'hat',price:600},
+  {id:'g_round', n:'まるめがね',slot:'glasses',price:80},
+  {id:'g_sun',   n:'サングラス',slot:'glasses',price:150},
+  {id:'g_heart', n:'ハートめがね',slot:'glasses',price:230},
+  {id:'c_bell',  n:'すず首輪',slot:'collar',price:60},
+  {id:'c_bow',   n:'ちょうネクタイ',slot:'collar',price:110},
+  {id:'c_scarf', n:'マフラー',slot:'collar',price:150},
+  {id:'c_lei',   n:'花の首かざり',slot:'collar',price:200},
+  {id:'o_hoodie',n:'パーカー',slot:'outfit',price:170},
+  {id:'o_kimono',n:'きもの',slot:'outfit',price:320},
+  {id:'o_hero',  n:'ヒーロースーツ',slot:'outfit',price:360},
+  {id:'b_cape',  n:'マント',slot:'back',price:250},
+  {id:'b_wings', n:'てんしのはね',slot:'back',price:450},
+];
+const COSTUME_MAP=Object.fromEntries(COSTUMES.map(c=>[c.id,c]));
+const SLOT_LABEL={hat:'👒 ぼうし・かぶりもの',glasses:'🕶️ メガネ',collar:'🎀 首かざり',outfit:'👕 ふく',back:'🪽 せなか'};
+
+const FURNITURE=[
+  {id:'f_window',  n:'まど',       price:0,  pos:[20,26], size:60, html:'<div style="width:56px;height:52px;background:linear-gradient(160deg,#bfe4ff,#e9f6ff);border:5px solid #fff;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.12);position:relative"><div style="position:absolute;inset:0;background:linear-gradient(#8fbf6a,#8fbf6a) center/4px 100% no-repeat,linear-gradient(#fff,#fff) center/100% 4px no-repeat"></div></div>'},
+  {id:'f_fence',   n:'しろいさく', price:50, pos:[50,60], size:80, html:'<div style="display:flex;gap:4px;align-items:flex-end">'+Array(4).fill('<div style=\'width:9px;height:26px;background:#fff;border-radius:3px 3px 0 0;box-shadow:0 2px 3px rgba(0,0,0,.12)\'></div>').join('')+'<div style="position:absolute;bottom:8px;left:0;right:0;height:5px;background:#fff;border-radius:3px"></div></div>'},
+  {id:'f_clock',   n:'かべ時計',   price:60, pos:[80,17], emoji:'🕐', size:30},
+  {id:'f_poster',  n:'ポスター',   price:70, pos:[82,40], emoji:'🖼️', size:32},
+  {id:'f_garland', n:'ガーランド', price:90, pos:[50,6],  emoji:'🎏', size:28},
+  {id:'f_shelf',   n:'本だな',     price:160,pos:[13,50], emoji:'📚', size:38},
+  {id:'f_tv',      n:'テレビ',     price:240,pos:[86,50], emoji:'📺', size:42},
+  {id:'f_plant',   n:'かんようしょくぶつ',price:80,pos:[9,57], emoji:'🪴', size:38},
+  {id:'f_cactus',  n:'サボテン',   price:60, pos:[91,60], emoji:'🌵', size:32},
+  {id:'f_flower',  n:'おはなばたけ',price:70, pos:[28,64], emoji:'🌷', size:26},
+  {id:'f_mushroom',n:'きのこ',     price:50, pos:[70,63], emoji:'🍄', size:24},
+  {id:'f_bed',     n:'ねこベッド', price:200,pos:[76,64], size:60, html:'<div style="width:66px;height:34px;background:radial-gradient(circle at 50% 30%,#ffd0dd,#ff9db8);border-radius:50%/60% 60% 100% 100%;box-shadow:inset 0 -4px 6px rgba(0,0,0,.08),0 3px 4px rgba(0,0,0,.14)"></div>'},
+  {id:'f_tower',   n:'キャットタワー',price:340,pos:[90,42], size:70, html:'<div style="position:relative;width:34px;height:108px"><div style="position:absolute;left:12px;top:0;width:10px;height:108px;background:#cbb18f;border-radius:4px"></div><div style="position:absolute;left:-4px;top:6px;width:42px;height:12px;background:#a9d18e;border-radius:6px"></div><div style="position:absolute;left:0;top:48px;width:34px;height:11px;background:#a9d18e;border-radius:6px"></div></div>'},
+  {id:'f_ball',    n:'けだま',     price:40, pos:[32,74], emoji:'🧶', size:26},
+  {id:'f_fish',    n:'おさかな',   price:50, pos:[66,76], emoji:'🐟', size:24},
+  {id:'f_teddy',   n:'ぬいぐるみ', price:90, pos:[24,72], emoji:'🧸', size:30},
+  {id:'f_mouse',   n:'おもちゃネズミ',price:40,pos:[74,73], emoji:'🐭', size:22},
+  {id:'f_bowl',    n:'ごはんボウル',price:70,pos:[40,80], emoji:'🍚', size:24},
+];
+const FURNI_MAP=Object.fromEntries(FURNITURE.map(f=>[f.id,f]));
+
+const RUGS=[
+  {id:'r_pink', n:'ピンクラグ', price:60, color:'radial-gradient(#ffd0dd,#ff9db8)'},
+  {id:'r_green',n:'クローバー', price:60, color:'radial-gradient(#cfeecf,#8fce8f)'},
+  {id:'r_blue', n:'ブルーラグ', price:60, color:'radial-gradient(#cfe4ff,#8fb8ee)'},
+];
+const RUG_MAP=Object.fromEntries(RUGS.map(r=>[r.id,r]));
+// wallpaper = 空のいろ
+const WALLS=[
+  {id:'w_mori', n:'はれた空',   price:0,  bg:'linear-gradient(180deg,#bfeaf0 0%,#dff5ee 58%,#e9f8dd 100%)'},
+  {id:'w_yugure',n:'ゆうやけ',  price:90, bg:'linear-gradient(180deg,#ffd9a8,#ffb0a0 60%,#ffd8b0)'},
+  {id:'w_sakura',n:'さくら空',  price:90, bg:'linear-gradient(180deg,#ffe3ef,#ffd0e0 60%,#fbe6d6)'},
+  {id:'w_mizu', n:'みずいろ',   price:90, bg:'linear-gradient(180deg,#cfeefb,#e3f6ff 60%,#eafaea)'},
+  {id:'w_night',n:'よぞら',     price:180,bg:'radial-gradient(1px 1px at 20% 30%,#fff,transparent),radial-gradient(1px 1px at 70% 20%,#fff,transparent),radial-gradient(1px 1px at 45% 55%,#fff,transparent),radial-gradient(1px 1px at 85% 45%,#fff,transparent),linear-gradient(180deg,#2b2b52,#42427a)'},
+];
+const WALL_MAP=Object.fromEntries(WALLS.map(w=>[w.id,w]));
+
+//=============================== 状態 ===============================
+const KEY='nyanko_mori_v1';
+let state=load();
+function load(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.logs)return migrate(s);}catch(e){}
+  return {logs:{},catName:'ネコタ',bond:0,spent:0,petPoints:0,
+    owned:['w_mori'],equipped:{hat:null,glasses:null,collar:null,outfit:null,back:null},
+    placed:[],wallpaper:'w_mori',rug:null,pet:{date:'',count:0},feedBondDate:'',synbioBondDate:''};
+}
+function migrate(s){
+  s.equipped=s.equipped||{hat:null,glasses:null,collar:null,outfit:null,back:null};
+  s.owned=s.owned||['w_mori'];s.placed=s.placed||[];s.pet=s.pet||{date:'',count:0};
+  if(s.bond==null)s.bond=0;if(s.spent==null)s.spent=0;if(s.petPoints==null)s.petPoints=0;
+  if(!s.wallpaper||!WALL_MAP[s.wallpaper])s.wallpaper='w_mori';if(!s.rug)s.rug=null;
+  return s;
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+function tk(d=new Date()){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+const TODAY=tk();
+
+//=============================== 計算 ===============================
+function entries(k){return state.logs[k]||[];}
+function daySummary(k){
+  let lacto=0,fiber=0;
+  entries(k).forEach(it=>{const f=FOOD_MAP[it.id];if(!f)return;lacto+=f.lacto*it.qty;fiber+=f.fiber*it.qty;});
+  const synbio=(lacto>=2&&fiber>=FIBER_TARGET);
+  const points=Math.round(lacto*8+fiber*4+(synbio?40:0));
+  return {lacto:+lacto.toFixed(1),fiber:+fiber.toFixed(1),points,synbio};
+}
+function earned(){let t=0;for(const k in state.logs)t+=daySummary(k).points;return t;}
+function wallet(){return earned()+state.petPoints-state.spent;}
+function stageFor(pt){let s=0;for(let i=0;i<STAGES.length;i++)if(pt>=STAGES[i].min)s=i;return s;}
+
+//=============================== なつき度 ===============================
+const BOND_LEVELS=[
+  {min:0,l:'よそよそしい',s:'まだ様子見中…ごはんとなでなでで仲良くなろう'},
+  {min:20,l:'きょうみしんしん',s:'ちょっと近づいてきた！'},
+  {min:40,l:'なかよし',s:'すっかり慣れてきたみたい 🐾'},
+  {min:60,l:'だいすき',s:'あなたが大好き！そばにいたがる'},
+  {min:85,l:'メロメロ',s:'いつもゴロゴロ甘えん坊 💕'},
+  {min:100,l:'きずなMAX',s:'ずっと一緒だよ 🌟'},
+];
+function bondLevel(b){let r=BOND_LEVELS[0];for(const x of BOND_LEVELS)if(b>=x.min)r=x;return r;}
+function addBond(n){state.bond=Math.min(100,state.bond+n);}
+
+//=============================== 猫SVG ===============================
+const FOREST_LEAF='<g transform="translate(112 46) rotate(24)"><path d="M0 0 Q15 -9 28 2 Q15 9 0 0 Z" fill="#7cc242"/><path d="M2 0 H24" stroke="#5fa32e" stroke-width="1.6"/></g>';
+function catSVG(stage,mood,eq){
+  const scale=Math.min(0.62+stage*0.075,1);
+  const coat=stage>=6?'#ffd873':'#ffd9a8', coatDark=stage>=6?'#f0b93b':'#f2b982';
+  const fluff=stage>=5, sparkle=stage>=4; eq=eq||{};
   let eyes,mouth;
   if(mood==='great'){
     eyes='<path d="M78 96 q7 -11 14 0" stroke="#6b5636" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M108 96 q7 -11 14 0" stroke="#6b5636" stroke-width="4" fill="none" stroke-linecap="round"/>';
     mouth='<path d="M92 112 q8 9 16 0" stroke="#6b5636" stroke-width="3" fill="none" stroke-linecap="round"/>';
-  }else{
+  }else if(mood==='good'){
     eyes='<circle cx="85" cy="97" r="6.5" fill="#6b5636"/><circle cx="115" cy="97" r="6.5" fill="#6b5636"/><circle cx="87" cy="94" r="2" fill="#fff"/><circle cx="117" cy="94" r="2" fill="#fff"/>';
     mouth='<path d="M94 110 q6 6 12 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+  }else if(mood==='meh'){
+    eyes='<circle cx="85" cy="97" r="6" fill="#6b5636"/><circle cx="115" cy="97" r="6" fill="#6b5636"/>';
+    mouth='<path d="M93 111 h14" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
+  }else{
+    eyes='<path d="M79 99 q6 -7 13 -2" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M108 97 q7 -5 13 2" stroke="#6b5636" stroke-width="3.4" fill="none" stroke-linecap="round"/>';
+    mouth='<path d="M93 113 q7 -5 14 0" stroke="#6b5636" stroke-width="2.6" fill="none" stroke-linecap="round"/>';
   }
-  return `<svg viewBox="0 0 200 200">
+  const back=COSTUME_BACK(eq.back),outfit=COSTUME_OUTFIT(eq.outfit,coat),collar=COSTUME_COLLAR(eq.collar),
+        glasses=COSTUME_GLASSES(eq.glasses),hat=COSTUME_HAT(eq.hat)||FOREST_LEAF;
+  return `<svg viewBox="0 0 200 200"><g transform="translate(100 178) scale(${scale}) translate(-100 -178)">
     <ellipse cx="100" cy="184" rx="46" ry="9" fill="rgba(80,60,30,.10)"/>
+    ${back}
     <path d="M142 170 q34 6 30 -30 q-3 -20 -18 -18" fill="none" stroke="${coatDark}" stroke-width="13" stroke-linecap="round"/>
     <path d="M58 184 C50 132 66 120 100 120 C134 120 150 132 142 184 Z" fill="${coat}"/>
     <ellipse cx="80" cy="182" rx="12" ry="7.5" fill="${coatDark}"/><ellipse cx="120" cy="182" rx="12" ry="7.5" fill="${coatDark}"/>
+    ${outfit}
     <path d="M60 72 L54 28 L96 58 Z" fill="${coat}"/><path d="M140 72 L146 28 L104 58 Z" fill="${coat}"/>
     <path d="M64 64 L61 40 L86 58 Z" fill="#ffb3c6"/><path d="M136 64 L139 40 L114 58 Z" fill="#ffb3c6"/>
+    ${fluff?`<circle cx="100" cy="94" r="50" fill="${coat}" opacity=".5"/>`:''}
     <circle cx="100" cy="94" r="42" fill="${coat}"/>
     <ellipse cx="70" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/><ellipse cx="130" cy="106" rx="9" ry="7" fill="#ffc9d8" opacity=".6"/>
     ${eyes}
@@ -197,36 +543,270 @@ function catSVG(mood){
     ${mouth}
     <path d="M64 102 h-22 M66 110 h-20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
     <path d="M136 102 h22 M134 110 h20" stroke="${coatDark}" stroke-width="2" stroke-linecap="round"/>
-    <!-- 森テーマの葉っぱ -->
-    <g transform="translate(112 44) rotate(24)"><path d="M0 0 Q16 -10 30 2 Q16 10 0 0 Z" fill="#7cc242"/><path d="M2 0 H26" stroke="#5fa32e" stroke-width="1.6"/></g>
-  </svg>`;
+    ${collar}${glasses}${hat}
+    ${sparkle?'<text x="150" y="58" font-size="18" opacity=".9">✨</text><text x="30" y="118" font-size="15" opacity=".8">✨</text>':''}
+  </g></svg>`;
 }
-const catArt=document.getElementById('catArt');
-catArt.innerHTML=catSVG('good');
+function COSTUME_HAT(id){switch(id){
+  case 'h_ribbon':return '<g transform="translate(100 50)"><path d="M0 0 L-16 -9 L-16 11 Z" fill="#ff6f91"/><path d="M0 0 L16 -9 L16 11 Z" fill="#ff6f91"/><circle r="6" fill="#e84c74"/></g>';
+  case 'h_straw':return '<g><ellipse cx="100" cy="54" rx="52" ry="13" fill="#e8c37a" stroke="#c99b4e" stroke-width="2"/><path d="M74 54 a26 30 0 0 1 52 0 Z" fill="#eecb86" stroke="#c99b4e" stroke-width="2"/><rect x="74" y="47" width="52" height="7" rx="3" fill="#c26b6b"/></g>';
+  case 'h_santa':return '<g><path d="M62 52 Q100 -14 140 46 Z" fill="#e5484d"/><ellipse cx="101" cy="50" rx="43" ry="9" fill="#fff"/><circle cx="140" cy="26" r="8" fill="#fff"/></g>';
+  case 'h_witch':return '<g><ellipse cx="100" cy="52" rx="50" ry="12" fill="#4b3a63"/><path d="M76 52 Q112 -26 118 48 Z" fill="#5a4780"/><rect x="80" y="42" width="42" height="8" rx="2" fill="#7a5cff"/><path d="M118 48 q10 -2 12 -10" stroke="#5a4780" stroke-width="7" fill="none" stroke-linecap="round"/></g>';
+  case 'h_crown':return '<g><path d="M70 48 L78 20 L100 40 L122 20 L130 48 Z" fill="#ffd23f" stroke="#e0a500" stroke-width="2" stroke-linejoin="round"/><rect x="70" y="46" width="60" height="8" rx="3" fill="#f0b93b"/><circle cx="78" cy="20" r="4" fill="#ff6b8a"/><circle cx="122" cy="20" r="4" fill="#6ac0ff"/><circle cx="100" cy="40" r="4" fill="#7ee081"/></g>';
+  default:return '';}}
+function COSTUME_GLASSES(id){switch(id){
+  case 'g_round':return '<g fill="#fff" fill-opacity=".2" stroke="#5a4632" stroke-width="3"><circle cx="85" cy="96" r="12"/><circle cx="115" cy="96" r="12"/></g><path d="M97 96 h6 M73 92 l-10 -4 M127 92 l10 -4" stroke="#5a4632" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  case 'g_sun':return '<g fill="#2b2b3a"><rect x="71" y="88" width="27" height="16" rx="7"/><rect x="102" y="88" width="27" height="16" rx="7"/></g><path d="M98 91 h6 M71 90 l-9 -3 M129 90 l9 -3" stroke="#2b2b3a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M76 92 l6 -3 M107 92 l6 -3" stroke="#fff" stroke-width="2" opacity=".55" stroke-linecap="round"/>';
+  case 'g_heart':return '<g fill="#ff5c8a" fill-opacity=".85"><path d="M85 90 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z"/><path d="M115 90 c-4 -6 -13 -3 -8 4 l8 8 8 -8 c5 -7 -4 -10 -8 -4 Z"/></g><path d="M97 94 h6" stroke="#ff5c8a" stroke-width="3" stroke-linecap="round"/>';
+  default:return '';}}
+function COSTUME_COLLAR(id){switch(id){
+  case 'c_bell':return '<path d="M72 126 q28 12 56 0" fill="none" stroke="#e5484d" stroke-width="7"/><circle cx="100" cy="134" r="7" fill="#ffcf33" stroke="#e0a500" stroke-width="1.5"/><path d="M96 134 h8" stroke="#c98f00" stroke-width="1.5"/>';
+  case 'c_bow':return '<path d="M72 126 q28 10 56 0" fill="none" stroke="#5b8def" stroke-width="4"/><g transform="translate(100 128)"><path d="M0 0 L-14 -8 L-14 8 Z" fill="#5b8def"/><path d="M0 0 L14 -8 L14 8 Z" fill="#5b8def"/><rect x="-4" y="-6" width="8" height="12" rx="2" fill="#3a6fd6"/></g>';
+  case 'c_scarf':return '<path d="M66 122 q34 20 68 0 l-4 15 q-30 13 -60 0 Z" fill="#3fa66b"/><path d="M118 133 l15 6 -5 20 -13 -9 Z" fill="#2e8c58"/>';
+  case 'c_lei':return '<g>'+[68,80,92,104,116,128].map((x,i)=>{const y=126+Math.sin((i-2.5)*0.5)*6;const col=['#ff8fab','#ffd23f','#ff8fab','#7ee081','#ff8fab','#ffd23f'][i];return `<circle cx="${x}" cy="${y}" r="5.5" fill="${col}"/><circle cx="${x}" cy="${y}" r="2" fill="#fff"/>`;}).join('')+'</g>';
+  default:return '';}}
+function COSTUME_OUTFIT(id){switch(id){
+  case 'o_hoodie':return '<path d="M60 184 C54 138 70 128 100 128 C130 128 146 138 140 184 Z" fill="#f2a154"/><path d="M72 130 q28 -13 56 0 q-7 15 -28 15 q-21 0 -28 -15 Z" fill="#dd8b3a"/><path d="M86 158 h28 v16 h-28 Z" fill="#dd8b3a"/><path d="M96 132 v10 M104 132 v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>';
+  case 'o_kimono':return '<path d="M60 184 C56 140 70 128 100 128 C130 128 144 140 140 184 Z" fill="#f2ece0"/><path d="M100 130 L82 184 M100 130 L118 184" stroke="#c0455e" stroke-width="6" fill="none"/><rect x="62" y="158" width="76" height="12" fill="#c0455e"/><path d="M100 130 l-9 24 18 0 Z" fill="#e2c4cb"/>';
+  case 'o_hero':return '<path d="M60 184 C54 138 70 128 100 128 C130 128 146 138 140 184 Z" fill="#3a6fd6"/><path d="M100 138 l4 12 13 0 -10 8 4 13 -11 -8 -11 8 4 -13 -10 -8 13 0 Z" fill="#ffd23f"/><rect x="62" y="166" width="76" height="9" fill="#ffd23f"/>';
+  default:return '';}}
+function COSTUME_BACK(id){switch(id){
+  case 'b_wings':return '<g fill="#fff" stroke="#e6ecf5" stroke-width="1.5"><path d="M72 132 q-42 -24 -56 4 q28 -4 36 14 q-26 2 -22 24 q24 -12 36 4 Z"/><path d="M128 132 q42 -24 56 4 q-28 -4 -36 14 q26 2 22 24 q-24 -12 -36 4 Z"/></g>';
+  case 'b_cape':return '<path d="M66 128 q34 -12 68 0 l8 62 q-42 -14 -84 0 Z" fill="#c0392b"/><path d="M78 124 q22 -9 44 0 l-3 11 q-19 -8 -38 0 Z" fill="#9e2c1e"/>';
+  default:return '';}}
 
-const lines=['きょうのごはん なにかな？🍃','なでてくれて ありがとニャ💕','はっこうしょくひん だいすき！','おなか よろこんでる〜♪','いっしょに 腸活しよ🐾'];
-let li=0;
-function heart(x,y){const s=document.getElementById('scene'),r=s.getBoundingClientRect();
-  const h=document.createElement('div');h.className='heart-p';h.textContent=['💚','💛','💕','🍃'][Math.floor(Math.random()*4)];
-  h.style.left=((x??r.width/2)-10)+'px';h.style.top=((y??r.height*0.45)-10)+'px';s.appendChild(h);setTimeout(()=>h.remove(),1000);}
-function react(ev){
-  catArt.innerHTML=catSVG('great');
-  catArt.classList.remove('bob','pop');void catArt.offsetWidth;catArt.classList.add('pop');
-  const s=document.getElementById('scene').getBoundingClientRect();
-  let x,y;if(ev&&ev.clientX){x=ev.clientX-s.left;y=ev.clientY-s.top;}
-  heart(x,y);
-  li=(li+1)%lines.length;document.getElementById('bubble').textContent=lines[li];
-  setTimeout(()=>{catArt.classList.remove('pop');catArt.classList.add('bob');catArt.innerHTML=catSVG('good');},700);
+//=============================== 気分 ===============================
+function moodOf(sum){
+  if(sum.synbio)return {key:'great',msg:'ごきげん！ 腸内フローラばっちり 😻'};
+  if(sum.lacto>0&&sum.fiber>0)return {key:'good',msg:'うれしい！ この調子 😺'};
+  if(sum.lacto>0||sum.fiber>0)return {key:'meh',msg:'もうちょっと！ 反対の栄養もほしいな'};
+  if(state.bond>=60)return {key:'meh',msg:'ごはんまだかな？ でもそばにいるよ'};
+  return {key:'hungry',msg:'おなかすいた… ごはん記録してね 😿'};
 }
-document.getElementById('cat').addEventListener('click',react);
-let tT;
-document.getElementById('feed').addEventListener('click',()=>{
-  react();heart();
-  const t=document.getElementById('toast');t.textContent='ごはんをあげた！ 腸活P +20 ✨';t.classList.add('show');
-  clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),2000);
+
+//=============================== 描画 ===============================
+let petJustNow=false;
+function render(){
+  const sum=daySummary(TODAY),total=earned(),stage=stageFor(total),st=STAGES[stage];
+  const mood=petJustNow?{key:'great',msg:''}:moodOf(sum);
+  document.getElementById('hdrCoin').textContent=wallet();
+  document.getElementById('homeName').textContent=state.catName;
+  document.getElementById('homeStage').textContent=st.n;
+  document.getElementById('catArtHome').innerHTML=catSVG(stage,mood.key,state.equipped);
+  renderRoom();
+  const bl=bondLevel(state.bond);
+  document.getElementById('bondLabel').textContent=bl.l;
+  document.getElementById('bondSub').textContent=bl.s;
+  document.getElementById('bondFill').style.width=state.bond+'%';
+  const hearts=Math.round(state.bond/20);
+  document.getElementById('bondHearts').innerHTML=Array.from({length:5},(_,i)=>i<hearts?'❤️':'🤍').join('');
+  const nextMin=stage<STAGES.length-1?STAGES[stage+1].min:st.min;
+  document.getElementById('lvlNum').textContent=stage+1;
+  if(stage<STAGES.length-1){
+    document.getElementById('lvlFill').style.width=Math.min(100,(total-st.min)/(nextMin-st.min)*100)+'%';
+    document.getElementById('lvlNext').textContent=`次の姿まで あと ${nextMin-total}P`;
+  }else{document.getElementById('lvlFill').style.width='100%';document.getElementById('lvlNext').textContent='最終形態！ 🏆';}
+  document.getElementById('mLacto').textContent=sum.lacto;
+  document.getElementById('mFiber').textContent=sum.fiber+'g';
+  document.getElementById('mPoint').textContent=sum.points;
+  document.getElementById('sLacto').textContent=sum.lacto;
+  document.getElementById('sFiber').innerHTML=sum.fiber+'<span class="unit">g</span>';
+  document.getElementById('sPoint').textContent=sum.points;
+  document.getElementById('mfLacto').style.width=(Math.min(100,sum.lacto/3*100)*0.5)+'%';
+  document.getElementById('mfFiber').style.width=(Math.min(100,sum.fiber/FIBER_TARGET*100)*0.5)+'%';
+  let bmsg;
+  if(sum.synbio)bmsg='完ぺき！ バランス◎';
+  else if(sum.fiber<FIBER_TARGET&&sum.lacto>=2)bmsg='食物繊維をもう少し';
+  else if(sum.fiber>=FIBER_TARGET&&sum.lacto<2)bmsg='発酵食品をプラス';
+  else if(sum.lacto>0||sum.fiber>0)bmsg='両方そろえよう';
+  else bmsg='今日のごはんを記録しよう';
+  document.getElementById('balanceMsg').textContent=bmsg;
+  document.getElementById('synbio').classList.toggle('on',sum.synbio);
+  renderLog();renderHistory();renderShop();
+}
+function renderRoom(){
+  const wall=WALL_MAP[state.wallpaper]||WALLS[0];
+  document.getElementById('roomWall').style.background=wall.bg;
+  document.getElementById('room').classList.toggle('night',wall.id==='w_night');
+  const rug=document.getElementById('rug');
+  if(state.rug&&RUG_MAP[state.rug]){rug.style.display='block';rug.style.background=RUG_MAP[state.rug].color;}
+  else rug.style.display='none';
+  document.getElementById('furniLayer').innerHTML=state.placed.map(id=>{
+    const f=FURNI_MAP[id];if(!f)return '';
+    const inner=f.html||`<span style="font-size:${f.size}px">${f.emoji}</span>`;
+    return `<div class="furni ${f.emoji?'emoji':''}" style="left:${f.pos[0]}%;top:${f.pos[1]}%">${inner}</div>`;
+  }).join('');
+}
+function renderLog(){
+  const el=document.getElementById('todayLog'),items=entries(TODAY);
+  if(!items.length){el.innerHTML='<div class="empty">まだ記録がありません。<br>「＋ 食べたものを記録する」からどうぞ 🐾</div>';return;}
+  el.innerHTML=items.map((it,i)=>{
+    const f=FOOD_MAP[it.id];if(!f)return '';
+    const meta=[];
+    if(f.lacto)meta.push(`<span class="lc">乳酸菌+${f.lacto*it.qty}</span>`);
+    if(f.fiber)meta.push(`<span class="fc">食物繊維+${(f.fiber*it.qty).toFixed(1)}g</span>`);
+    return `<div class="log-item"><span class="lem">${f.e}</span>
+      <div style="flex:1"><div class="lname">${f.n}</div><div class="lmeta">${meta.join(' ・ ')||'—'}</div></div>
+      <div class="qty"><button data-act="dec" data-i="${i}">−</button><span>${it.qty}</span><button data-act="inc" data-i="${i}">＋</button></div></div>`;
+  }).join('');
+}
+function renderHistory(){
+  let streak=0;const base=entries(TODAY).length?new Date():(()=>{const d=new Date();d.setDate(d.getDate()-1);return d;})();
+  for(const d=new Date(base);;d.setDate(d.getDate()-1)){if(entries(tk(d)).length)streak++;else break;}
+  document.getElementById('streakNum').textContent=streak;
+  const days=[];for(let i=6;i>=0;i--){const dt=new Date();dt.setDate(dt.getDate()-i);days.push(dt);}
+  const sums=days.map(dt=>daySummary(tk(dt)));const max=Math.max(60,...sums.map(s=>s.points));
+  document.getElementById('chart').innerHTML=days.map((dt,i)=>{const p=sums[i].points;
+    return `<div class="bar-col"><div class="bar-val">${p||''}</div><div class="bar ${p?'':'zero'}" style="height:${Math.max(3,p/max*100)}%"></div><div class="bar-lbl">${['日','月','火','水','木','金','土'][dt.getDay()]}</div></div>`;
+  }).join('');
+  const total=earned(),stage=stageFor(total);
+  document.getElementById('growthList').innerHTML=STAGES.map((s,i)=>{
+    const reached=total>=s.min,cur=i===stage;
+    return `<div class="growth-item ${reached?'reached':''} ${cur?'current':''}"><div class="gem">${catSVG(i,'good',{})}</div>
+      <div style="flex:1"><div class="gn">${s.n}</div><div class="gr">${cur?'いまここ 🐾':reached?'到達ずみ':'これから'}</div></div>
+      <div class="gpt">${s.min}P${reached?' ✓':''}</div></div>`;
+  }).join('');
+  const keys=Object.keys(state.logs).filter(k=>entries(k).length).sort().reverse();
+  const hl=document.getElementById('histList');
+  hl.innerHTML=keys.length?keys.slice(0,30).map(k=>{const s=daySummary(k),[y,m,dd]=k.split('-');
+    return `<div class="hist-item"><div class="hist-date"><b>${+m}/${+dd}</b>${k===TODAY?'今日':''}</div>
+      <div class="hist-detail"><span class="lc">乳酸菌 ${s.lacto}</span> ・ <span class="fc">繊維 ${s.fiber}g</span>${s.synbio?' 🎉':''}</div>
+      <div class="hist-pt">${s.points}<span style="font-size:10px">P</span></div></div>`;
+  }).join(''):'<div class="empty">記録がたまるとここに並びます 📖</div>';
+}
+
+//=============================== ショップ ===============================
+let shopSub='wear';
+function renderShop(){
+  const w=wallet(),body=document.getElementById('shopBody');
+  if(shopSub==='wear'){
+    let html='';
+    ['hat','glasses','collar','outfit','back'].forEach(slot=>{
+      html+=`<div class="shop-group-title">${SLOT_LABEL[slot]}</div><div class="shop-grid">`+
+        COSTUMES.filter(c=>c.slot===slot).map(c=>shopCard('costume',c,w)).join('')+'</div>';
+    });
+    body.innerHTML=html;
+  }else{
+    body.innerHTML=`<div class="shop-group-title">🌤️ そらのいろ（かべがみ）</div><div class="shop-grid">`+WALLS.map(x=>shopCard('wall',x,w)).join('')+'</div>'+
+      `<div class="shop-group-title">🟢 ラグ</div><div class="shop-grid">`+RUGS.map(x=>shopCard('rug',x,w)).join('')+'</div>'+
+      `<div class="shop-group-title">🪑 かぐ・こもの</div><div class="shop-grid">`+FURNITURE.map(x=>shopCard('furni',x,w)).join('')+'</div>';
+  }
+}
+function shopPreview(type,x){
+  if(type==='costume'){const eq={};eq[x.slot]=x.id;return catSVG(3,'good',eq);}
+  if(type==='wall')return `<div style="width:56px;height:56px;border-radius:12px;background:${x.bg};border:2px solid var(--cream-d)"></div>`;
+  if(type==='rug')return `<div style="width:56px;height:30px;border-radius:50%;background:${x.color}"></div>`;
+  if(type==='furni')return x.html?x.html:`<span style="font-size:40px">${x.emoji}</span>`;
+}
+function shopCard(type,x,w){
+  const free=x.price===0,owned=state.owned.includes(x.id),isOwned=owned||free;
+  let active=false;
+  if(type==='costume')active=state.equipped[x.slot]===x.id;
+  if(type==='wall')active=state.wallpaper===x.id;
+  if(type==='rug')active=state.rug===x.id;
+  if(type==='furni')active=state.placed.includes(x.id);
+  if(!isOwned){
+    const can=w>=x.price;
+    return `<div class="shop-item"><div class="shop-preview">${shopPreview(type,x)}</div>
+      <div class="shop-name">${x.n}</div><div class="shop-price">✨ ${x.price}</div>
+      <button class="shop-btn buy" data-type="${type}" data-id="${x.id}" ${can?'':'disabled'}>${can?'買う':'P不足'}</button></div>`;
+  }
+  let label,cls;
+  if(type==='costume'){label=active?'ぬぐ':'きる';cls=active?'off':'use';}
+  else if(type==='furni'){label=active?'しまう':'かざる';cls=active?'off':'use';}
+  else{label=active?'つかってる':'つかう';cls=active?'off':'use';}
+  return `<div class="shop-item ${active?'equipped':''}">${active?'<span class="badge">つかってる</span>':''}<div class="shop-preview">${shopPreview(type,x)}</div>
+    <div class="shop-name">${x.n}</div><div class="shop-price">${free?'さいしょから':'もってる ✓'}</div>
+    <button class="shop-btn ${cls}" data-type="${type}" data-id="${x.id}" data-toggle="1">${label}</button></div>`;
+}
+document.getElementById('shopBody').addEventListener('click',e=>{
+  const b=e.target.closest('.shop-btn');if(!b)return;
+  const type=b.dataset.type,id=b.dataset.id,toggle=b.dataset.toggle;
+  const x={costume:COSTUME_MAP,wall:WALL_MAP,rug:RUG_MAP,furni:FURNI_MAP}[type][id];
+  if(!toggle){
+    if(wallet()<x.price)return;
+    state.spent+=x.price;state.owned.push(id);applyItem(type,id,true);addBond(1);
+    save();render();toast(`「${x.n}」を買ったよ！ 🎁`);flyPoint('-'+x.price+'P');
+  }else{applyItem(type,id,'toggle');save();render();}
 });
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');});
+function applyItem(type,id,mode){
+  if(type==='costume'){const slot=COSTUME_MAP[id].slot;state.equipped[slot]=(mode===true)?id:(state.equipped[slot]===id?null:id);}
+  else if(type==='wall'){state.wallpaper=id;}
+  else if(type==='rug'){state.rug=(mode==='toggle'&&state.rug===id)?null:id;}
+  else if(type==='furni'){if(mode===true){if(!state.placed.includes(id))state.placed.push(id);}else{const i=state.placed.indexOf(id);if(i>=0)state.placed.splice(i,1);else state.placed.push(id);}}
+}
+
+//=============================== 操作 ===============================
+function addFood(id){
+  if(!state.logs[TODAY])state.logs[TODAY]=[];
+  const list=state.logs[TODAY],first=list.length===0;
+  const beforeSyn=daySummary(TODAY).synbio,beforeP=daySummary(TODAY).points;
+  const ex=list.find(it=>it.id===id);if(ex)ex.qty++;else list.push({id,qty:1});
+  if(first&&state.feedBondDate!==TODAY){state.feedBondDate=TODAY;addBond(3);toast('ごはんをあげた！ 少しなついた 🐾');}
+  const after=daySummary(TODAY);
+  if(!beforeSyn&&after.synbio&&state.synbioBondDate!==TODAY){state.synbioBondDate=TODAY;addBond(3);toast('🎉 シンバイオティクス達成！ ボーナス＋40P');}
+  save();const gained=after.points-beforeP;petJustNow=false;render();
+  document.querySelectorAll('.stat').forEach(s=>{s.classList.remove('measuring');void s.offsetWidth;s.classList.add('measuring');});
+  if(gained>0)flyPoint('+'+gained+'P');
+}
+function changeQty(i,delta){
+  const list=state.logs[TODAY];if(!list||!list[i])return;
+  list[i].qty+=delta;if(list[i].qty<=0)list.splice(i,1);if(!list.length)delete state.logs[TODAY];
+  save();render();
+}
+function pet(ev){
+  const room=document.getElementById('room'),r=room.getBoundingClientRect();
+  let x,y;
+  if(ev.touches&&ev.touches[0]){x=ev.touches[0].clientX-r.left;y=ev.touches[0].clientY-r.top;}
+  else{x=ev.clientX-r.left;y=ev.clientY-r.top;}
+  if(isNaN(x)){x=r.width/2;y=r.height*0.5;}
+  const h=document.createElement('div');h.className='heart-p';h.textContent=['💚','💛','💕','🍃'][Math.floor(Math.random()*4)];
+  h.style.left=(x-9)+'px';h.style.top=(y-9)+'px';room.appendChild(h);setTimeout(()=>h.remove(),1000);
+  const art=document.getElementById('catArtHome');art.classList.remove('cat-pet','cat-bounce');void art.offsetWidth;art.classList.add('cat-pet');
+  setTimeout(()=>{art.classList.remove('cat-pet');art.classList.add('cat-bounce');},520);
+  if(state.pet.date!==TODAY)state.pet={date:TODAY,count:0};
+  if(state.pet.count<5){
+    state.pet.count++;addBond(1);state.petPoints+=2;
+    const p=document.createElement('div');p.className='purr';p.textContent='ゴロゴロ♪';p.style.left=(x-24)+'px';p.style.top=(y-30)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
+    petJustNow=true;save();render();setTimeout(()=>{petJustNow=false;render();},1400);
+  }else{
+    const p=document.createElement('div');p.className='purr';p.textContent='まんぞく♪';p.style.left=(x-22)+'px';p.style.top=(y-30)+'px';room.appendChild(p);setTimeout(()=>p.remove(),900);
+  }
+}
+document.getElementById('catHome').addEventListener('click',pet);
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');document.getElementById('scr-'+t.dataset.scr).classList.add('active');window.scrollTo(0,0);
+});
+document.querySelectorAll('.subtab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));t.classList.add('active');shopSub=t.dataset.sub;renderShop();
+});
+document.getElementById('todayLog').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;changeQty(+b.dataset.i,b.dataset.act==='inc'?1:-1);});
+
+const sheet=document.getElementById('sheet'),sheetBg=document.getElementById('sheetBg');
+let curCat='すべて',curSearch='';
+function openSheet(){renderFoods();sheet.classList.add('open');sheetBg.classList.add('open');}
+function closeSheet(){sheet.classList.remove('open');sheetBg.classList.remove('open');document.getElementById('searchInput').blur();}
+document.getElementById('homeAdd').onclick=openSheet;
+document.getElementById('foodAdd').onclick=openSheet;
+document.getElementById('closeSheet').onclick=closeSheet;sheetBg.onclick=closeSheet;
+document.getElementById('catChips').innerHTML=FOOD_CATS.map((c,i)=>`<button class="cat-chip ${i===0?'active':''}" data-c="${c}">${c}</button>`).join('');
+document.getElementById('catChips').addEventListener('click',e=>{const b=e.target.closest('.cat-chip');if(!b)return;curCat=b.dataset.c;document.querySelectorAll('.cat-chip').forEach(x=>x.classList.toggle('active',x===b));renderFoods();});
+document.getElementById('searchInput').addEventListener('input',e=>{curSearch=e.target.value.trim();renderFoods();});
+function renderFoods(){
+  let list=FOODS;if(curCat!=='すべて')list=list.filter(f=>f.c===curCat);if(curSearch)list=list.filter(f=>f.n.includes(curSearch));
+  const el=document.getElementById('foodList');
+  el.innerHTML=list.length?list.map(f=>{const tags=[];if(f.lacto)tags.push(`<span class="tag l">乳酸菌 +${f.lacto}</span>`);if(f.fiber)tags.push(`<span class="tag f">食物繊維 ${f.fiber}g</span>`);
+    return `<div class="food-card" data-id="${f.id}"><span class="fem">${f.e}</span><div style="flex:1"><div class="fn">${f.n}</div><div class="ft">${tags.join('')}</div></div><button class="fadd">＋</button></div>`;
+  }).join(''):'<div class="empty">見つかりませんでした</div>';
+}
+document.getElementById('foodList').addEventListener('click',e=>{const card=e.target.closest('.food-card');if(!card)return;addFood(card.dataset.id);});
+document.getElementById('renameBtn').onclick=()=>{const nm=prompt('猫のなまえ',state.catName);if(nm&&nm.trim()){state.catName=nm.trim().slice(0,12);save();render();}};
+document.getElementById('resetBtn').onclick=()=>{if(confirm('すべての記録・猫・アイテムをリセットします。よろしいですか？')){localStorage.removeItem(KEY);state=load();save();render();}};
+function flyPoint(txt){const pop=document.getElementById('pop');const el=document.createElement('div');el.className='pt-fly';el.textContent=txt;if(txt[0]==='-')el.style.color='var(--accent-dark)';pop.appendChild(el);setTimeout(()=>el.remove(),1100);}
+let toastT;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+render();
 </script>
 </body>
 </html>

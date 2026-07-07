@@ -141,7 +141,9 @@
   .log-item .lem{font-size:23px;width:32px;text-align:center;}
   .log-item .lname{font-size:14px;font-weight:800;}
   .log-item .lmeta{font-size:10.5px;color:var(--ink-light);font-weight:700;margin-top:1px;}
-  .log-item .lmeta .lc{color:var(--lacto)}.log-item .lmeta .fc{color:var(--fiber)}
+  .log-item .lmeta .lc{color:var(--lacto)}.log-item .lmeta .fc{color:var(--fiber)}.log-item .lmeta .kc{color:var(--coin)}
+  .log-total{margin-top:11px;padding-top:11px;border-top:2px dotted var(--cream-d);text-align:center;font-size:12.5px;font-weight:800;color:var(--ink-light);}
+  .log-total b{font-family:'Mochiy Pop One';font-size:15px;color:var(--wood-d);}
   .qty{display:flex;align-items:center;gap:7px;}
   .qty button{width:28px;height:28px;border-radius:50%;border:2px solid var(--cream-d);background:#fff;font-size:16px;font-weight:900;color:var(--ink);cursor:pointer;line-height:1;box-shadow:0 2px 0 var(--cream-d);}
   .qty span{font-family:'Mochiy Pop One';font-size:13px;min-width:14px;text-align:center;}
@@ -184,6 +186,29 @@
   .hist-detail{flex:1;font-size:11px;color:var(--ink-light);font-weight:800;}
   .hist-detail .lc{color:var(--lacto)}.hist-detail .fc{color:var(--fiber)}
   .hist-pt{font-family:'Mochiy Pop One';font-size:15px;color:var(--coin);}
+  /* calendar */
+  .cal-head{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:10px;}
+  .cal-head #calMonth{font-size:15px;color:var(--wood-d);min-width:110px;text-align:center;}
+  .cal-nav{border:none;background:var(--cream);color:var(--wood-d);width:32px;height:32px;border-radius:50%;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 2px 0 var(--cream-d);line-height:1;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-h{text-align:center;font-size:10px;font-weight:800;color:var(--ink-light);padding:2px 0;}
+  .cal-h.sun{color:#e0603a}.cal-h.sat{color:#5b8def}
+  .cal-cell{aspect-ratio:1/1;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12.5px;font-weight:800;color:var(--ink);background:var(--cream);border:2px solid transparent;position:relative;}
+  .cal-cell.empty{background:transparent;}
+  .cal-cell.logged{background:#fff;border-color:#bfe39a;cursor:pointer;}
+  .cal-cell.logged .k{font-family:'Mochiy Pop One';font-size:8.5px;color:var(--coin);margin-top:1px;}
+  .cal-cell.today{box-shadow:0 0 0 2px var(--accent);}
+  .cal-cell.sel{background:var(--leaf-d);color:#fff;border-color:var(--leaf-d);}
+  .cal-cell.sel .k{color:#fff;}
+  .cal-detail{margin-top:13px;border-top:2px dotted var(--cream-d);padding-top:12px;}
+  .cal-detail h4{font-size:13px;font-weight:900;margin-bottom:8px;}
+  .cd-item{display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:12.5px;font-weight:700;border-bottom:1px dotted var(--cream-d);}
+  .cd-item:last-of-type{border-bottom:none;}
+  .cd-item .e{font-size:18px;}.cd-item .q{color:var(--ink-light);font-size:11px;}
+  .cd-item .k{margin-left:auto;font-family:'Mochiy Pop One';font-size:12px;color:var(--wood-d);white-space:nowrap;}
+  .cd-tot{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;}
+  .cd-tot span{background:var(--cream);border:2px solid var(--cream-d);border-radius:11px;padding:5px 11px;font-size:11px;font-weight:800;}
+  .cd-empty{text-align:center;color:var(--ink-light);font-size:12px;font-weight:700;padding:10px 4px;}
   .growth-item{display:flex;align-items:center;gap:12px;padding:10px 2px;border-bottom:2px dotted var(--cream-d);opacity:.42;}
   .growth-item.reached{opacity:1;}
   .growth-item.current{opacity:1;background:#f0f8e2;border-radius:14px;padding:10px 12px;border-bottom:none;}
@@ -316,6 +341,11 @@
       <div><div class="sn"><span id="streakNum">0</span> <span style="font-size:15px">日</span></div><div class="sl">連続で腸活を記録中！</div></div>
     </div>
     <div class="card"><div class="section-title">📊 この7日間の腸活ポイント</div><div class="chart" id="chart"></div></div>
+    <div class="card">
+      <div class="cal-head"><button class="cal-nav" id="calPrev">‹</button><span id="calMonth" class="mochi"></span><button class="cal-nav" id="calNext">›</button></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div id="calDetail"></div>
+    </div>
     <div class="card"><div class="section-title">🐾 せいちょうの道のり</div><div id="growthList"></div></div>
     <div class="card"><div class="section-title">📖 記録の履歴</div><div id="histList"></div></div>
     <div class="info">
@@ -421,6 +451,19 @@ const DISHES=[
   {id:'d_cornsoup',n:'コーンスープ',e:'🌽',c:'料理',lacto:0,fiber:2,ing:'とうもろこし・牛乳・玉ねぎ'},
 ];
 DISHES.forEach(d=>FOODS.push(d));
+// おおよそのカロリー（kcal / 1食・1品あたりの目安）
+const KCAL={
+  yogurt:65,drinkyogurt:90,lacto:70,kimchi:25,nukazuke:20,natto:100,miso:40,cheese:60,amazake:80,kraut:20,
+  gobo:40,broccoli:25,spinach:15,kabocha:60,mushroom:15,corn:90,avocado:190,konnyaku:8,carrot:25,cabbage:20,
+  banana:90,apple:55,kiwi:45,berry:40,mikan:40,strawberry:30,
+  edamame:60,daizu:110,hijiki:15,wakame:10,kombu:15,lentil:115,
+  genmai:165,oatmeal:110,satsumaimo:130,ryebread:160,soba:200,
+  d_misoshiru:40,d_tonjiru:180,d_kenchin:150,d_nattogohan:300,d_kimchinabe:350,d_nikujaga:300,d_curry:700,
+  d_yasaiitame:200,d_kinpira:120,d_hijiki:100,d_chikuzen:200,d_gomokumame:160,d_kiriboshi:90,d_oden:200,
+  d_salad:80,d_potesara:200,d_minestrone:150,d_mabo:300,d_hoikoro:350,d_sabamiso:250,d_okonomi:550,
+  d_hiyayakko:80,d_nukamori:30,d_yogurtbowl:250,d_granola:300,d_smoothie:150,d_cheesetoast:250,d_cornsoup:140,
+};
+FOODS.forEach(f=>f.kcal=KCAL[f.id]||0);
 const FOOD_CATS=['すべて','料理','発酵','野菜','果物','豆・海藻','主食'];
 const FOOD_MAP=Object.fromEntries(FOODS.map(f=>[f.id,f]));
 const FIBER_TARGET=18;
@@ -515,11 +558,11 @@ const TODAY=tk();
 //=============================== 計算 ===============================
 function entries(k){return state.logs[k]||[];}
 function daySummary(k){
-  let lacto=0,fiber=0;
-  entries(k).forEach(it=>{const f=FOOD_MAP[it.id];if(!f)return;lacto+=f.lacto*it.qty;fiber+=f.fiber*it.qty;});
+  let lacto=0,fiber=0,kcal=0;
+  entries(k).forEach(it=>{const f=FOOD_MAP[it.id];if(!f)return;lacto+=f.lacto*it.qty;fiber+=f.fiber*it.qty;kcal+=(f.kcal||0)*it.qty;});
   const synbio=(lacto>=2&&fiber>=FIBER_TARGET);
   const points=Math.round(lacto*8+fiber*4+(synbio?40:0));
-  return {lacto:+lacto.toFixed(1),fiber:+fiber.toFixed(1),points,synbio};
+  return {lacto:+lacto.toFixed(1),fiber:+fiber.toFixed(1),kcal,points,synbio};
 }
 function earned(){let t=0;for(const k in state.logs)t+=daySummary(k).points;return t;}
 function wallet(){return earned()+state.petPoints-state.spent;}
@@ -655,7 +698,7 @@ function render(){
   else bmsg='今日のごはんを記録しよう';
   document.getElementById('balanceMsg').textContent=bmsg;
   document.getElementById('synbio').classList.toggle('on',sum.synbio);
-  renderLog();renderHistory();renderShop();
+  renderLog();renderHistory();renderCalendar();renderShop();
 }
 function renderRoom(){
   const wall=WALL_MAP[state.wallpaper]||WALLS[0];
@@ -673,15 +716,17 @@ function renderRoom(){
 function renderLog(){
   const el=document.getElementById('todayLog'),items=entries(TODAY);
   if(!items.length){el.innerHTML='<div class="empty">まだ記録がありません。<br>「＋ 食べたものを記録する」からどうぞ 🐾</div>';return;}
+  const sum=daySummary(TODAY);
   el.innerHTML=items.map((it,i)=>{
     const f=FOOD_MAP[it.id];if(!f)return '';
     const meta=[];
+    if(f.kcal)meta.push(`<span class="kc">約${f.kcal*it.qty}kcal</span>`);
     if(f.lacto)meta.push(`<span class="lc">乳酸菌+${f.lacto*it.qty}</span>`);
     if(f.fiber)meta.push(`<span class="fc">食物繊維+${(f.fiber*it.qty).toFixed(1)}g</span>`);
     return `<div class="log-item"><span class="lem">${f.e}</span>
       <div style="flex:1"><div class="lname">${f.n}</div><div class="lmeta">${meta.join(' ・ ')||'—'}</div></div>
       <div class="qty"><button data-act="dec" data-i="${i}">−</button><span>${it.qty}</span><button data-act="inc" data-i="${i}">＋</button></div></div>`;
-  }).join('');
+  }).join('')+`<div class="log-total">🔥 きょうの合計 <b>約${sum.kcal}kcal</b> ・ 腸活 ${sum.points}P</div>`;
 }
 function renderHistory(){
   let streak=0;const base=entries(TODAY).length?new Date():(()=>{const d=new Date();d.setDate(d.getDate()-1);return d;})();
@@ -707,6 +752,39 @@ function renderHistory(){
       <div class="hist-pt">${s.points}<span style="font-size:10px">P</span></div></div>`;
   }).join(''):'<div class="empty">記録がたまるとここに並びます 📖</div>';
 }
+
+//=============================== カレンダー ===============================
+const now=new Date();
+let calView={y:now.getFullYear(),m:now.getMonth()};
+let calSel=entries(TODAY).length?TODAY:null;
+function renderCalendar(){
+  const {y,m}=calView;
+  document.getElementById('calMonth').textContent=`${y}年 ${m+1}月`;
+  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  const wk=['日','月','火','水','木','金','土'];
+  let html=wk.map((w,i)=>`<div class="cal-h ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('');
+  for(let i=0;i<first;i++)html+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const k=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has=entries(k).length,s=has?daySummary(k):null;
+    const cls=['cal-cell'];if(has)cls.push('logged');if(k===TODAY)cls.push('today');if(k===calSel)cls.push('sel');
+    html+=`<div class="${cls.join(' ')}" data-k="${has?k:''}">${d}${has?`<span class="k">${s.kcal}</span>`:''}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=html;
+  renderCalDetail();
+}
+function renderCalDetail(){
+  const el=document.getElementById('calDetail');
+  if(!calSel||!entries(calSel).length){el.innerHTML='<div class="cd-empty">🍽️ 記録のある日（緑の枠）をタップすると、その日の品目とカロリーが見られます</div>';return;}
+  const s=daySummary(calSel),[Y,M,D]=calSel.split('-');
+  const items=entries(calSel).map(it=>{const f=FOOD_MAP[it.id];if(!f)return '';
+    return `<div class="cd-item"><span class="e">${f.e}</span><span>${f.n}</span><span class="q">×${it.qty}</span><span class="k">約${(f.kcal||0)*it.qty}kcal</span></div>`;}).join('');
+  el.innerHTML=`<div class="cal-detail"><h4>📅 ${+M}月${+D}日 の食事（${entries(calSel).length}品目）</h4>${items}
+    <div class="cd-tot"><span>🔥 約${s.kcal}kcal</span><span>🦠 乳酸菌 ${s.lacto}</span><span>🌿 繊維 ${s.fiber}g</span><span>✨ ${s.points}P</span>${s.synbio?'<span>🎉 達成</span>':''}</div></div>`;
+}
+document.getElementById('calGrid').addEventListener('click',e=>{const c=e.target.closest('.cal-cell');if(!c||!c.dataset.k)return;calSel=c.dataset.k;renderCalendar();});
+document.getElementById('calPrev').onclick=()=>{calView.m--;if(calView.m<0){calView.m=11;calView.y--;}renderCalendar();};
+document.getElementById('calNext').onclick=()=>{calView.m++;if(calView.m>11){calView.m=0;calView.y++;}renderCalendar();};
 
 //=============================== ショップ ===============================
 let shopSub='wear';

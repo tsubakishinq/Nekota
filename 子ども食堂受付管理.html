@@ -94,6 +94,14 @@
   .admin-link-wrap{text-align:center;margin-top:28px;}
   .admin-link{background:none;border:none;color:var(--ink-light);font-size:11px;padding:10px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;text-decoration:underline;text-decoration-color:var(--border);}
   .admin-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:16px;}
+
+  .complete-icon{font-size:40px;text-align:center;margin-bottom:8px;}
+  .complete-title{font-size:17px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:20px;}
+  .complete-table{background:var(--bg);border-radius:10px;padding:4px 16px;margin-bottom:20px;}
+  .complete-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;gap:12px;}
+  .complete-row:last-child{border-bottom:none;}
+  .complete-row .c-label{color:var(--ink-light);flex:0 0 auto;}
+  .complete-row .c-value{color:var(--ink);font-weight:700;text-align:right;}
 </style>
 </head>
 <body>
@@ -157,6 +165,20 @@
     <button type="button" class="back-btn" onclick="hideAdmin()">‹ 受付画面に戻る</button>
     <div class="admin-title">管理画面：受付一覧</div>
     <div id="entryListWrap"></div>
+  </div>
+
+  <div id="screenComplete" style="display:none">
+    <div class="input-card">
+      <div class="complete-icon">✅</div>
+      <div class="complete-title">申し込みが完了しました</div>
+      <div class="complete-table">
+        <div class="complete-row"><span class="c-label">日時</span><span class="c-value" id="completeDateTime"></span></div>
+        <div class="complete-row"><span class="c-label">場所</span><span class="c-value" id="completeLocation"></span></div>
+        <div class="complete-row"><span class="c-label">お名前</span><span class="c-value" id="completeName"></span></div>
+        <div class="complete-row"><span class="c-label">人数</span><span class="c-value" id="completePeople"></span></div>
+      </div>
+      <button type="button" class="btn-primary" onclick="backToHomeFromComplete()">戻る</button>
+    </div>
   </div>
 </main>
 
@@ -228,6 +250,8 @@ let selectedTime = null;
 let editingId = null; // {date, locationId, id}
 let adminMode = false;
 let cameFromAdmin = false;
+let showComplete = false;
+let lastSubmission = null;
 
 async function apiFetch(path, options={}){
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -327,6 +351,7 @@ function selectDate(d){
   cancelEdit(true);
   selectedLocationId = null;
   selectedTime = null;
+  showComplete = false;
   renderAll();
 }
 
@@ -343,6 +368,7 @@ function renderSummary(){
 
 function currentScreen(){
   if(adminMode) return 'admin';
+  if(showComplete) return 'complete';
   if(!selectedLocationId) return 'location';
   if(!selectedTime) return 'time';
   return 'form';
@@ -354,6 +380,22 @@ function renderScreens(){
   document.getElementById('screenTime').style.display = screen==='time' ? 'block' : 'none';
   document.getElementById('screenForm').style.display = screen==='form' ? 'block' : 'none';
   document.getElementById('screenAdmin').style.display = screen==='admin' ? 'block' : 'none';
+  document.getElementById('screenComplete').style.display = screen==='complete' ? 'block' : 'none';
+}
+
+function renderComplete(){
+  if(!lastSubmission) return;
+  document.getElementById('completeDateTime').textContent = `${lastSubmission.dateLabel} ${lastSubmission.time}`;
+  document.getElementById('completeLocation').textContent = lastSubmission.locationName;
+  document.getElementById('completeName').textContent = lastSubmission.name;
+  document.getElementById('completePeople').textContent = `${lastSubmission.people}人`;
+}
+
+function backToHomeFromComplete(){
+  showComplete = false;
+  lastSubmission = null;
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function showAdmin(){
@@ -513,6 +555,7 @@ function renderAll(){
   renderSlots();
   renderForm();
   renderEntryList();
+  renderComplete();
   renderScreens();
 }
 
@@ -576,13 +619,22 @@ async function submitEntry(){
     return;
   }
 
-  const keepLocation = selectedLocationId, keepTime = selectedTime;
+  const loc = getLocation(selectedLocationId);
+  const {md, dow} = fmtDate(selectedDate);
+  lastSubmission = {
+    dateLabel: `${md}(${dow})`,
+    time: selectedTime,
+    locationName: loc.name,
+    name,
+    people
+  };
+  showComplete = true;
+  selectedLocationId = null;
+  selectedTime = null;
   document.getElementById('fName').value = '';
   document.getElementById('fPeople').value = 1;
-  selectedLocationId = keepLocation;
-  selectedTime = keepTime;
   renderAll();
-  document.getElementById('fName').focus();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function startEdit(locId, id){

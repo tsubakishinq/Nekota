@@ -163,10 +163,13 @@
 <script>
 const DATES = ['2026-08-05','2026-08-07','2026-08-17','2026-08-21','2026-08-24'];
 const DOW = ['日','月','火','水','木','金','土'];
-const STORAGE_KEY = 'kodomoShokudoUketsuke_v2';
 const DISPLAY_CAP = 30;
 const ACTUAL_CAP = 28;
 const ADMIN_PIN = '0945';
+
+const SUPABASE_URL = 'https://terzisgstbqeiqrtiblj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_boiIMnJ4Qy-DUh4dsiN5Jg_Ji9tJHoJ';
+const SYNC_INTERVAL_MS = 8000;
 
 // dow: 0=日 1=月 2=火 3=水 4=木 5=金 6=土
 const LOCATIONS = [
@@ -218,7 +221,7 @@ const LOCATIONS = [
   }
 ];
 
-let data = loadData();
+let data = {};
 let selectedDate = DATES[0];
 let selectedLocationId = null;
 let selectedTime = null;
@@ -226,15 +229,38 @@ let editingId = null; // {date, locationId, id}
 let adminMode = false;
 let cameFromAdmin = false;
 
-function loadData(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){ return {}; }
+async function apiFetch(path, options={}){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers||{})
+    }
+  });
+  if(!res.ok){
+    const text = await res.text().catch(()=> '');
+    throw new Error(`API error ${res.status}: ${text}`);
+  }
+  return res;
 }
-function saveData(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+function rebuildDataFromRows(rows){
+  const d = {};
+  for(const row of rows){
+    if(!d[row.date]) d[row.date] = {};
+    if(!d[row.date][row.location_id]) d[row.date][row.location_id] = [];
+    d[row.date][row.location_id].push({ id: row.id, time: row.time, name: row.name, people: row.people });
+  }
+  data = d;
 }
+
+async function refreshData(){
+  const res = await apiFetch('reservations?select=*');
+  rebuildDataFromRows(await res.json());
+}
+
 function entriesFor(date, locId){
   return (data[date] && data[date][locId]) || [];
 }
@@ -500,7 +526,7 @@ function returnFromEdit(){
   }
 }
 
-function submitEntry(){
+async function submitEntry(){
   const name = document.getElementById('fName').value.trim();
   const people = Number(document.getElementById('fPeople').value) || 1;
 
@@ -519,16 +545,29 @@ function submitEntry(){
     return;
   }
 
-  if(!data[selectedDate]) data[selectedDate] = {};
-  if(!data[selectedDate][selectedLocationId]) data[selectedDate][selectedLocationId] = [];
-
-  if(isEdit){
-    const entry = data[editingId.date][editingId.locationId].find(e=>e.id===editingId.id);
-    if(entry){ entry.time = selectedTime; entry.name = name; entry.people = people; }
-  }else{
-    data[selectedDate][selectedLocationId].push({ id: String(Date.now()), time: selectedTime, name, people });
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  try{
+    if(isEdit){
+      await apiFetch(`reservations?id=eq.${editingId.id}`, {
+        method: 'PATCH',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ time: selectedTime, name, people })
+      });
+    }else{
+      await apiFetch('reservations', {
+        method: 'POST',
+        headers: { 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ date: selectedDate, location_id: selectedLocationId, time: selectedTime, name, people })
+      });
+    }
+    await refreshData();
+  }catch(e){
+    alert('通信エラーで保存できませんでした。電波状況を確認してもう一度お試しください。');
+    submitBtn.disabled = false;
+    return;
   }
-  saveData();
+  submitBtn.disabled = false;
 
   if(isEdit){
     returnFromEdit();
@@ -547,9 +586,9 @@ function submitEntry(){
 }
 
 function startEdit(locId, id){
-  const entry = entriesFor(selectedDate, locId).find(e=>e.id===id);
+  const entry = entriesFor(selectedDate, locId).find(e=>String(e.id)===String(id));
   if(!entry) return;
-  editingId = { date: selectedDate, locationId: locId, id };
+  editingId = { date: selectedDate, locationId: locId, id: entry.id };
   selectedLocationId = locId;
   selectedTime = entry.time;
   cameFromAdmin = adminMode;
@@ -575,15 +614,39 @@ function cancelEdit(skipRender){
   if(!skipRender) renderAll();
 }
 
-function deleteEntry(locId, id){
+async function deleteEntry(locId, id){
   if(!confirm('この受付を削除しますか？')) return;
-  data[selectedDate][locId] = entriesFor(selectedDate, locId).filter(e=>e.id!==id);
-  saveData();
+  try{
+    await apiFetch(`reservations?id=eq.${id}`, { method: 'DELETE' });
+    await refreshData();
+  }catch(e){
+    alert('通信エラーで削除できませんでした。電波状況を確認してもう一度お試しください。');
+    return;
+  }
   renderAll();
 }
 
-renderHeader();
-renderAll();
+async function syncLoop(){
+  setInterval(async ()=>{
+    try{
+      await refreshData();
+      renderAll();
+    }catch(e){ /* ignore transient network errors */ }
+  }, SYNC_INTERVAL_MS);
+}
+
+async function init(){
+  renderHeader();
+  try{
+    await refreshData();
+  }catch(e){
+    alert('データの読み込みに失敗しました。電波状況を確認して再読み込みしてください。');
+  }
+  renderAll();
+  syncLoop();
+}
+
+init();
 </script>
 </body>
 </html>

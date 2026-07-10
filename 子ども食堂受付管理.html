@@ -192,6 +192,24 @@ const ADMIN_PIN = '0945';
 const SUPABASE_URL = 'https://terzisgstbqeiqrtiblj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_boiIMnJ4Qy-DUh4dsiN5Jg_Ji9tJHoJ';
 const SYNC_INTERVAL_MS = 8000;
+const WEB3FORMS_ACCESS_KEY = '4a3c879b-aa6a-4a41-80b4-12124fa0f2c8';
+
+async function notifyByEmail(locationName, dateLabel, time, name, people){
+  try{
+    await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_ACCESS_KEY,
+        subject: `子ども食堂受付: ${locationName} ${dateLabel} ${time}`,
+        日時: `${dateLabel} ${time}`,
+        場所: locationName,
+        お名前: name,
+        人数: `${people}人`
+      })
+    });
+  }catch(e){ /* 通知メールの失敗は受付処理自体には影響させない */ }
+}
 
 // dow: 0=日 1=月 2=火 3=水 4=木 5=金 6=土
 const LOCATIONS = [
@@ -621,13 +639,15 @@ async function submitEntry(){
 
   const loc = getLocation(selectedLocationId);
   const {md, dow} = fmtDate(selectedDate);
+  const dateLabel = `${md}(${dow})`;
   lastSubmission = {
-    dateLabel: `${md}(${dow})`,
+    dateLabel,
     time: selectedTime,
     locationName: loc.name,
     name,
     people
   };
+  notifyByEmail(loc.name, dateLabel, selectedTime, name, people);
   showComplete = true;
   selectedLocationId = null;
   selectedTime = null;

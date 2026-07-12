@@ -253,13 +253,10 @@ function updatePlayer(dt){
   // auto fire
   player.fireCd-=dt;
   if(player.fireCd<=0){ fire(); }
-  // options follow (trail)
-  optTrail.push({x:player.x,y:player.y}); if(optTrail.length>120) optTrail.shift();
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
 }
-const optTrail=[];
 let kittenMode=false; // 子猫アタック トグル (ON=敵に飛んで引っ掻く)
 const DIAG=-0.5; // diagonal-up angle for DOUBLE
 function fire(){
@@ -293,9 +290,10 @@ function shootRing(x,y){ bullets.push({x,y,vx:340,vy:0,r:14,dmg:0.35,color:'#7ef
 function dropMissile(x,y,vy0){ missiles.push({x,y,vx:300,vy:vy0||0,r:7,spd:340,life:3.2}); Audio2.sfx.hit(); }
 
 // options (子猫)
-function addOption(){ if(options.length>=4) return false; options.push({x:player.x,y:player.y, delay:(options.length+1)*16, vx:0, vy:0, claw:0}); return true; }
-function updateOptions(dt){ for(const o of options){
-  if(kittenMode){ // 敵の方向へ飛んで引っ掻く
+const OPT_GAP=32; // 子猫どうし／本機との間隔（重ならない）
+function addOption(){ if(options.length>=4) return false; const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0}); return true; }
+function updateOptions(dt){
+  if(kittenMode){ for(const o of options){ // 敵の方向へ飛んで引っ掻く
     if(o.claw>0) o.claw-=dt;
     let tgt=null,bd=1e9; for(const e of enemies){ const d=dist2(o.x,o.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
     if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x), sp=440; o.vx=Math.cos(a)*sp; o.vy=Math.sin(a)*sp; }
@@ -304,8 +302,14 @@ function updateOptions(dt){ for(const o of options){
     o.x=clamp(o.x,12,W-12); o.y=clamp(o.y,12,H-12);
     if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){ o.claw=0.16; spawnParticles(o.x,o.y,'#fff',6,150,0.3); hitEnemy(e,2,o.x,o.y); } }
-  } else { const idx=Math.max(0, optTrail.length-1-o.delay); const p=optTrail[idx]; if(p){ o.x=p.x; o.y=p.y; } }
-} }
+  } return; }
+  // 隊列モード：本機の後ろに一定間隔でチェーン追従（止まっても重ならず、動けば連なる）
+  let lx=player.x, ly=player.y;
+  for(const o of options){ const dx=o.x-lx, dy=o.y-ly; const d=Math.hypot(dx,dy)||0.001;
+    const tx=lx+dx/d*OPT_GAP, ty=ly+dy/d*OPT_GAP; // 常に前の相手からOPT_GAP後方を維持
+    o.x+=(tx-o.x)*Math.min(1,dt*13); o.y+=(ty-o.y)*Math.min(1,dt*13);
+    lx=o.x; ly=o.y; }
+}
 function toggleKittens(){ if(options.length===0){ showToast('子猫がいないニャ','#ffd0ee'); return; }
   kittenMode=!kittenMode; nekoBtn.classList.toggle('on', kittenMode);
   if(kittenMode){ Audio2.sfx.meow(); showToast('🐾 子猫アタック ON','#ffd0ee'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
@@ -677,7 +681,7 @@ const titleScreen=document.getElementById('titleScreen'), overScreen=document.ge
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
 function startGame(){ score=0; distance=0; stage=0; powerCursor=0;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; optTrail.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }

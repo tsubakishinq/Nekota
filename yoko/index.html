@@ -255,6 +255,7 @@ const POWJP=['スピード','ミサイル','ダブル','レーザー','オプシ
 const POWCOST=[1,2,3,4,5,6]; // 🐾ストックの必要数（足りないと選べない）
 let powerStock=0; // 集めた🐾の数（タップで任意の項目を発動）
 let lives=3;      // 残機（やられても🐾ストックは維持して復活、最大3）
+let carrier=null; // 復活演出：ペットキャリーが後ろから出てきて1秒後に自機化
 
 const dpad={active:false,dx:0,dy:0};
 function updatePlayer(dt){
@@ -346,13 +347,40 @@ function damagePlayer(){
     if(player.shield<=0) showToast('SHIELD BREAK','#57f6ff'); return; }
   Audio2.sfx.hurt(); shake(14,.4); flash('#ff2e6e',.45); spawnParticles(player.x,player.y,'#57f6ff',36,300,1); spawnParticles(player.x,player.y,'#ff5ec9',26,240,1.1);
   player.alive=false; lives--; // 🐾ストックとパワーアップは維持
-  if(lives>0) setTimeout(revive,1000); else setTimeout(gameOver,900);
+  if(lives>0){ carrier={x:-100, y:H/2, t:0, revived:false}; Audio2.sfx.warn(); } // ペットキャリー登場
+  else setTimeout(gameOver,900);
 }
-function revive(){ if(state!=='play') return; player.x=170; player.y=H/2; player.alive=true;
+function updateCarrier(dt){ if(!carrier) return; carrier.t+=dt;
+  carrier.x += (170-carrier.x)*Math.min(1,dt*5); // 後ろ（左）からスライドイン
+  if(carrier.t>0.4 && Math.random()<0.35) spawnParticles(carrier.x,carrier.y,'#8be9ff',1,60,0.3);
+  if(!carrier.revived && carrier.t>=1.0){ carrier.revived=true; revive(); } // 1秒後に自機として復活
+  if(carrier.t>1.5) carrier=null; // 余韻を残して消える
+}
+function revive(){ if(state!=='play') return; player.x=carrier?carrier.x:170; player.y=carrier?carrier.y:H/2; player.alive=true;
   player.invuln=1; player.redInvuln=0; // 1秒間 点滅無敵で復活
   kittenMode=false; nekoBtn.classList.remove('on');
-  spawnParticles(player.x,player.y,'#57f6ff',20,220,0.6); Audio2.sfx.power(); showToast('のこり '+lives+'機','#57f6ff');
+  spawnParticles(player.x,player.y,'#fff',24,260,0.6); spawnParticles(player.x,player.y,'#57f6ff',18,200,0.6); Audio2.sfx.power(); showToast('のこり '+lives+'機','#57f6ff');
 }
+function drawCarrier(){ if(!carrier) return; ctx.save(); ctx.translate(carrier.x,carrier.y+Math.sin(carrier.t*8)*1.5);
+  if(carrier.revived) ctx.globalAlpha=clamp((1.5-carrier.t)/0.5,0,1); // 復活後フェードアウト
+  const w=48,h=38;
+  // 取っ手
+  ctx.shadowColor='#57f6ff'; ctx.shadowBlur=14; ctx.strokeStyle='#276f7c'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(0,-h*0.5,11,Math.PI,TAU); ctx.stroke();
+  // 本体
+  ctx.shadowBlur=12; const g=ctx.createLinearGradient(0,-h/2,0,h/2); g.addColorStop(0,'#6fd6e4'); g.addColorStop(1,'#2f9bad'); ctx.fillStyle=g;
+  roundRect(-w/2,-h/2,w,h,9); ctx.fill(); ctx.shadowBlur=0;
+  // ドア（前面＝右）
+  ctx.fillStyle='rgba(8,26,36,.6)'; roundRect(w*0.02,-h*0.4,w*0.44,h*0.8,6); ctx.fill();
+  ctx.strokeStyle='rgba(200,240,250,.55)'; ctx.lineWidth=2;
+  for(let i=0;i<3;i++){ const bx=w*0.1+i*w*0.13; ctx.beginPath(); ctx.moveTo(bx,-h*0.34); ctx.lineTo(bx,h*0.34); ctx.stroke(); }
+  // 窓からのぞく子猫（復活前）
+  if(!carrier.revived){ ctx.fillStyle='#fff6fb';
+    ctx.beginPath(); ctx.moveTo(-w*0.24,-4); ctx.lineTo(-w*0.29,-13); ctx.lineTo(-w*0.14,-6); ctx.closePath();
+    ctx.moveTo(-w*0.08,-4); ctx.lineTo(-w*0.03,-13); ctx.lineTo(-w*0.18,-6); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(-w*0.16,2,9,0,TAU); ctx.fill();
+    ctx.fillStyle='#37476a'; ctx.beginPath(); ctx.arc(-w*0.2,1,1.7,0,TAU); ctx.arc(-w*0.12,1,1.7,0,TAU); ctx.fill();
+    ctx.fillStyle='#ff7bb0'; ctx.beginPath(); ctx.arc(-w*0.16,4.5,1.4,0,TAU); ctx.fill(); }
+  ctx.restore(); }
 
 // ================= ENEMIES =================
 function spawnEnemy(type, y, opt){ opt=opt||{}; const x=W+40;
@@ -740,7 +768,7 @@ let state='title', last=performance.now();
 const titleScreen=document.getElementById('titleScreen'), overScreen=document.getElementById('overScreen'), pauseScreen=document.getElementById('pauseScreen'), pauseBtn=document.getElementById('pauseBtn');
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
-function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false;
+function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
@@ -767,7 +795,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   if(state==='play'){
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
-    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt);
+    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt);
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
   if(flashA>0) flashA=Math.max(0,flashA-dt*2);
@@ -777,7 +805,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   ctx.fillStyle='#05060f'; ctx.fillRect(0,0,W,H);
   let ox=0,oy=0; if(shakeMag>0){ ox=rnd(-shakeMag,shakeMag); oy=rnd(-shakeMag,shakeMag); ctx.translate(ox,oy); }
   drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets();
-  for(const e of enemies) drawEnemy(e); drawOptions(); drawPlayer(); drawTexts();
+  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();
   if(flashA>0){ ctx.fillStyle=flashColor; ctx.globalAlpha=flashA*0.5; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }

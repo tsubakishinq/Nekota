@@ -402,7 +402,7 @@ function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1);
   if(Math.random() < (e.drop?1:0.4)*dmult) spawnPowerup(e.x,e.y); }
 
 // ================= POWERUPS (capsule) =================
-function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:14,seed:Math.random()*TAU}); }
+function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:26,seed:Math.random()*TAU}); } // 肉球マークを大きく
 function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powerups[i]; p.seed+=dt*4; p.x+=p.vx*dt;
   if(p.x<-30){ powerups.splice(i,1); continue; }
   if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🐾 +1','#ffd85e',14); powerups.splice(i,1); refreshPowHint(); } } }

@@ -97,10 +97,10 @@
     <div id="powBar">
       <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🐾1</small></div>
       <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🐾2</small></div>
-      <div class="powcell" data-i="2"><span class="lv"></span><b>ダブル</b><small>🐾2</small></div>
-      <div class="powcell" data-i="3"><span class="lv"></span><b>レーザー</b><small>🐾3</small></div>
-      <div class="powcell" data-i="4"><span class="lv"></span><b>オプション</b><small>🐾2</small></div>
-      <div class="powcell" data-i="5"><span class="lv"></span><b>シールド</b><small>🐾2</small></div>
+      <div class="powcell" data-i="2"><span class="lv"></span><b>ダブル</b><small>🐾3</small></div>
+      <div class="powcell" data-i="3"><span class="lv"></span><b>レーザー</b><small>🐾4</small></div>
+      <div class="powcell" data-i="4"><span class="lv"></span><b>オプション</b><small>🐾5</small></div>
+      <div class="powcell" data-i="5"><span class="lv"></span><b>シールド</b><small>🐾6</small></div>
     </div>
     <div id="powBtn"><span>🐾</span><small id="powStock">×0</small></div>
   </div>
@@ -110,7 +110,7 @@
     <div class="panel">
       横スクロール猫シューティング！ 敵は右から来るぞ。<br>
       <b>🐾カプセル</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
-      項目ごとに必要な🐾数がちがう（例：スピード🐾1・レーザー🐾3）
+      必要な🐾数：スピード1・ミサイル2・ダブル3・レーザー4・子猫5・バリア6
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="panel">
@@ -252,7 +252,7 @@ function playerSpeed(){ return BASE_SPEED*(1+player.speedLvl*0.33); } // 3段階
 // power-up bar (Gradius)
 const POWERS=['SPEED','MISSILE','DOUBLE','LASER','OPTION','SHIELD'];
 const POWJP=['スピード','ミサイル','ダブル','レーザー','オプション','シールド'];
-const POWCOST=[1,2,2,3,2,2]; // 🐾ストックの必要数（足りないと選べない）
+const POWCOST=[1,2,3,4,5,6]; // 🐾ストックの必要数（足りないと選べない）
 let powerStock=0; // 集めた🐾の数（タップで任意の項目を発動）
 
 const dpad={active:false,dx:0,dy:0};
@@ -407,8 +407,14 @@ function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powe
   if(p.x<-30){ powerups.splice(i,1); continue; }
   if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🐾 +1','#ffd85e',14); powerups.splice(i,1); refreshPowHint(); } } }
 function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2; ctx.save(); ctx.translate(p.x,p.y+bob);
-  ctx.shadowColor='#ffd85e'; ctx.shadowBlur=14; ctx.fillStyle='rgba(10,8,2,.85)'; ctx.strokeStyle='#ffd85e'; ctx.lineWidth=2.5;
-  ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffd85e'; ctx.fillText('🐾',0,1); ctx.restore(); } }
+  // 金色のグロー
+  ctx.shadowColor='#ffd85e'; ctx.shadowBlur=16; ctx.fillStyle='rgba(255,216,94,.18)'; ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill();
+  // ピンクの肉球マーク
+  ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=8; ctx.fillStyle='#ff9ecf'; const s=p.r*0.98;
+  ctx.beginPath(); ctx.ellipse(0,s*0.24,s*0.5,s*0.42,0,0,TAU); ctx.fill(); // 手のひらパッド
+  for(const [bx,by,br] of [[-s*0.47,-s*0.14,s*0.17],[-s*0.17,-s*0.42,s*0.18],[s*0.17,-s*0.42,s*0.18],[s*0.47,-s*0.14,s*0.17]]){
+    ctx.beginPath(); ctx.ellipse(bx,by,br,br*1.15,0,0,TAU); ctx.fill(); } // 指の肉球
+  ctx.restore(); } }
 
 function usePower(i){ // 🐾ストックをコスト分消費して発動（足りなければ不可）
   if(state!=='play'||!player.alive||powerStock<POWCOST[i]) return;

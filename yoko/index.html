@@ -53,19 +53,21 @@
   @keyframes powPulse{ 0%,100%{ box-shadow:0 0 22px rgba(255,216,94,.55), inset 0 0 16px rgba(255,255,255,.35); }
     50%{ box-shadow:0 0 40px 8px rgba(255,216,94,.95), inset 0 0 18px rgba(255,255,255,.55); } }
   /* tappable power-up bar (above the control row so it never overlaps the D-pad/buttons) */
-  #powBar{pointer-events:none; position:absolute; left:50%; bottom:150px; transform:translateX(-50%);
-    display:grid; grid-template-columns:repeat(3,108px); grid-auto-rows:42px; gap:8px;}
-  .powcell{pointer-events:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  #powBar{pointer-events:none; position:absolute; left:50%; bottom:178px; transform:translateX(-50%);
+    display:grid; grid-template-columns:repeat(3,108px); grid-auto-rows:44px; gap:8px;}
+  .powcell{position:relative; pointer-events:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-radius:9px; background:rgba(9,12,34,.72); border:1.5px solid rgba(120,150,210,.5); color:#c3d4f2;
-    font-weight:900; line-height:1.05; text-align:center;}
-  .powcell b{font-size:16px;} .powcell small{font-size:9px; color:#5effa0; opacity:0; margin-top:1px;}
-  .powcell.owned{ background:rgba(94,255,160,.16); border-color:#5effa0; color:#d6ffe8;}
-  .powcell.owned small{opacity:1;}
-  .powcell.avail{ border-color:#ffd85e; color:#fff6dd; box-shadow:0 0 16px rgba(255,216,94,.5);
-    animation: cellPulse .8s ease-in-out infinite;}
-  .powcell.avail b{color:#ffe7a0;}
-  @keyframes cellPulse{ 0%,100%{ box-shadow:0 0 12px rgba(255,216,94,.4);} 50%{ box-shadow:0 0 22px 3px rgba(255,216,94,.8);} }
-  .powcell:active{transform:scale(.94);}
+    font-weight:900; line-height:1.05; text-align:center; opacity:.5; transition:opacity .15s;}
+  .powcell b{font-size:16px;}
+  .powcell small{font-size:10px; color:#ffd27a; margin-top:2px;} /* cost badge */
+  .powcell .lv{position:absolute; top:2px; right:5px; font-size:9px; color:#5effa0;} /* owned level */
+  .powcell.owned{ background:rgba(94,255,160,.14); border-color:rgba(94,255,160,.7);}
+  .powcell.avail{ opacity:1; border-color:#ffd85e; color:#fff6dd;
+    animation: cellPulse .7s ease-in-out infinite;} /* 選択できる項目だけ点滅 */
+  .powcell.avail b{color:#ffe7a0;} .powcell.avail small{color:#ffe7a0;}
+  @keyframes cellPulse{ 0%,100%{ box-shadow:0 0 10px rgba(255,216,94,.35); border-color:rgba(255,216,94,.6);}
+    50%{ box-shadow:0 0 24px 4px rgba(255,216,94,.85); border-color:#fff;} }
+  .powcell.avail:active{transform:scale(.94);}
   #nekoBtn{pointer-events:auto; position:absolute; left:150px; bottom:30px; width:66px; height:66px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%,#ffe3f4,#ff8ecb 72%); box-shadow:0 0 18px rgba(255,142,203,.6), inset 0 0 14px rgba(255,255,255,.4);
     display:flex; flex-direction:column; align-items:center; justify-content:center; color:#5a1638; font-weight:900; font-size:22px;
@@ -93,12 +95,12 @@
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
     <div id="nekoBtn">🐈<small>こねこ</small></div>
     <div id="powBar">
-      <div class="powcell" data-i="0"><b>スピード</b><small></small></div>
-      <div class="powcell" data-i="1"><b>ミサイル</b><small></small></div>
-      <div class="powcell" data-i="2"><b>ダブル</b><small></small></div>
-      <div class="powcell" data-i="3"><b>レーザー</b><small></small></div>
-      <div class="powcell" data-i="4"><b>オプション</b><small></small></div>
-      <div class="powcell" data-i="5"><b>シールド</b><small></small></div>
+      <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🐾1</small></div>
+      <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🐾2</small></div>
+      <div class="powcell" data-i="2"><span class="lv"></span><b>ダブル</b><small>🐾2</small></div>
+      <div class="powcell" data-i="3"><span class="lv"></span><b>レーザー</b><small>🐾3</small></div>
+      <div class="powcell" data-i="4"><span class="lv"></span><b>オプション</b><small>🐾2</small></div>
+      <div class="powcell" data-i="5"><span class="lv"></span><b>シールド</b><small>🐾2</small></div>
     </div>
     <div id="powBtn"><span>🐾</span><small id="powStock">×0</small></div>
   </div>
@@ -107,8 +109,8 @@
     <div class="logo">NEKOTA GEO<small>Y O K O &nbsp; S C R O L L</small></div>
     <div class="panel">
       横スクロール猫シューティング！ 敵は右から来るぞ。<br>
-      <b>🐾カプセル</b>を集めた数だけ、下のパネルの<b>好きな項目をタップ</b>して発動！<br>
-      スピード ／ ミサイル ／ ダブル ／ レーザー ／ オプション ／ シールド
+      <b>🐾カプセル</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
+      項目ごとに必要な🐾数がちがう（例：スピード🐾1・レーザー🐾3）
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="panel">
@@ -250,6 +252,7 @@ function playerSpeed(){ return BASE_SPEED*(1+player.speedLvl*0.33); } // 3段階
 // power-up bar (Gradius)
 const POWERS=['SPEED','MISSILE','DOUBLE','LASER','OPTION','SHIELD'];
 const POWJP=['スピード','ミサイル','ダブル','レーザー','オプション','シールド'];
+const POWCOST=[1,2,2,3,2,2]; // 🐾ストックの必要数（足りないと選べない）
 let powerStock=0; // 集めた🐾の数（タップで任意の項目を発動）
 
 const dpad={active:false,dx:0,dy:0};
@@ -407,8 +410,8 @@ function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2;
   ctx.shadowColor='#ffd85e'; ctx.shadowBlur=14; ctx.fillStyle='rgba(10,8,2,.85)'; ctx.strokeStyle='#ffd85e'; ctx.lineWidth=2.5;
   ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffd85e'; ctx.fillText('🐾',0,1); ctx.restore(); } }
 
-function usePower(i){ // 🐾ストックを1消費して任意の項目を発動
-  if(state!=='play'||!player.alive||powerStock<=0) return;
+function usePower(i){ // 🐾ストックをコスト分消費して発動（足りなければ不可）
+  if(state!=='play'||!player.alive||powerStock<POWCOST[i]) return;
   const slot=POWERS[i];
   if(slot==='SPEED'){ if(player.speedLvl<3){ player.speedLvl++; spawnText(player.x,player.y-24,'SPEED '+player.speedLvl,'#57f6ff',15);} else { addScore(500); } }
   else if(slot==='MISSILE'){ if(player.missileLvl<2){ player.missileLvl++; spawnText(player.x,player.y-24,'MISSILE x'+player.missileLvl,'#ff8a5e',15);} else { addScore(500); } }
@@ -419,7 +422,7 @@ function usePower(i){ // 🐾ストックを1消費して任意の項目を発�
   else if(slot==='SHIELD'){ // each ring soaks 2 hits, stack up to 3 rings; 4th activation = red 3s invincibility
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
     else { player.shield=Math.min(6,(Math.ceil(player.shield/2)+1)*2); spawnText(player.x,player.y-24,'SHIELD x'+Math.ceil(player.shield/2),'#57f6ff',15); } }
-  Audio2.sfx.up(); powerStock--; refreshPowHint();
+  Audio2.sfx.up(); powerStock-=POWCOST[i]; refreshPowHint();
 }
 
 // ================= BULLETS / COLLISIONS =================
@@ -681,11 +684,10 @@ function powOwnedLabel(i){
 }
 function refreshPowHint(){ // update stock counter + cell states
   powStock.textContent='×'+powerStock; powBtn.classList.toggle('has', powerStock>0);
-  const avail=powerStock>0;
-  for(let i=0;i<powCells.length;i++){ const lab=powOwnedLabel(i);
-    powCells[i].classList.toggle('avail', avail);
+  for(let i=0;i<powCells.length;i++){ const lab=powOwnedLabel(i); const afford=powerStock>=POWCOST[i];
+    powCells[i].classList.toggle('avail', afford);   // ストックが足りる項目だけ点滅＆選択可
     powCells[i].classList.toggle('owned', !!lab);
-    powCells[i].querySelector('small').textContent=lab; } }
+    powCells[i].querySelector('.lv').textContent=lab; } }
 powCells.forEach(c=>{ const use=e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); if(state==='play') usePower(+c.dataset.i); };
   c.addEventListener('touchstart',use,{passive:false}); c.addEventListener('mousedown',use); });
 const nekoBtn=document.getElementById('nekoBtn');

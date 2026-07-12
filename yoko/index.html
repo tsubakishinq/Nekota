@@ -304,10 +304,10 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
 function hitEnemy(e,dmg,x,y){ e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
-  addScore(e.score); if(e.drop) spawnPowerup(e.x,e.y); }
+  addScore(e.score); if(e.drop || Math.random()<0.22) spawnPowerup(e.x,e.y); }
 
 // ================= POWERUPS (capsule) =================
-function spawnPowerup(x,y){ powerups.push({x,y,vx:-120,vy:0,r:12,seed:Math.random()*TAU}); }
+function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:14,seed:Math.random()*TAU}); }
 function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powerups[i]; p.seed+=dt*4; p.x+=p.vx*dt;
   if(p.x<-30){ powerups.splice(i,1); continue; }
   if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerCursor=(powerCursor%6)+1; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); powerups.splice(i,1); refreshPowHint(); } } }
@@ -430,7 +430,7 @@ function playerPower(){ let p=player.speedLvl*0.4;
 // Blended difficulty: starts near 0 and ramps up with both stage and player power.
 function diffLevel(){ return (stage-1)*1.1 + playerPower()*0.75; }
 function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanner=2.2; Audio2.sfx.up(); showToast('STAGE '+n,'#57f6ff');
-  stagePool=['fan','straight','wave']; if(n>=1) stagePool.push('gold'); if(n>=2) stagePool.push('gun','wave','gold'); if(n>=3) stagePool.push('turret','gun');
+  stagePool=['fan','straight','wave','gold','gold']; if(n>=2) stagePool.push('gun','wave','gold'); if(n>=3) stagePool.push('turret','gun');
   stageRemaining=14+n*8;   // total enemies to release this stage
   spawnTimer=1.6; }        // grace period so a weak start isn't swarmed
 function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage); if(bossActive) return;

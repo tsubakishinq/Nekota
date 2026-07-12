@@ -49,6 +49,15 @@
     border:2px solid rgba(255,255,255,.4); line-height:1.1;}
   #powBtn small{font-size:8px; opacity:.85;}
   #powBtn:active{transform:scale(.93);}
+  #powBtn.ready{ animation: powPulse .6s ease-in-out infinite; }
+  @keyframes powPulse{ 0%,100%{ box-shadow:0 0 22px rgba(255,216,94,.6), inset 0 0 18px rgba(255,255,255,.35); }
+    50%{ box-shadow:0 0 46px 10px rgba(255,216,94,.98), inset 0 0 20px rgba(255,255,255,.6); } }
+  #powReady{pointer-events:none; position:absolute; right:20px; bottom:118px; width:86px; text-align:center;
+    color:#ffe7a0; font-weight:900; font-size:13px; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,216,94,.9);
+    opacity:0; transition:opacity .2s;}
+  #powReady.show{ opacity:1; animation: powBounce .6s ease-in-out infinite; }
+  #powReady b{display:block; font-size:20px; line-height:1;}
+  @keyframes powBounce{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(6px);} }
   .pauseBtn{position:absolute; top:10px; right:12px; z-index:16; width:38px; height:38px; border-radius:9px;
     background:rgba(9,12,34,.55); border:1px solid rgba(87,246,255,.3); color:var(--neon); font-size:17px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;}
@@ -65,6 +74,7 @@
 
   <div id="touch">
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
+    <div id="powReady">おして！<b>▼</b></div>
     <div id="powBtn"><span>POWER</span><small id="powHint">かいほう</small></div>
   </div>
 
@@ -304,13 +314,13 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
 function hitEnemy(e,dmg,x,y){ e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
-  addScore(e.score); if(e.drop || Math.random()<0.22) spawnPowerup(e.x,e.y); }
+  addScore(e.score); if(e.drop || Math.random()<0.4) spawnPowerup(e.x,e.y); }
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:14,seed:Math.random()*TAU}); }
 function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powerups[i]; p.seed+=dt*4; p.x+=p.vx*dt;
   if(p.x<-30){ powerups.splice(i,1); continue; }
-  if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerCursor=(powerCursor%6)+1; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); powerups.splice(i,1); refreshPowHint(); } } }
+  if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerCursor=(powerCursor%6)+1; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'▶ '+POWJP[powerCursor-1],'#ffd85e',14); powerups.splice(i,1); refreshPowHint(); } } }
 function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2; ctx.save(); ctx.translate(p.x,p.y+bob);
   ctx.shadowColor='#ffd85e'; ctx.shadowBlur=14; ctx.fillStyle='rgba(10,8,2,.85)'; ctx.strokeStyle='#ffd85e'; ctx.lineWidth=2.5;
   ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffd85e'; ctx.fillText('🐾',0,1); ctx.restore(); } }
@@ -466,14 +476,21 @@ function drawHUD(){ ctx.save();
   ctx.textAlign='center'; ctx.font='900 15px "Trebuchet MS"'; ctx.fillStyle='#ffd85e'; ctx.fillText('STAGE '+stage,W/2,12);
   // power-up bar (bottom center)
   const bw=68, gap=6, total=6*bw+5*gap, bx=(W-total)/2, by=H-30;
+  const pulse=0.5+0.5*Math.sin(performance.now()*0.006);
   for(let i=0;i<6;i++){ const x=bx+i*(bw+gap); const lit=powerCursor===i+1;
-    ctx.fillStyle=lit?'rgba(255,216,94,.9)':'rgba(9,12,34,.7)'; ctx.strokeStyle=lit?'#fff':'rgba(120,150,210,.5)'; ctx.lineWidth=1.5;
-    roundRect(x,by,bw,20,5); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=lit?'#3a2c00':'#9fb4de'; ctx.font='900 10px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(POWJP[i],x+bw/2,by+10);
-    // active markers
     const on=(i===0&&player.speedLvl>0)||(i===1&&player.hasMissile)||(i===2&&player.shotMode==='double')||(i===3&&player.shotMode==='laser')||(i===4&&options.length>0)||(i===5&&player.shield>0);
-    if(on){ ctx.fillStyle='#5effa0'; ctx.beginPath(); ctx.arc(x+bw-6,by+4,3,0,TAU); ctx.fill(); }
+    if(lit){ ctx.fillStyle='rgba(255,216,94,'+(0.75+0.25*pulse)+')'; ctx.strokeStyle='#fff'; ctx.lineWidth=2.5; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=10+14*pulse; }
+    else if(on){ ctx.fillStyle='rgba(94,255,160,.28)'; ctx.strokeStyle='#5effa0'; ctx.lineWidth=1.8; ctx.shadowBlur=0; }
+    else { ctx.fillStyle='rgba(9,12,34,.7)'; ctx.strokeStyle='rgba(120,150,210,.5)'; ctx.lineWidth=1.5; ctx.shadowBlur=0; }
+    roundRect(x,by,bw,20,5); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle=lit?'#3a2c00':(on?'#c9ffe0':'#9fb4de'); ctx.font='900 10px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(POWJP[i],x+bw/2,by+10);
+    if(on){ ctx.fillStyle='#5effa0'; ctx.font='900 11px "Trebuchet MS"'; ctx.fillText('✓',x+bw-8,by+6); }
+    if(lit){ // bouncing arrow above the ready slot
+      const ay=by-8-4*pulse; ctx.fillStyle='#ffd85e'; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=10;
+      ctx.beginPath(); ctx.moveTo(x+bw/2-6,ay-7); ctx.lineTo(x+bw/2+6,ay-7); ctx.lineTo(x+bw/2,ay); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0; }
   }
+  if(powerCursor>0){ ctx.globalAlpha=0.7+0.3*pulse; ctx.fillStyle='#ffe7a0'; ctx.font='900 12px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText('POWERボタンで はつどう！',W/2,by-24); ctx.globalAlpha=1; }
   // boss hp
   if(bossActive&&boss){ const w=W-120,h=9,x=60,y=44; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
     ctx.fillStyle='#ff5ec9'; ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
@@ -518,8 +535,11 @@ dpadEl.addEventListener('mousedown',e=>{ dpadTouchId='m'; dpadSet(e.clientX,e.cl
 window.addEventListener('mousemove',e=>{ if(dpadTouchId==='m'&&(e.buttons&1)) dpadSet(e.clientX,e.clientY); });
 window.addEventListener('mouseup',()=>{ if(dpadTouchId==='m') dpadEnd(); });
 
-const powBtn=document.getElementById('powBtn'), powHint=document.getElementById('powHint');
-function refreshPowHint(){ powHint.textContent = powerCursor? POWJP[powerCursor-1] : 'かいほう'; }
+const powBtn=document.getElementById('powBtn'), powHint=document.getElementById('powHint'), powReady=document.getElementById('powReady');
+function refreshPowHint(){ const ready=powerCursor>0;
+  powHint.textContent = ready? POWJP[powerCursor-1] : 'かいほう';
+  powBtn.classList.toggle('ready', ready); powReady.classList.toggle('show', ready);
+  powReady.firstChild.textContent = ready ? (POWJP[powerCursor-1]) : 'おして！'; }
 powBtn.addEventListener('touchstart',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); activatePower(); },{passive:false});
 powBtn.addEventListener('mousedown',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); activatePower(); });
 

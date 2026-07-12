@@ -52,8 +52,8 @@
   #powBtn.has{ animation: powPulse .7s ease-in-out infinite; }
   @keyframes powPulse{ 0%,100%{ box-shadow:0 0 22px rgba(255,216,94,.55), inset 0 0 16px rgba(255,255,255,.35); }
     50%{ box-shadow:0 0 40px 8px rgba(255,216,94,.95), inset 0 0 18px rgba(255,255,255,.55); } }
-  /* tappable power-up bar (bottom center, bigger) */
-  #powBar{pointer-events:none; position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+  /* tappable power-up bar (above the control row so it never overlaps the D-pad/buttons) */
+  #powBar{pointer-events:none; position:absolute; left:50%; bottom:150px; transform:translateX(-50%);
     display:grid; grid-template-columns:repeat(3,108px); grid-auto-rows:42px; gap:8px;}
   .powcell{pointer-events:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-radius:9px; background:rgba(9,12,34,.72); border:1.5px solid rgba(120,150,210,.5); color:#c3d4f2;

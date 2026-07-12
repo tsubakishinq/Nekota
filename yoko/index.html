@@ -241,7 +241,7 @@ function updatePlayer(dt){
 const optTrail=[];
 function fire(){
   const mode=player.shotMode;
-  if(mode==='laser'){ player.fireCd=0.16; shootLaser(player.x+player.r, player.y); Audio2.sfx.laser(); }
+  if(mode==='laser'){ player.fireCd=0.1; shootLaser(player.x+player.r, player.y); Audio2.sfx.laser(); }
   else { player.fireCd=0.14;
     shootBullet(player.x+player.r, player.y, 620, 0);
     if(mode==='double'){ shootBullet(player.x+player.r*0.6, player.y-6, 520, -300); }
@@ -253,7 +253,7 @@ function fire(){
     for(const o of options) dropMissile(o.x,o.y+8); } }
 }
 function shootBullet(x,y,vx,vy){ bullets.push({x,y,vx,vy,r:5,dmg:1,color:'#ffd85e',kind:'bullet'}); }
-function shootLaser(x,y){ bullets.push({x,y,vx:1150,vy:0,r:5,dmg:0.7,color:'#57f6ff',kind:'laser',pierce:true}); }
+function shootLaser(x,y){ bullets.push({x,y,vx:1150,vy:0,r:5,dmg:0.7,color:'#57f6ff',kind:'laser',pierce:true,len:56,thickV:5,hitThick:11}); }
 function dropMissile(x,y){ missiles.push({x,y,vx:360,vy:40,r:6}); Audio2.sfx.hit(); }
 
 // options (子猫)
@@ -345,8 +345,10 @@ function updateBullets(dt){
   for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt;
     if(b.x>W+30||b.x<-30||b.y<-30||b.y>H+30){ bullets.splice(i,1); continue; }
     let hit=false;
-    for(let j=0;j<enemies.length;j++){ const e=enemies[j]; const rr=b.r+e.r; if(dist2(b.x,b.y,e.x,e.y)<rr*rr){
-      hitEnemy(e,b.dmg,b.x,b.y); if(!b.pierce){ bullets.splice(i,1); hit=true; } break; } }
+    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; let overlap;
+      if(b.kind==='laser'){ overlap = Math.abs(e.y-b.y)<e.r+b.hitThick && e.x<b.x+b.len+e.r && e.x>b.x-b.len-e.r; }
+      else { const rr=b.r+e.r; overlap = dist2(b.x,b.y,e.x,e.y)<rr*rr; }
+      if(overlap){ hitEnemy(e,b.dmg,b.x,b.y); if(!b.pierce){ bullets.splice(i,1); hit=true; break; } } }
     if(hit) continue;
   }
   // missiles hug the bottom-ish, arc
@@ -364,7 +366,7 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
 }
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
   for(const b of bullets){ ctx.fillStyle=b.color; ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
-    if(b.kind==='laser') ctx.ellipse(b.x,b.y,14,2.6,0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); }
+    if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); }
   for(const m of missiles){ ctx.fillStyle='#ff8a3c'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,TAU); ctx.fill(); }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='source-over';
   for(const b of eBullets){ ctx.save(); ctx.translate(b.x,b.y); ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();

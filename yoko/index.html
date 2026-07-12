@@ -281,6 +281,8 @@ function updatePlayer(dt){
   // auto fire
   player.fireCd-=dt;
   if(player.fireCd<=0){ fire(); }
+  // 猫レーザー（3段階目）：2秒に1回 猫が走る
+  if(player.laserMode>=4){ catLaserT-=dt; if(catLaserT<=0){ catLaserT=2.0; spawnCatRunner(); } } else catLaserT=0;
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -310,7 +312,34 @@ function fire(){
 }
 function shootBullet(x,y,vx,vy){ bullets.push({x,y,vx,vy,r:5,dmg:1,color:'#ffd85e',kind:'bullet'}); }
 function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang); const m=player.laserMode||1;
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*LMUL[m],color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang,cat:m>=4}); }
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*LMUL[m],color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang}); }
+// 3段階目の猫レーザー：2秒に1回、猫が走って後ろに当たり判定のある線を残す
+const catRunners=[]; let catLaserT=0;
+function spawnCatRunner(){ const y=player.y, x0=player.x+player.r;
+  catRunners.push({y, x0, hx:x0, vx:1500, phase:'run', life:0.8, dmgT:0}); Audio2.sfx.laser(); }
+function updateCatRunners(dt){ for(let i=catRunners.length-1;i>=0;i--){ const c=catRunners[i];
+  if(c.phase==='run'){ c.hx+=c.vx*dt; if(c.hx>W+40){ c.hx=W+40; c.phase='hold'; } }
+  else { c.life-=dt; if(c.life<=0){ catRunners.splice(i,1); continue; } }
+  c.dmgT-=dt; if(c.dmgT<=0){ c.dmgT=0.09; const thick=17, dmg=LBASE*1.8; // x1.8 の当たり判定ライン
+    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(Math.abs(e.y-c.y)<thick+e.r && e.x>c.x0-e.r && e.x<c.hx+e.r){ hitEnemy(e,dmg,e.x,c.y); if(Math.random()<0.3) spawnParticles(e.x,c.y,'#ff9ee0',2,140,0.3); } } }
+} }
+function drawCatRunners(){ for(const c of catRunners){ const fade=c.phase==='hold'?Math.max(0,c.life/0.8):1;
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=fade;
+  // 残した線（当たり判定）
+  const grd=ctx.createLinearGradient(c.x0,0,c.hx,0); grd.addColorStop(0,'rgba(255,158,224,.15)'); grd.addColorStop(1,'rgba(255,200,240,.95)');
+  ctx.fillStyle=grd; ctx.shadowColor='#ff9ee0'; ctx.shadowBlur=16; ctx.fillRect(c.x0,c.y-5,c.hx-c.x0,10);
+  ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(c.x0,c.y-1.5,c.hx-c.x0,3);
+  // 走る猫（先頭）
+  ctx.globalAlpha=1; ctx.translate(c.hx,c.y); ctx.fillStyle='#fff'; drawRunningCat(15); ctx.restore(); } }
+function drawRunningCat(s){ ctx.shadowColor='#ff9ee0'; ctx.shadowBlur=14;
+  ctx.beginPath(); ctx.ellipse(0,0,s*1.1,s*0.6,0,0,TAU); ctx.fill(); // 胴
+  ctx.beginPath(); ctx.arc(s*1.05,-s*0.45,s*0.5,0,TAU); ctx.fill(); // 頭
+  ctx.beginPath(); ctx.moveTo(s*0.8,-s*0.8); ctx.lineTo(s*0.95,-s*1.35); ctx.lineTo(s*1.2,-s*0.85); ctx.closePath();
+  ctx.moveTo(s*1.2,-s*0.85); ctx.lineTo(s*1.45,-s*1.3); ctx.lineTo(s*1.55,-s*0.6); ctx.closePath(); ctx.fill(); // 耳
+  ctx.strokeStyle='#fff'; ctx.lineWidth=s*0.32; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-s*1.0,0); ctx.quadraticCurveTo(-s*2.0,-s*0.7,-s*1.5,-s*1.5); ctx.stroke(); // しっぽ
+  ctx.beginPath(); ctx.moveTo(-s*0.5,s*0.5); ctx.lineTo(-s*1.0,s*1.4); ctx.moveTo(0,s*0.6); ctx.lineTo(s*0.4,s*1.4);
+  ctx.moveTo(s*0.5,s*0.5); ctx.lineTo(s*0.25,s*1.4); ctx.moveTo(s*0.95,s*0.45); ctx.lineTo(s*1.4,s*1.3); ctx.stroke(); ctx.lineCap='butt'; } // 走る脚
 function dropMissile(x,y,vy0){ missiles.push({x,y,vx:300,vy:vy0||0,r:8,spd:340,life:3.2}); Audio2.sfx.hit(); }
 const blasts=[]; // 魚型バースト爆発（0.5秒 当たり判定）
 function spawnFishBlast(x,y){ blasts.push({x,y,life:0.5,r:52,dmgT:0}); Audio2.sfx.explode(); spawnParticles(x,y,'#ff8a3c',18,240,0.6); shake(6,.2); }
@@ -547,22 +576,8 @@ function drawFishBone(r){ // 魚の骨ミサイル（頭が進行方向＝右）
   ctx.beginPath(); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,-r*0.7); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,r*0.7); ctx.stroke(); // 尾びれ
   ctx.beginPath(); ctx.arc(r*1.05,0,r*0.5,0,TAU); ctx.stroke(); // 頭
   ctx.beginPath(); ctx.arc(r*1.15,-r*0.12,r*0.12,0,TAU); ctx.fill(); ctx.lineCap='butt'; } // 目
-function drawCatRunLaser(len,th){ // 走る猫のシルエット（横長・右向き）
-  const s=th*2.4; ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=12;
-  for(let c=-1;c<=1;c++){ const cx=c*len*0.62; ctx.save(); ctx.translate(cx,0);
-    ctx.beginPath(); ctx.ellipse(0,0,s*1.5,s*0.7,0,0,TAU); ctx.fill(); // 胴
-    ctx.beginPath(); ctx.arc(s*1.5,-s*0.5,s*0.55,0,TAU); ctx.fill(); // 頭
-    ctx.beginPath(); ctx.moveTo(s*1.2,-s*0.9); ctx.lineTo(s*1.35,-s*1.4); ctx.lineTo(s*1.6,-s*0.95); ctx.closePath();
-    ctx.moveTo(s*1.6,-s*0.95); ctx.lineTo(s*1.8,-s*1.4); ctx.lineTo(s*1.9,-s*0.7); ctx.closePath(); ctx.fill(); // 耳
-    ctx.beginPath(); ctx.moveTo(-s*1.4,0); ctx.quadraticCurveTo(-s*2.4,-s*0.8,-s*1.9,-s*1.4); ctx.lineWidth=s*0.4; ctx.strokeStyle=ctx.fillStyle; ctx.stroke(); // しっぽ
-    ctx.lineWidth=s*0.32; // 走る脚
-    ctx.beginPath(); ctx.moveTo(-s*0.6,s*0.5); ctx.lineTo(-s*1.0,s*1.3); ctx.moveTo(-s*0.1,s*0.6); ctx.lineTo(s*0.3,s*1.3);
-    ctx.moveTo(s*0.6,s*0.5); ctx.lineTo(s*0.3,s*1.3); ctx.moveTo(s*1.0,s*0.5); ctx.lineTo(s*1.4,s*1.2); ctx.stroke();
-    ctx.restore(); } ctx.shadowBlur=0; }
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
   for(const b of bullets){ ctx.shadowColor=b.color; ctx.shadowBlur=8;
-    if(b.kind==='laser' && b.cat){ // 3段階目：猫が走るシルエットレーザー
-      ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); ctx.fillStyle=b.color; drawCatRunLaser(b.len,b.thickV+2); ctx.restore(); continue; }
     ctx.beginPath();
     if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
@@ -579,19 +594,32 @@ function drawCatShip(x,y,r,skinGlow){
   const fg=ctx.createLinearGradient(-r,0,-r-tl,0); fg.addColorStop(0,'#aefcff'); fg.addColorStop(.5,'#57f6ff'); fg.addColorStop(1,'rgba(255,94,201,0)');
   ctx.fillStyle=fg; ctx.beginPath(); ctx.moveTo(-r+2,-6); ctx.lineTo(-r+2,6); ctx.lineTo(-r-tl,0); ctx.closePath(); ctx.fill();
   ctx.globalCompositeOperation='source-over';
-  // body (facing right)
+  // しっぽ（後方＝左、くるん）
+  ctx.strokeStyle='#57c9ff'; ctx.lineWidth=4.5; ctx.lineCap='round'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=10;
+  ctx.beginPath(); ctx.moveTo(-r*0.75,r*0.35); ctx.quadraticCurveTo(-r*1.5,r*0.35,-r*1.45,-r*0.4); ctx.quadraticCurveTo(-r*1.4,-r*0.95,-r*1.75,-r*0.95); ctx.stroke();
+  // body (facing right) — 丸っこい猫の体
   ctx.shadowColor='#57f6ff'; ctx.shadowBlur=14; const g=ctx.createLinearGradient(0,-r,0,r); g.addColorStop(0,'#fff'); g.addColorStop(.5,'#8be9ff'); g.addColorStop(1,'#2b7bd6');
   ctx.fillStyle=g; ctx.strokeStyle='#eaf6ff'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(r+2,0); ctx.quadraticCurveTo(r*0.4,r*1.1,-r*0.9,r*0.6); ctx.quadraticCurveTo(-r*0.5,0,-r*0.9,-r*0.6); ctx.quadraticCurveTo(r*0.4,-r*1.1,r+2,0); ctx.fill(); ctx.stroke();
-  // ears (top)
-  ctx.fillStyle='#8be9ff'; ctx.beginPath(); ctx.moveTo(-r*0.2,-r*0.55); ctx.lineTo(-r*0.7,-r*0.95); ctx.lineTo(0,-r*0.5); ctx.closePath();
-  ctx.moveTo(r*0.25,-r*0.5); ctx.lineTo(r*0.1,-r*0.95); ctx.lineTo(r*0.5,-r*0.45); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(r+2,0); ctx.quadraticCurveTo(r*0.4,r*1.15,-r*0.85,r*0.7); ctx.quadraticCurveTo(-r*0.45,0,-r*0.85,-r*0.7); ctx.quadraticCurveTo(r*0.4,-r*1.15,r+2,0); ctx.fill(); ctx.stroke();
+  // 大きな猫耳（ピンク内側）
+  ctx.fillStyle='#8be9ff';
+  ctx.beginPath(); ctx.moveTo(-r*0.25,-r*0.6); ctx.lineTo(-r*0.5,-r*1.35); ctx.lineTo(r*0.25,-r*0.68); ctx.closePath();
+  ctx.moveTo(r*0.25,-r*0.68); ctx.lineTo(r*0.62,-r*1.25); ctx.lineTo(r*0.85,-r*0.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#ff9ecf';
+  ctx.beginPath(); ctx.moveTo(-r*0.2,-r*0.66); ctx.lineTo(-r*0.38,-r*1.12); ctx.lineTo(r*0.1,-r*0.7); ctx.closePath();
+  ctx.moveTo(r*0.3,-r*0.7); ctx.lineTo(r*0.56,-r*1.02); ctx.lineTo(r*0.68,-r*0.58); ctx.closePath(); ctx.fill();
   ctx.shadowBlur=0;
-  // face
-  ctx.fillStyle='#0a1230'; ctx.beginPath(); ctx.ellipse(r*0.15,0,r*0.5,r*0.5,0,0,TAU); ctx.fill();
-  ctx.fillStyle='#57f6ff'; ctx.beginPath(); ctx.arc(r*0.25,-3,2.2,0,TAU); ctx.arc(r*0.25,3,2.2,0,TAU); ctx.fill();
-  ctx.fillStyle='#ff5ec9'; ctx.beginPath(); ctx.arc(r*0.5,0,2,0,TAU); ctx.fill();
-  ctx.restore();
+  // 顔まわり
+  ctx.fillStyle='#0a1230'; ctx.beginPath(); ctx.ellipse(r*0.28,0,r*0.5,r*0.52,0,0,TAU); ctx.fill();
+  // 猫目（縦アーモンド）
+  ctx.fillStyle='#aef8ff'; ctx.beginPath(); ctx.ellipse(r*0.28,-r*0.22,2.4,4.4,0,0,TAU); ctx.ellipse(r*0.28,r*0.22,2.4,4.4,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#0a1230'; ctx.beginPath(); ctx.ellipse(r*0.32,-r*0.22,1,3,0,0,TAU); ctx.ellipse(r*0.32,r*0.22,1,3,0,0,TAU); ctx.fill(); // 縦瞳孔
+  // ピンクの鼻
+  ctx.fillStyle='#ff7bb0'; ctx.beginPath(); ctx.moveTo(r*0.62,-2.4); ctx.lineTo(r*0.62,2.4); ctx.lineTo(r*0.78,0); ctx.closePath(); ctx.fill();
+  // ヒゲ
+  ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(r*0.6,-1); ctx.lineTo(r*1.25,-6); ctx.moveTo(r*0.62,0); ctx.lineTo(r*1.3,0); ctx.moveTo(r*0.6,1); ctx.lineTo(r*1.25,6); ctx.stroke();
+  ctx.lineCap='butt'; ctx.restore();
 }
 function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Math.floor(player.invuln*16)%2===0;
   const t=performance.now()*0.004, puls=0.5+0.5*Math.sin(t*2.5);
@@ -834,7 +862,7 @@ const titleScreen=document.getElementById('titleScreen'), overScreen=document.ge
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
@@ -860,7 +888,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   if(state==='play'){
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
-    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt);
+    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt);
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
   if(flashA>0) flashA=Math.max(0,flashA-dt*2);
@@ -869,7 +897,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   // bg
   ctx.fillStyle='#05060f'; ctx.fillRect(0,0,W,H);
   let ox=0,oy=0; if(shakeMag>0){ ox=rnd(-shakeMag,shakeMag); oy=rnd(-shakeMag,shakeMag); ctx.translate(ox,oy); }
-  drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets(); drawBlasts();
+  drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets(); drawBlasts(); drawCatRunners();
   for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();

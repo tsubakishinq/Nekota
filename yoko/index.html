@@ -278,6 +278,9 @@ function spawnEnemy(type, y, opt){ opt=opt||{}; const x=W+40;
     case 'turret': Object.assign(e,{hp:6,r:20,vx:-70,vy:0,score:300,color:'#5effa0',shoots:true,aim:true}); break;
     case 'gold': Object.assign(e,{hp:3,r:15,vx:-190,vy:0,score:200,color:'#ffd85e',amp:rnd(40,90),baseY:e.y,drop:true}); break; // 倒すとカプセル
   }
+  // Early enemies are much softer: stage 1 basics die in one hit, then HP ramps back up.
+  const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3+:0
+  e.hp=Math.max(1, e.hp-soft);
   e.maxhp=e.hp; if(opt.vx)e.vx=opt.vx; enemies.push(e); return e;
 }
 function updateEnemies(dt){

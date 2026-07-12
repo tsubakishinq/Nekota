@@ -252,9 +252,9 @@ const BASE_SPEED=210;
 const player={ x:170, y:H/2, r:15, alive:true, invuln:0, thrust:0,
   fireCd:0, laserMode:0, doubleLv:0, // laserMode 0=off 1=beam 2=ring ; doubleLv 0=single 1=double 2=triple
   speedLvl:0, // 0..5
-  missileLvl:0, shield:0, redInvuln:0, dead:false }; // shield = hit points (each ring absorbs 2), max 6 (triple)
+  missileLvl:0, missileBurst:false, shield:0, redInvuln:0, dead:false }; // missileLvl 0-3, laserMode 0-4
 function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0;
-  player.laserMode=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.shield=0; player.redInvuln=0; }
+  player.laserMode=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; }
 function playerSpeed(){ return BASE_SPEED*(1+player.speedLvl*0.33); } // 3段階で最大約2倍
 
 // power-up bar (Gradius)
@@ -287,14 +287,11 @@ function updatePlayer(dt){
 }
 let kittenMode=false; // 子猫アタック トグル (ON=敵に飛んで引っ掻く)
 const DIAG=-0.5; // diagonal-up angle for DOUBLE
+const LBASE=0.11; // レーザー基礎威力（従来の約5割）
+const LMUL=[0,1,1.2,1.5,1.8], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0']; // 段階:1基本/2黄/3赤/4猫
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
-  if(player.laserMode===2){ player.fireCd=0.62; // expanding ring laser (fewer rings)
-    shootRing(player.x+player.r, player.y);
-    if(dl>=1) shootLaser(player.x+player.r*0.7, player.y-4, DIAG);
-    if(dl>=2) shootLaser(player.x+player.r*0.7, player.y+4, -DIAG);
-    Audio2.sfx.laser(); }
-  else if(player.laserMode===1){ player.fireCd=0.1;
+  if(player.laserMode>0){ player.fireCd=0.1;
     shootLaser(player.x+player.r, player.y, 0);
     if(dl>=1) shootLaser(player.x+player.r*0.7, player.y-4, DIAG);
     if(dl>=2) shootLaser(player.x+player.r*0.7, player.y+4, -DIAG);
@@ -306,16 +303,27 @@ function fire(){
     Audio2.sfx.shoot(); }
   // options fire too (straight only, keeps the screen readable)
   for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0); else { shootBullet(o.x+10,o.y,600,0); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300);} }
-  // homing missiles: 1 at lvl1, 2 at lvl2
-  if(player.missileLvl>0){ player.missileCd=(player.missileCd||0)-1; if((player.missileCd||0)<=0){ player.missileCd=player.missileLvl>=2?7:11;
-    dropMissile(player.x+6,player.y-6,-70);
-    if(player.missileLvl>=2) dropMissile(player.x+6,player.y+6,70); } }
+  // homing missiles: 最大3発（ヒット時はバースト強化なら爆発）
+  if(player.missileLvl>0){ player.missileCd=(player.missileCd||0)-1; if((player.missileCd||0)<=0){
+    player.missileCd = player.missileLvl>=3?6 : player.missileLvl>=2?7 : 11;
+    const n=player.missileLvl; for(let k=0;k<n;k++){ const off=(k-(n-1)/2)*13; dropMissile(player.x+6, player.y+off, off*3.5); } } }
 }
 function shootBullet(x,y,vx,vy){ bullets.push({x,y,vx,vy,r:5,dmg:1,color:'#ffd85e',kind:'bullet'}); }
-function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang);
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:0.22,color:'#57f6ff',kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang}); }
-function shootRing(x,y){ bullets.push({x,y,vx:340,vy:0,r:14,dmg:0.35,color:'#7ef0ff',kind:'ring',pierce:true,grow:340,maxR:H*0.5,hRatio:0.62,vRatio:1.18}); } // 縦長 & 画面端まで成長
-function dropMissile(x,y,vy0){ missiles.push({x,y,vx:300,vy:vy0||0,r:7,spd:340,life:3.2}); Audio2.sfx.hit(); }
+function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang); const m=player.laserMode||1;
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*LMUL[m],color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang,cat:m>=4}); }
+function dropMissile(x,y,vy0){ missiles.push({x,y,vx:300,vy:vy0||0,r:8,spd:340,life:3.2}); Audio2.sfx.hit(); }
+const blasts=[]; // 魚型バースト爆発（0.5秒 当たり判定）
+function spawnFishBlast(x,y){ blasts.push({x,y,life:0.5,r:52,dmgT:0}); Audio2.sfx.explode(); spawnParticles(x,y,'#ff8a3c',18,240,0.6); shake(6,.2); }
+function updateBlasts(dt){ for(let i=blasts.length-1;i>=0;i--){ const b=blasts[i]; b.life-=dt; b.dmgT-=dt;
+  if(b.dmgT<=0){ b.dmgT=0.1; for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(dist2(b.x,b.y,e.x,e.y)<(b.r+e.r)*(b.r+e.r)) hitEnemy(e,1.6,e.x,e.y); } }
+  if(b.life<=0) blasts.splice(i,1); } }
+function drawBlasts(){ for(const b of blasts){ const k=1-b.life/0.5; const R=b.r*(0.5+k*0.7); ctx.save(); ctx.translate(b.x,b.y);
+  ctx.globalAlpha=Math.max(0,b.life/0.5); ctx.globalCompositeOperation='lighter';
+  ctx.fillStyle='#ff9a3c'; ctx.shadowColor='#ffb347'; ctx.shadowBlur=18;
+  // 魚型バースト（体＋尾）
+  ctx.beginPath(); ctx.ellipse(0,0,R,R*0.6,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(R*0.8,0); ctx.lineTo(R*1.35,-R*0.5); ctx.lineTo(R*1.35,R*0.5); ctx.closePath(); ctx.fill();
+  ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; ctx.restore(); } }
 
 // options (子猫)
 const OPT_GAP=44; // 子猫どうし／本機との間隔（重ならない）
@@ -487,10 +495,11 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
   if(state!=='play'||!player.alive||powerStock<POWCOST[i]) return;
   const slot=POWERS[i];
   if(slot==='SPEED'){ if(player.speedLvl<3){ player.speedLvl++; spawnText(player.x,player.y-24,'SPEED '+player.speedLvl,'#57f6ff',15);} else { addScore(500); } }
-  else if(slot==='MISSILE'){ if(player.missileLvl<2){ player.missileLvl++; spawnText(player.x,player.y-24,'MISSILE x'+player.missileLvl,'#ff8a5e',15);} else { addScore(500); } }
+  else if(slot==='MISSILE'){ if(player.missileLvl<3){ player.missileLvl++; spawnText(player.x,player.y-24,'MISSILE x'+player.missileLvl,'#ff8a5e',15);} // 最大3発
+    else if(!player.missileBurst){ player.missileBurst=true; spawnText(player.x,player.y-24,'🐟 バースト！','#ff8a5e',16); } else { addScore(500); } }
   else if(slot==='DOUBLE'){ player.doubleLv=player.doubleLv>=2?1:player.doubleLv+1; spawnText(player.x,player.y-24,player.doubleLv>=2?'TRIPLE':'DOUBLE','#ffd85e',15); }
-  else if(slot==='LASER'){ player.laserMode = player.laserMode===0?1 : player.laserMode===1?2 : 1; // off→beam→ring→beam
-    spawnText(player.x,player.y-24,player.laserMode===2?'RING LASER':'LASER','#57f6ff',15); }
+  else if(slot==='LASER'){ if(player.laserMode<4){ player.laserMode++; } else { addScore(500); } // 基本→黄→赤→猫
+    const nm=['','LASER','黄 x1.2','赤 x1.5','🐱 x1.8']; spawnText(player.x,player.y-24,nm[player.laserMode],LCOL[player.laserMode]||'#57f6ff',15); }
   else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'OPTION x'+options.length,'#ffd0ee',15); }
   else if(slot==='SHIELD'){ // each ring soaks 2 hits, stack up to 3 rings; 4th activation = red 3s invincibility
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
@@ -521,7 +530,7 @@ function updateBullets(dt){
     m.x+=m.vx*dt; m.y+=m.vy*dt; m.ang=Math.atan2(m.vy,m.vx);
     if(Math.random()<0.7) spawnParticles(m.x-Math.cos(m.ang)*6,m.y-Math.sin(m.ang)*6,'#ff8a3c',1,50,0.2);
     if(m.x>W+30||m.x<-30||m.y<-30||m.y>H+30||m.life<=0){ missiles.splice(i,1); continue; }
-    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=m.r+e.r; if(dist2(m.x,m.y,e.x,e.y)<rr*rr){ spawnParticles(m.x,m.y,'#ff8a3c',12,180,0.5); hitEnemy(e,2,m.x,m.y); missiles.splice(i,1); break; } }
+    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=m.r+e.r; if(dist2(m.x,m.y,e.x,e.y)<rr*rr){ spawnParticles(m.x,m.y,'#ff8a3c',12,180,0.5); hitEnemy(e,2,m.x,m.y); if(player.missileBurst) spawnFishBlast(m.x,m.y); missiles.splice(i,1); break; } }
   }
 }
 function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt;
@@ -530,12 +539,34 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
   // enemy body collision
   if(player.alive&&player.invuln<=0){ for(const e of enemies){ const rr=e.r+player.r*0.7; if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(); break; } } }
 }
+function drawFishBone(r){ // 魚の骨ミサイル（頭が進行方向＝右）
+  ctx.strokeStyle='#ffe6c2'; ctx.fillStyle='#ffe6c2'; ctx.shadowColor='#ff9a3c'; ctx.shadowBlur=8; ctx.lineWidth=2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-r*1.4,0); ctx.lineTo(r*0.9,0); ctx.stroke(); // 背骨
+  for(let k=0;k<4;k++){ const bx=r*0.7-k*r*0.55; const rib=r*(0.7-k*0.12); // 肋骨
+    ctx.beginPath(); ctx.moveTo(bx,-rib); ctx.lineTo(bx,rib); ctx.stroke(); }
+  ctx.beginPath(); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,-r*0.7); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,r*0.7); ctx.stroke(); // 尾びれ
+  ctx.beginPath(); ctx.arc(r*1.05,0,r*0.5,0,TAU); ctx.stroke(); // 頭
+  ctx.beginPath(); ctx.arc(r*1.15,-r*0.12,r*0.12,0,TAU); ctx.fill(); ctx.lineCap='butt'; } // 目
+function drawCatRunLaser(len,th){ // 走る猫のシルエット（横長・右向き）
+  const s=th*2.4; ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=12;
+  for(let c=-1;c<=1;c++){ const cx=c*len*0.62; ctx.save(); ctx.translate(cx,0);
+    ctx.beginPath(); ctx.ellipse(0,0,s*1.5,s*0.7,0,0,TAU); ctx.fill(); // 胴
+    ctx.beginPath(); ctx.arc(s*1.5,-s*0.5,s*0.55,0,TAU); ctx.fill(); // 頭
+    ctx.beginPath(); ctx.moveTo(s*1.2,-s*0.9); ctx.lineTo(s*1.35,-s*1.4); ctx.lineTo(s*1.6,-s*0.95); ctx.closePath();
+    ctx.moveTo(s*1.6,-s*0.95); ctx.lineTo(s*1.8,-s*1.4); ctx.lineTo(s*1.9,-s*0.7); ctx.closePath(); ctx.fill(); // 耳
+    ctx.beginPath(); ctx.moveTo(-s*1.4,0); ctx.quadraticCurveTo(-s*2.4,-s*0.8,-s*1.9,-s*1.4); ctx.lineWidth=s*0.4; ctx.strokeStyle=ctx.fillStyle; ctx.stroke(); // しっぽ
+    ctx.lineWidth=s*0.32; // 走る脚
+    ctx.beginPath(); ctx.moveTo(-s*0.6,s*0.5); ctx.lineTo(-s*1.0,s*1.3); ctx.moveTo(-s*0.1,s*0.6); ctx.lineTo(s*0.3,s*1.3);
+    ctx.moveTo(s*0.6,s*0.5); ctx.lineTo(s*0.3,s*1.3); ctx.moveTo(s*1.0,s*0.5); ctx.lineTo(s*1.4,s*1.2); ctx.stroke();
+    ctx.restore(); } ctx.shadowBlur=0; }
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
-  for(const b of bullets){ ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
+  for(const b of bullets){ ctx.shadowColor=b.color; ctx.shadowBlur=8;
+    if(b.kind==='laser' && b.cat){ // 3段階目：猫が走るシルエットレーザー
+      ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); ctx.fillStyle=b.color; drawCatRunLaser(b.len,b.thickV+2); ctx.restore(); continue; }
+    ctx.beginPath();
     if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
-  for(const m of missiles){ ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.ang||0); ctx.fillStyle='#ff8a3c'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=8;
-    ctx.beginPath(); ctx.moveTo(m.r+2,0); ctx.lineTo(-m.r,m.r*0.7); ctx.lineTo(-m.r*0.5,0); ctx.lineTo(-m.r,-m.r*0.7); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  for(const m of missiles){ ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.ang||0); drawFishBone(m.r); ctx.restore(); }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='source-over';
   for(const b of eBullets){ ctx.save(); ctx.translate(b.x,b.y); ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
     ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); ctx.restore(); } ctx.shadowBlur=0; }
@@ -778,9 +809,9 @@ const powCells=[...document.querySelectorAll('.powcell')];
 // per-slot "owned level" label shown on each cell
 function powOwnedLabel(i){
   if(i===0) return player.speedLvl>0?'Lv'+player.speedLvl:'';
-  if(i===1) return player.missileLvl>0?'×'+player.missileLvl:'';
+  if(i===1) return player.missileBurst?'×3🐟':(player.missileLvl>0?'×'+player.missileLvl:'');
   if(i===2) return player.doubleLv>=2?'TRIPLE':player.doubleLv===1?'DOUBLE':'';
-  if(i===3) return player.laserMode===2?'RING':player.laserMode===1?'ON':'';
+  if(i===3) return ['','ON','黄','赤','🐱'][player.laserMode]||'';
   if(i===4) return options.length>0?'×'+options.length:'';
   if(i===5) return player.shield>0?'×'+Math.ceil(player.shield/2):(player.redInvuln>0?'MAX':'');
   return '';
@@ -803,7 +834,7 @@ const titleScreen=document.getElementById('titleScreen'), overScreen=document.ge
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
@@ -829,7 +860,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   if(state==='play'){
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
-    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt);
+    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt);
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
   if(flashA>0) flashA=Math.max(0,flashA-dt*2);
@@ -838,7 +869,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   // bg
   ctx.fillStyle='#05060f'; ctx.fillRect(0,0,W,H);
   let ox=0,oy=0; if(shakeMag>0){ ox=rnd(-shakeMag,shakeMag); oy=rnd(-shakeMag,shakeMag); ctx.translate(ox,oy); }
-  drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets();
+  drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets(); drawBlasts();
   for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();

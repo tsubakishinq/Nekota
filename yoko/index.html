@@ -254,6 +254,7 @@ const POWERS=['SPEED','MISSILE','DOUBLE','LASER','OPTION','SHIELD'];
 const POWJP=['スピード','ミサイル','ダブル','レーザー','オプション','シールド'];
 const POWCOST=[1,2,3,4,5,6]; // 🐾ストックの必要数（足りないと選べない）
 let powerStock=0; // 集めた🐾の数（タップで任意の項目を発動）
+let lives=3;      // 残機（やられても🐾ストックは維持して復活、最大3）
 
 const dpad={active:false,dx:0,dy:0};
 function updatePlayer(dt){
@@ -344,7 +345,13 @@ function damagePlayer(){
     spawnParticles(player.x,player.y,'#57f6ff',14,200,0.4); shake(5,.15); flash('#57f6ff',.22); refreshPowHint();
     if(player.shield<=0) showToast('SHIELD BREAK','#57f6ff'); return; }
   Audio2.sfx.hurt(); shake(14,.4); flash('#ff2e6e',.45); spawnParticles(player.x,player.y,'#57f6ff',36,300,1); spawnParticles(player.x,player.y,'#ff5ec9',26,240,1.1);
-  player.alive=false; setTimeout(gameOver,900);
+  player.alive=false; lives--; // 🐾ストックとパワーアップは維持
+  if(lives>0) setTimeout(revive,1000); else setTimeout(gameOver,900);
+}
+function revive(){ if(state!=='play') return; player.x=170; player.y=H/2; player.alive=true;
+  player.invuln=1; player.redInvuln=0; // 1秒間 点滅無敵で復活
+  kittenMode=false; nekoBtn.classList.remove('on');
+  spawnParticles(player.x,player.y,'#57f6ff',20,220,0.6); Audio2.sfx.power(); showToast('のこり '+lives+'機','#57f6ff');
 }
 
 // ================= ENEMIES =================
@@ -357,18 +364,21 @@ function spawnEnemy(type, y, opt){ opt=opt||{}; const x=W+40;
     case 'gun': Object.assign(e,{hp:4,r:17,vx:-90,vy:0,score:250,color:'#5ec9ff',shoots:true,aim:true}); break;
     case 'turret': Object.assign(e,{hp:6,r:20,vx:-70,vy:0,score:300,color:'#5effa0',shoots:true,aim:true}); break;
     case 'gold': Object.assign(e,{hp:3,r:15,vx:-190,vy:0,score:200,color:'#ffd85e',amp:rnd(40,90),baseY:e.y,drop:true}); break; // 倒すとカプセル
+    case 'katsuo': Object.assign(e,{hp:14+stage*3,r:28,vx:-64,vy:0,score:900,color:'#5b7fa8',amp:rnd(50,90),baseY:clamp(e.y,90,H-90),katsuo:true}); break; // 硬い！倒すと刺身
   }
-  // Early enemies are much softer: stage 1 basics die in one hit, then HP ramps back up.
-  const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3:0
-  const hard=Math.max(0, stage-3);  // ボス撃破ごとに硬く: stage4:+1, stage5:+2...
-  e.hp=Math.max(1, e.hp-soft+hard);
+  if(type!=='katsuo'){ // カツオは常に硬いので軟化補正の対象外
+    // Early enemies are much softer: stage 1 basics die in one hit, then HP ramps back up.
+    const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3:0
+    const hard=Math.max(0, stage-3);  // ボス撃破ごとに硬く: stage4:+1, stage5:+2...
+    e.hp=Math.max(1, e.hp-soft+hard);
+  }
   e.maxhp=e.hp; if(opt.vx)e.vx=opt.vx; enemies.push(e); return e;
 }
 function updateEnemies(dt){
   for(let i=enemies.length-1;i>=0;i--){ const e=enemies[i]; e.hitFlash=Math.max(0,e.hitFlash-dt*6);
     if(e.t==='boss'){ updateBoss(e,dt); continue; }
     e.x+=e.vx*dt;
-    if(e.t==='fan'||e.t==='wave'||e.t==='gold') e.y=e.baseY+Math.sin(e.x*0.012+e.seed)*e.amp;
+    if(e.t==='fan'||e.t==='wave'||e.t==='gold'||e.t==='katsuo') e.y=e.baseY+Math.sin(e.x*0.012+e.seed)*e.amp;
     if(e.shoots){ e.fireCd-=dt; if(e.fireCd<=0 && e.x<W-20 && e.x>W*0.3){ e.fireCd=rnd(1.3,2.4); enemyShoot(e); } }
     if(e.x<-50){ enemies.splice(i,1); }
   }
@@ -390,6 +400,13 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
       const a=player.alive?Math.atan2(player.y-e.y,player.x-e.x):Math.PI; ctx.fillStyle=col; ctx.fillRect(0,-3,Math.cos(a)*e.r-2,6); break; }
     case 'turret': { ctx.beginPath(); for(let k=0;k<6;k++){ const a=k/6*TAU; ctx[k?'lineTo':'moveTo'](Math.cos(a)*e.r,Math.sin(a)*e.r);} ctx.closePath(); ctx.fill();
       ctx.fillStyle=flash?'#fff':'#053a1f'; ctx.beginPath(); ctx.arc(0,0,e.r*0.4,0,TAU); ctx.fill(); break; }
+    case 'katsuo': { const r=e.r; // カツオ（頭が左＝進行方向）
+      ctx.fillStyle=flash?'#fff':'#8fb0d6'; ctx.beginPath(); ctx.moveTo(r*0.9,0); ctx.lineTo(r*1.5,-r*0.6); ctx.lineTo(r*1.5,r*0.6); ctx.closePath(); ctx.fill(); // 尾びれ
+      const g=ctx.createLinearGradient(0,-r,0,r); g.addColorStop(0,flash?'#fff':'#7fa3cc'); g.addColorStop(0.55,flash?'#fff':'#4f6f96'); g.addColorStop(1,flash?'#fff':'#33506f'); ctx.fillStyle=g;
+      ctx.beginPath(); ctx.ellipse(0,0,r,r*0.62,0,0,TAU); ctx.fill(); // 体
+      ctx.fillStyle=flash?'#eee':'rgba(20,30,50,.5)'; for(let k=-1;k<=1;k++){ ctx.beginPath(); ctx.ellipse(k*r*0.28,0,r*0.06,r*0.5,0,0,TAU); ctx.fill(); } // カツオの縞
+      ctx.fillStyle=flash?'#fff':'#dfe9f5'; ctx.beginPath(); ctx.arc(-r*0.55,-r*0.12,r*0.16,0,TAU); ctx.fill(); // 目
+      ctx.fillStyle='#122'; ctx.beginPath(); ctx.arc(-r*0.58,-r*0.12,r*0.08,0,TAU); ctx.fill(); break; }
   }
   if(e.drop){ ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='900 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐾',0,1); }
   if(e.maxhp>=4 && e.hp<e.maxhp){ ctx.shadowBlur=0; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-e.r,-e.r-8,e.r*2,4); ctx.fillStyle='#5effa0'; ctx.fillRect(-e.r,-e.r-8,e.r*2*(e.hp/e.maxhp),4); }
@@ -398,15 +415,28 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
 function hitEnemy(e,dmg,x,y){ e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
-  addScore(e.score); const dmult=stage>=2?0.34:1; // 2面以降はアイテム約1/3
+  addScore(e.score);
+  if(e.katsuo){ spawnSashimi(e.x,e.y); shake(6,.2); showToast('🍣 さしみ！ とって1機','#ff9ecf'); return; }
+  const dmult=stage>=2?0.34:1; // 2面以降はアイテム約1/3
   if(Math.random() < (e.drop?1:0.4)*dmult) spawnPowerup(e.x,e.y); }
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:26,seed:Math.random()*TAU}); } // 肉球マークを大きく
+function spawnSashimi(x,y){ powerups.push({x,y,vx:-70,vy:0,r:24,seed:Math.random()*TAU,kind:'sashimi'}); } // 取ると1機
 function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powerups[i]; p.seed+=dt*4; p.x+=p.vx*dt;
-  if(p.x<-30){ powerups.splice(i,1); continue; }
-  if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🐾 +1','#ffd85e',14); powerups.splice(i,1); refreshPowHint(); } } }
+  if(p.x<-40){ powerups.splice(i,1); continue; }
+  if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){
+    if(p.kind==='sashimi'){ if(lives<3) lives++; Audio2.sfx.up(); spawnParticles(p.x,p.y,'#ff9ecf',12,180,0.5); spawnText(player.x,player.y-26,'🍣 1UP！','#5effa0',16); }
+    else { powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🐾 +1','#ffd85e',14); refreshPowHint(); }
+    powerups.splice(i,1); } } }
 function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2; ctx.save(); ctx.translate(p.x,p.y+bob);
+  if(p.kind==='sashimi'){ const s=p.r; // 刺身（白い皿＋ピンクの切り身）
+    ctx.shadowColor='#ff9ecf'; ctx.shadowBlur=16; ctx.fillStyle='rgba(255,255,255,.9)'; ctx.beginPath(); ctx.ellipse(0,s*0.35,s*0.95,s*0.42,0,0,TAU); ctx.fill(); // 皿
+    ctx.shadowBlur=6;
+    for(const [ox,oy] of [[-s*0.35,0],[s*0.05,-s*0.12],[s*0.4,0.05*s]]){ ctx.save(); ctx.translate(ox,oy); ctx.rotate(-0.3);
+      ctx.fillStyle='#ff8fb5'; ctx.beginPath(); ctx.ellipse(0,0,s*0.42,s*0.26,0,0,TAU); ctx.fill(); // 切り身
+      ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-s*0.3,-s*0.02); ctx.lineTo(s*0.3,s*0.05); ctx.stroke(); ctx.restore(); } // 脂のスジ
+    ctx.restore(); continue; }
   // 金色のグロー
   ctx.shadowColor='#ffd85e'; ctx.shadowBlur=16; ctx.fillStyle='rgba(255,216,94,.18)'; ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill();
   // ピンクの肉球マーク
@@ -589,7 +619,7 @@ function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
 }
 
 // ================= DIRECTOR =================
-let stage=1, spawnTimer=0, distance=0, stageBanner=0, stageRemaining=0, bossPending=false, stagePool=[];
+let stage=1, spawnTimer=0, distance=0, stageBanner=0, stageRemaining=0, bossPending=false, stagePool=[], stageTotal=0, katsuoDone=false;
 // How strong the player currently is (0 when fresh, grows with power-ups).
 function playerPower(){ let p=player.speedLvl*0.4;
   p+=player.doubleLv*1.1; p+=player.laserMode*1.2;
@@ -599,9 +629,12 @@ function diffLevel(){ return (stage-1)*1.1 + playerPower()*0.75; }
 function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanner=2.2; Audio2.sfx.up(); showToast('STAGE '+n,'#57f6ff');
   stagePool=['fan','straight','wave','gold','gold']; if(n>=2) stagePool.push('gun','wave','gold'); if(n>=3) stagePool.push('turret','gun');
   stageRemaining=14+n*8;   // total enemies to release this stage
+  stageTotal=stageRemaining; katsuoDone=false; // 1ステージ1体のカツオ
   spawnTimer=1.6; }        // grace period so a weak start isn't swarmed
 function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage); if(bossActive) return;
   const d=diffLevel();
+  // 1ステージ1体だけカツオ登場（ステージ折り返しあたり）
+  if(!katsuoDone && stageRemaining<=stageTotal*0.6){ katsuoDone=true; Audio2.sfx.warn(); showToast('🐟 カツオ出現！','#5b7fa8'); spawnEnemy('katsuo'); }
   const cap=Math.round(clamp(2+d*0.9, 2, 14));   // max enemies allowed on screen at once
   if(stageRemaining>0){ spawnTimer-=dt; if(spawnTimer<=0){
     if(enemies.length>=cap){ spawnTimer=0.3; return; }   // hold back until the screen thins out
@@ -630,6 +663,8 @@ function flash(c,a){ flashColor=c; flashA=Math.max(flashA,a); }
 function drawHUD(){ ctx.save();
   ctx.textAlign='left'; ctx.textBaseline='top'; ctx.font='900 24px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=8;
   ctx.fillText(score.toLocaleString(),16,10); ctx.shadowBlur=0; ctx.font='10px "Trebuchet MS"'; ctx.fillStyle='#7f95c9'; ctx.fillText('SCORE',17,36);
+  // 残機（小さい自機アイコン）
+  for(let k=0;k<lives;k++) drawCatShip(108+k*24, 24, 8);
   ctx.textAlign='center'; ctx.font='900 15px "Trebuchet MS"'; ctx.fillStyle='#ffd85e'; ctx.fillText('STAGE '+stage,W/2,12);
   // (power-up bar is now DOM: #powBar, tappable)
   // boss hp
@@ -705,7 +740,7 @@ let state='title', last=performance.now();
 const titleScreen=document.getElementById('titleScreen'), overScreen=document.getElementById('overScreen'), pauseScreen=document.getElementById('pauseScreen'), pauseBtn=document.getElementById('pauseBtn');
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
-function startGame(){ score=0; distance=0; stage=0; powerStock=0;
+function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';

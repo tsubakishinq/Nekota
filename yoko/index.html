@@ -154,7 +154,15 @@ const Audio2=(function(){
     const da=buf.getChannelData(0); for(let i=0;i<n;i++)da[i]=(Math.random()*2-1)*(1-i/n);
     const s=actx.createBufferSource(); s.buffer=buf; const f=actx.createBiquadFilter(); f.type='lowpass'; f.frequency.value=ff||1400;
     const ga=actx.createGain(); ga.gain.value=g||0.3; s.connect(f); f.connect(ga); ga.connect(sfxGain); s.start(); }
+  function meowTone(base,delay){ if(!enabled||!actx)return; const t0=actx.currentTime+(delay||0);
+    const o=actx.createOscillator(), ga=actx.createGain(), f=actx.createBiquadFilter();
+    o.type='sawtooth'; f.type='bandpass'; f.Q.value=7;
+    o.frequency.setValueAtTime(base*0.85,t0); o.frequency.linearRampToValueAtTime(base*1.35,t0+0.10); o.frequency.linearRampToValueAtTime(base*0.9,t0+0.34);
+    f.frequency.setValueAtTime(700,t0); f.frequency.linearRampToValueAtTime(1700,t0+0.10); f.frequency.linearRampToValueAtTime(750,t0+0.34);
+    ga.gain.setValueAtTime(0.0001,t0); ga.gain.exponentialRampToValueAtTime(0.32,t0+0.04); ga.gain.exponentialRampToValueAtTime(0.0001,t0+0.4);
+    o.connect(f); f.connect(ga); ga.connect(sfxGain); o.start(t0); o.stop(t0+0.44); }
   const sfx={ shoot(){beep(760,.07,'square',0.1,1200);}, laser(){beep(1150,.08,'sawtooth',0.1,420);},
+    meow(){ meowTone(620,0); meowTone(700,0.42); }, // にゃーにゃー
     hit(){beep(240,.05,'square',0.09);}, explode(){noise(.3,0.4,900); beep(110,.28,'triangle',0.22,40);},
     big(){noise(.6,0.55,700); beep(85,.55,'triangle',0.4,30);}, power(){beep(600,.09,'sine',0.28,940); setTimeout(()=>beep(940,.1,'sine',0.24,1300),70);},
     coin(){beep(1250,.06,'square',0.16,1650);}, hurt(){noise(.24,0.4,500); beep(170,.24,'sawtooth',0.3,60);},
@@ -255,7 +263,7 @@ const optTrail=[];
 const DIAG=-0.5; // diagonal-up angle for DOUBLE
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
-  if(player.laserMode===2){ player.fireCd=0.32; // expanding ring laser
+  if(player.laserMode===2){ player.fireCd=0.62; // expanding ring laser (fewer rings)
     shootRing(player.x+player.r, player.y);
     if(dl>=1) shootLaser(player.x+player.r*0.7, player.y-4, DIAG);
     if(dl>=2) shootLaser(player.x+player.r*0.7, player.y+4, -DIAG);
@@ -297,7 +305,7 @@ function updateOptions(dt){ for(const o of options){
 } }
 function unleashKittens(){ if(options.length===0){ showToast('子猫がいないニャ','#ffd0ee'); return; } if(player.nekoCd>0) return;
   player.nekoCd=6; for(const o of options){ o.berserk=4; const a=Math.random()*TAU; o.vx=Math.cos(a)*400; o.vy=Math.sin(a)*400; o.wanderT=rnd(0.15,0.35); }
-  Audio2.sfx.power(); showToast('🐾 子猫アタック！','#ffd0ee'); }
+  Audio2.sfx.meow(); showToast('🐾 子猫アタック！','#ffd0ee'); }
 
 function damagePlayer(){
   if(!player.alive||player.invuln>0||player.redInvuln>0) return;
@@ -358,7 +366,8 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
 function hitEnemy(e,dmg,x,y){ e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
-  addScore(e.score); if(e.drop || Math.random()<0.4) spawnPowerup(e.x,e.y); }
+  addScore(e.score); const dmult=stage>=2?0.34:1; // 2面以降はアイテム約1/3
+  if(Math.random() < (e.drop?1:0.4)*dmult) spawnPowerup(e.x,e.y); }
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:14,seed:Math.random()*TAU}); }
@@ -393,7 +402,7 @@ function updateBullets(dt){
     let hit=false;
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; let overlap;
       if(b.kind==='laser'){ const rr=e.r+b.hitThick; overlap = segDist2(e.x,e.y, b.x-b.len*b.dx,b.y-b.len*b.dy, b.x+b.len*b.dx,b.y+b.len*b.dy) < rr*rr; }
-      else if(b.kind==='ring'){ const rx=b.r*b.hRatio, ry=b.r*b.vRatio; const nx=(e.x-b.x)/rx, ny=(e.y-b.y)/ry; const nr=Math.sqrt(nx*nx+ny*ny); const band=(e.r+11)/((rx+ry)*0.5); overlap = Math.abs(nr-1)<band; }
+      else if(b.kind==='ring'){ const rx=b.r*b.hRatio, ry=b.r*b.vRatio; const nx=(e.x-b.x)/rx, ny=(e.y-b.y)/ry; const nr=Math.sqrt(nx*nx+ny*ny); const band=(e.r+5)/((rx+ry)*0.5); overlap = Math.abs(nr-1)<band; }
       else { const rr=b.r+e.r; overlap = dist2(b.x,b.y,e.x,e.y)<rr*rr; }
       if(overlap){ hitEnemy(e,b.dmg,b.x,b.y); if(!b.pierce){ bullets.splice(i,1); hit=true; break; } } }
     if(hit) continue;
@@ -418,7 +427,7 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
 }
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
   for(const b of bullets){ ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
-    if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=7; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
+    if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
   for(const m of missiles){ ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.ang||0); ctx.fillStyle='#ff8a3c'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=8;
     ctx.beginPath(); ctx.moveTo(m.r+2,0); ctx.lineTo(-m.r,m.r*0.7); ctx.lineTo(-m.r*0.5,0); ctx.lineTo(-m.r,-m.r*0.7); ctx.closePath(); ctx.fill(); ctx.restore(); }
@@ -505,19 +514,33 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); for(let k=-1;k<=1;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9'});} Audio2.sfx.hit(); }
     else { e.fireCd=1.2; const n=12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e'});} Audio2.sfx.big(); } }
 }
-function drawBoss(e){ const flash=e.hitFlash>0, r=e.r; ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=22;
-  // 大きな猫コア(左向きに口)
-  const grad=ctx.createLinearGradient(0,-r,0,r); grad.addColorStop(0,flash?'#fff':'#ff8ad6'); grad.addColorStop(1,flash?'#fff':'#7a1150'); ctx.fillStyle=grad;
-  ctx.beginPath(); ctx.ellipse(0,0,r*0.9,r,0,0,TAU); ctx.fill();
-  // ears
-  ctx.beginPath(); ctx.moveTo(-r*0.3,-r*0.7); ctx.lineTo(-r*0.9,-r*1.15); ctx.lineTo(-r*0.1,-r*0.6); ctx.closePath();
-  ctx.moveTo(r*0.3,-r*0.7); ctx.lineTo(r*0.9,-r*1.15); ctx.lineTo(r*0.1,-r*0.6); ctx.closePath(); ctx.fill();
-  // eye (weak point glow) facing left
-  ctx.shadowBlur=16; ctx.shadowColor='#57f6ff'; ctx.fillStyle=flash?'#fff':(e.hp/e.maxhp<0.5?'#ff3b3b':'#57f6ff');
-  ctx.beginPath(); ctx.arc(-r*0.3,0,r*0.22,0,TAU); ctx.fill();
-  ctx.shadowBlur=0; ctx.fillStyle='#0a0010'; ctx.fillRect(-r*0.35,-r*0.18,3,r*0.36);
-  // mouth (cannon)
-  ctx.strokeStyle='#2a0016'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(-r*0.6,r*0.25,r*0.28,-0.6,0.6); ctx.stroke();
+function drawBoss(e){ const flash=e.hitFlash>0, r=e.r; const lowHp=e.hp/e.maxhp<0.5; ctx.shadowColor='#b6c4dc'; ctx.shadowBlur=20;
+  // 巨大ネズミ（左向き＝プレイヤー側に鼻先）
+  // しっぽ（右後方）
+  ctx.strokeStyle=flash?'#fff':'#d69ac0'; ctx.lineWidth=6; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(r*0.85,r*0.25); ctx.quadraticCurveTo(r*1.55,r*0.15,r*1.45,-r*0.55); ctx.quadraticCurveTo(r*1.4,-r*1.05,r*1.75,-r*1.1); ctx.stroke();
+  // 大きな丸い耳
+  ctx.fillStyle=flash?'#fff':'#93a2ba'; ctx.beginPath(); ctx.arc(-r*0.12,-r*0.86,r*0.5,0,TAU); ctx.arc(r*0.58,-r*0.82,r*0.5,0,TAU); ctx.fill();
+  ctx.fillStyle=flash?'#fff':'#f2b8d6'; ctx.beginPath(); ctx.arc(-r*0.12,-r*0.86,r*0.28,0,TAU); ctx.arc(r*0.58,-r*0.82,r*0.28,0,TAU); ctx.fill();
+  // 頭・体（グレー、左に向かって鼻先が細くなる）
+  const grad=ctx.createLinearGradient(0,-r,0,r); grad.addColorStop(0,flash?'#fff':'#bcc8dc'); grad.addColorStop(1,flash?'#fff':'#727f98'); ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.moveTo(-r*1.05,0);
+  ctx.quadraticCurveTo(-r*0.6,-r*0.78,r*0.15,-r*0.86);
+  ctx.quadraticCurveTo(r*0.98,-r*0.72,r*0.98,0);
+  ctx.quadraticCurveTo(r*0.98,r*0.72,r*0.15,r*0.86);
+  ctx.quadraticCurveTo(-r*0.6,r*0.78,-r*1.05,0); ctx.closePath(); ctx.fill();
+  // 鼻先のピンクの鼻
+  ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#ff7bb0'; ctx.beginPath(); ctx.arc(-r*1.02,0,r*0.13,0,TAU); ctx.fill();
+  // 前歯
+  ctx.fillStyle='#fff'; ctx.fillRect(-r*0.99,r*0.12,r*0.12,r*0.3); ctx.fillRect(-r*0.85,r*0.12,r*0.12,r*0.3);
+  // 目（弱点：HP低下で赤く光る）
+  ctx.shadowBlur=14; ctx.shadowColor=lowHp?'#ff3b3b':'#ff5ec9'; ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':'#241019');
+  ctx.beginPath(); ctx.arc(-r*0.36,-r*0.12,r*0.2,0,TAU); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle=flash?'#333':'#fff'; ctx.beginPath(); ctx.arc(-r*0.42,-r*0.18,r*0.07,0,TAU); ctx.fill();
+  // ヒゲ
+  ctx.strokeStyle='rgba(240,245,255,.7)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(-r*0.85,r*0.08); ctx.lineTo(-r*1.65,-r*0.12); ctx.moveTo(-r*0.85,r*0.26); ctx.lineTo(-r*1.62,r*0.3); ctx.moveTo(-r*0.85,r*0.42); ctx.lineTo(-r*1.5,r*0.62); ctx.stroke();
+  ctx.lineCap='butt';
 }
 function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
   for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff5ec9':'#57f6ff',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);
@@ -590,7 +613,7 @@ function drawHUD(){ ctx.save();
   // boss hp
   if(bossActive&&boss){ const w=W-120,h=9,x=60,y=44; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
     ctx.fillStyle='#ff5ec9'; ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
-    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 10px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ NYAN CORE ★',W/2,y-2); }
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 10px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ ボスネズミ CHU-CHU ★',W/2,y-2); }
   if(stageBanner>0){ const a=Math.min(1, stageBanner>1.6?(2.2-stageBanner)/0.6:stageBanner/1.0); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
   ctx.restore();

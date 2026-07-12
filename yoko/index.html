@@ -448,7 +448,8 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
   if(e.maxhp>=4 && e.hp<e.maxhp){ ctx.shadowBlur=0; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-e.r,-e.r-8,e.r*2,4); ctx.fillStyle='#5effa0'; ctx.fillRect(-e.r,-e.r-8,e.r*2*(e.hp/e.maxhp),4); }
   ctx.restore();
 }
-function hitEnemy(e,dmg,x,y){ e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
+function hitEnemy(e,dmg,x,y){ if(e.t==='boss'&&e.dmgReduce){ dmg*=(1-e.dmgReduce); e.shieldFlash=1; spawnParticles(x,y,'#cfe0ff',2,120,0.2); } // 装備でダメージ軽減
+  e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
   addScore(e.score);
@@ -610,10 +611,15 @@ function drawKitten(r, glow){ const gb=glow?15:9;
 
 // ================= BOSS =================
 let boss=null, bossActive=false;
-function spawnBoss(){ Audio2.sfx.warn(); showToast('⚠ WARNING ⚠','#ff5ec9');
-  const hp=50+stage*30; boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1};
+function spawnBoss(){ Audio2.sfx.warn();
+  const gear=clamp(stage-1,0,3); // 倒すたびに 0→盾→兜→鎧 と装備が増える
+  const hp=Math.round((50+stage*30)*(1+gear*0.18));
+  boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
+    gear, hasShield:stage>=2, hasHelmet:stage>=3, hasArmor:stage>=4, dmgReduce:gear*0.13, shieldFlash:0};
+  const names=['','【盾つき】','【盾＋兜】','【フル装備】'];
+  showToast('⚠ WARNING ⚠ '+names[gear],'#ff5ec9');
   enemies.push(boss); }
-function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6);
+function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
@@ -647,6 +653,26 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r; const lowHp=e.hp/e.maxhp<
   ctx.strokeStyle='rgba(240,245,255,.7)'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(-r*0.85,r*0.08); ctx.lineTo(-r*1.65,-r*0.12); ctx.moveTo(-r*0.85,r*0.26); ctx.lineTo(-r*1.62,r*0.3); ctx.moveTo(-r*0.85,r*0.42); ctx.lineTo(-r*1.5,r*0.62); ctx.stroke();
   ctx.lineCap='butt';
+  // ===== 装備（ボスを倒すたびに増える）=====
+  if(e.hasArmor){ // 鎧（胴＋肩当て）
+    ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#8994a8'; ctx.strokeStyle='#565d6f'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(r*0.18,r*0.22,r*0.66,r*0.55,0,-0.5,Math.PI+0.5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=flash?'#fff':'#a6b0c4'; ctx.beginPath(); ctx.arc(r*0.62,-r*0.06,r*0.26,0,TAU); ctx.fill(); ctx.stroke(); // 肩当て
+    ctx.fillStyle='#e3eaf5'; for(let k=-1;k<=1;k++){ ctx.beginPath(); ctx.arc(r*0.18,r*0.1+k*r*0.26,r*0.05,0,TAU); ctx.fill(); } }
+  if(e.hasHelmet){ // 兜（ドーム＋金の三日月前立て）
+    ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#39415a'; ctx.strokeStyle='#181d2b'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(r*0.22,-r*0.62,r*0.66,Math.PI,TAU); ctx.fill(); ctx.stroke(); // ドーム
+    ctx.beginPath(); ctx.ellipse(r*0.22,-r*0.6,r*0.72,r*0.16,0,0,Math.PI); ctx.fill(); ctx.stroke(); // ひさし
+    ctx.fillStyle=flash?'#fff':'#ffd85e'; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=10; // 前立て（三日月）
+    ctx.beginPath(); ctx.arc(r*0.22,-r*1.06,r*0.34,Math.PI*0.16,Math.PI*0.84);
+    ctx.arc(r*0.22,-r*0.9,r*0.3,Math.PI*0.84,Math.PI*0.16,true); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0; }
+  if(e.hasShield){ // 盾（前面＝プレイヤー側）
+    const sf=e.shieldFlash>0; ctx.shadowColor='#cfe0ff'; ctx.shadowBlur=sf?18:8;
+    ctx.fillStyle=sf?'#fff':'#9aa6bd'; ctx.strokeStyle='#565f74'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.ellipse(-r*0.92,r*0.22,r*0.44,r*0.64,0,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=sf?'#ffd85e':'#c7d2e6'; ctx.beginPath(); ctx.arc(-r*0.92,r*0.22,r*0.16,0,TAU); ctx.fill(); // 中央エンブレム
+    ctx.strokeStyle='#697390'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(-r*0.92,r*0.22-r*0.32); ctx.lineTo(-r*0.92,r*0.22+r*0.32); ctx.moveTo(-r*0.92-r*0.24,r*0.22); ctx.lineTo(-r*0.92+r*0.24,r*0.22); ctx.stroke(); ctx.shadowBlur=0; }
 }
 function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
   for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff5ec9':'#57f6ff',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);

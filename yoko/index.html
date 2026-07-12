@@ -303,7 +303,7 @@ function updateOptions(dt){ for(const o of options){
     o.x+=o.vx*dt; o.y+=o.vy*dt;
     o.x=clamp(o.x,12,W-12); o.y=clamp(o.y,12,H-12);
     if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
-    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=13+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){ o.claw=0.16; spawnParticles(o.x,o.y,'#fff',6,150,0.3); hitEnemy(e,2,o.x,o.y); } }
+    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){ o.claw=0.16; spawnParticles(o.x,o.y,'#fff',6,150,0.3); hitEnemy(e,2,o.x,o.y); } }
   } else { const idx=Math.max(0, optTrail.length-1-o.delay); const p=optTrail[idx]; if(p){ o.x=p.x; o.y=p.y; } }
 } }
 function toggleKittens(){ if(options.length===0){ showToast('子猫がいないニャ','#ffd0ee'); return; }
@@ -483,10 +483,10 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r); ctx.globalAlpha=1;
 }
 function drawOptions(){ for(const o of options){ ctx.save(); ctx.translate(o.x,o.y);
-  if(kittenMode){ ctx.save(); ctx.rotate(performance.now()*0.02); ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; ctx.strokeStyle='rgba(255,142,203,.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,15,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
+  if(kittenMode){ ctx.save(); ctx.rotate(performance.now()*0.02); ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; ctx.strokeStyle='rgba(255,142,203,.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,21,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
   if(o.claw>0){ ctx.save(); ctx.strokeStyle='rgba(255,255,255,'+(o.claw/0.16)+')'; ctx.shadowColor='#fff'; ctx.shadowBlur=8; ctx.lineWidth=2; // 引っ掻き傷エフェクト
-    for(let s=-1;s<=1;s++){ ctx.beginPath(); ctx.moveTo(6+s*4,-12); ctx.lineTo(14+s*4,12); ctx.stroke(); } ctx.restore(); }
-  drawKitten(9, kittenMode); ctx.restore(); } }
+    for(let s=-1;s<=1;s++){ ctx.beginPath(); ctx.moveTo(9+s*5,-17); ctx.lineTo(20+s*5,17); ctx.stroke(); } ctx.restore(); }
+  drawKitten(13, kittenMode); ctx.restore(); } }
 function drawKitten(r, glow){ const gb=glow?15:9;
   // ears (outer)
   ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=gb; ctx.fillStyle='#fff6fb';

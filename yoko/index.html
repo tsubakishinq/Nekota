@@ -43,12 +43,29 @@
   #dpad .arm.u{top:14%;} #dpad .arm.d{top:86%;} #dpad .arm.l{left:14%;} #dpad .arm.r{left:86%;}
   #dnub{position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%,#8be9ff,#2b7bd6); box-shadow:0 0 16px rgba(87,246,255,.5);}
-  #powBtn{pointer-events:auto; position:absolute; right:20px; bottom:24px; width:86px; height:86px; border-radius:50%;
-    background:radial-gradient(circle at 40% 35%,#ffe7a0,var(--gold) 70%); box-shadow:0 0 22px rgba(255,216,94,.6), inset 0 0 18px rgba(255,255,255,.35);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a2c00; font-weight:900; letter-spacing:1px; font-size:14px;
-    border:2px solid rgba(255,255,255,.4); line-height:1.1;}
-  #powBtn small{font-size:8px; opacity:.85;}
-  #powBtn:active{transform:scale(.93);}
+  /* 🐾 stock counter (was the POWER button) */
+  #powBtn{pointer-events:none; position:absolute; right:16px; bottom:22px; width:78px; height:78px; border-radius:50%;
+    background:radial-gradient(circle at 40% 35%,#ffe7a0,var(--gold) 70%); box-shadow:0 0 22px rgba(255,216,94,.55), inset 0 0 16px rgba(255,255,255,.35);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a2c00; font-weight:900; font-size:26px;
+    border:2px solid rgba(255,255,255,.4); line-height:1;}
+  #powBtn small{font-size:15px; font-weight:900; margin-top:2px;}
+  #powBtn.has{ animation: powPulse .7s ease-in-out infinite; }
+  @keyframes powPulse{ 0%,100%{ box-shadow:0 0 22px rgba(255,216,94,.55), inset 0 0 16px rgba(255,255,255,.35); }
+    50%{ box-shadow:0 0 40px 8px rgba(255,216,94,.95), inset 0 0 18px rgba(255,255,255,.55); } }
+  /* tappable power-up bar (bottom center, bigger) */
+  #powBar{pointer-events:none; position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    display:grid; grid-template-columns:repeat(3,108px); grid-auto-rows:42px; gap:8px;}
+  .powcell{pointer-events:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-radius:9px; background:rgba(9,12,34,.72); border:1.5px solid rgba(120,150,210,.5); color:#c3d4f2;
+    font-weight:900; line-height:1.05; text-align:center;}
+  .powcell b{font-size:16px;} .powcell small{font-size:9px; color:#5effa0; opacity:0; margin-top:1px;}
+  .powcell.owned{ background:rgba(94,255,160,.16); border-color:#5effa0; color:#d6ffe8;}
+  .powcell.owned small{opacity:1;}
+  .powcell.avail{ border-color:#ffd85e; color:#fff6dd; box-shadow:0 0 16px rgba(255,216,94,.5);
+    animation: cellPulse .8s ease-in-out infinite;}
+  .powcell.avail b{color:#ffe7a0;}
+  @keyframes cellPulse{ 0%,100%{ box-shadow:0 0 12px rgba(255,216,94,.4);} 50%{ box-shadow:0 0 22px 3px rgba(255,216,94,.8);} }
+  .powcell:active{transform:scale(.94);}
   #nekoBtn{pointer-events:auto; position:absolute; left:150px; bottom:30px; width:66px; height:66px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%,#ffe3f4,#ff8ecb 72%); box-shadow:0 0 18px rgba(255,142,203,.6), inset 0 0 14px rgba(255,255,255,.4);
     display:flex; flex-direction:column; align-items:center; justify-content:center; color:#5a1638; font-weight:900; font-size:22px;
@@ -58,15 +75,6 @@
   #nekoBtn.on{ box-shadow:0 0 26px 6px rgba(255,142,203,.95), inset 0 0 14px rgba(255,255,255,.5); border-color:#fff;
     animation: nekoPulse .5s ease-in-out infinite; }
   @keyframes nekoPulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.07);} }
-  #powBtn.ready{ animation: powPulse .6s ease-in-out infinite; }
-  @keyframes powPulse{ 0%,100%{ box-shadow:0 0 22px rgba(255,216,94,.6), inset 0 0 18px rgba(255,255,255,.35); }
-    50%{ box-shadow:0 0 46px 10px rgba(255,216,94,.98), inset 0 0 20px rgba(255,255,255,.6); } }
-  #powReady{pointer-events:none; position:absolute; right:20px; bottom:118px; width:86px; text-align:center;
-    color:#ffe7a0; font-weight:900; font-size:13px; letter-spacing:.5px; text-shadow:0 0 10px rgba(255,216,94,.9);
-    opacity:0; transition:opacity .2s;}
-  #powReady.show{ opacity:1; animation: powBounce .6s ease-in-out infinite; }
-  #powReady b{display:block; font-size:20px; line-height:1;}
-  @keyframes powBounce{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(6px);} }
   .pauseBtn{position:absolute; top:10px; right:12px; z-index:16; width:38px; height:38px; border-radius:9px;
     background:rgba(9,12,34,.55); border:1px solid rgba(87,246,255,.3); color:var(--neon); font-size:17px;
     display:flex; align-items:center; justify-content:center; cursor:pointer;}
@@ -84,21 +92,28 @@
   <div id="touch">
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
     <div id="nekoBtn">🐈<small>こねこ</small></div>
-    <div id="powReady">おして！<b>▼</b></div>
-    <div id="powBtn"><span>POWER</span><small id="powHint">かいほう</small></div>
+    <div id="powBar">
+      <div class="powcell" data-i="0"><b>スピード</b><small></small></div>
+      <div class="powcell" data-i="1"><b>ミサイル</b><small></small></div>
+      <div class="powcell" data-i="2"><b>ダブル</b><small></small></div>
+      <div class="powcell" data-i="3"><b>レーザー</b><small></small></div>
+      <div class="powcell" data-i="4"><b>オプション</b><small></small></div>
+      <div class="powcell" data-i="5"><b>シールド</b><small></small></div>
+    </div>
+    <div id="powBtn"><span>🐾</span><small id="powStock">×0</small></div>
   </div>
 
   <div class="overlay" id="titleScreen">
     <div class="logo">NEKOTA GEO<small>Y O K O &nbsp; S C R O L L</small></div>
     <div class="panel">
       横スクロール猫シューティング！ 敵は右から来るぞ。<br>
-      <b>🐾カプセル</b>を集めて <b>POWER</b> でパワーアップ（グラディウス式）。<br>
-      スピード → ミサイル → ダブル → レーザー → オプション → シールド
+      <b>🐾カプセル</b>を集めた数だけ、下のパネルの<b>好きな項目をタップ</b>して発動！<br>
+      スピード ／ ミサイル ／ ダブル ／ レーザー ／ オプション ／ シールド
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="panel">
       <b>操作</b>　移動：左下の十字キー / <span>← →↑↓</span>（ショットは自動）<br>
-      パワーアップ発動：右下 <b>POWER</b>ボタン（PCは <b>X</b>）／ポーズ：P
+      パワーアップ：🐾を集めて<b>下のパネルをタップ</b>で発動／ポーズ：P
     </div>
     <div class="rotate">📱 スマホは横向きがおすすめ</div>
     <div class="hs" id="titleHigh"></div>
@@ -235,7 +250,7 @@ function playerSpeed(){ return BASE_SPEED*(1+player.speedLvl*0.33); } // 3段階
 // power-up bar (Gradius)
 const POWERS=['SPEED','MISSILE','DOUBLE','LASER','OPTION','SHIELD'];
 const POWJP=['スピード','ミサイル','ダブル','レーザー','オプション','シールド'];
-let powerCursor=0; // 0=none, 1..6 lit slot
+let powerStock=0; // 集めた🐾の数（タップで任意の項目を発動）
 
 const dpad={active:false,dx:0,dy:0};
 function updatePlayer(dt){
@@ -323,7 +338,7 @@ function toggleKittens(){ if(options.length===0){ showToast('子猫がいない�
 function damagePlayer(){
   if(!player.alive||player.invuln>0||player.redInvuln>0) return;
   if(player.shield>0){ player.shield--; player.invuln=0.6; Audio2.sfx.power(); // each barrier ring soaks 2 hits
-    spawnParticles(player.x,player.y,'#57f6ff',14,200,0.4); shake(5,.15); flash('#57f6ff',.22);
+    spawnParticles(player.x,player.y,'#57f6ff',14,200,0.4); shake(5,.15); flash('#57f6ff',.22); refreshPowHint();
     if(player.shield<=0) showToast('SHIELD BREAK','#57f6ff'); return; }
   Audio2.sfx.hurt(); shake(14,.4); flash('#ff2e6e',.45); spawnParticles(player.x,player.y,'#57f6ff',36,300,1); spawnParticles(player.x,player.y,'#ff5ec9',26,240,1.1);
   player.alive=false; setTimeout(gameOver,900);
@@ -387,24 +402,24 @@ function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1);
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:14,seed:Math.random()*TAU}); }
 function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powerups[i]; p.seed+=dt*4; p.x+=p.vx*dt;
   if(p.x<-30){ powerups.splice(i,1); continue; }
-  if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerCursor=(powerCursor%6)+1; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'▶ '+POWJP[powerCursor-1],'#ffd85e',14); powerups.splice(i,1); refreshPowHint(); } } }
+  if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){ powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🐾 +1','#ffd85e',14); powerups.splice(i,1); refreshPowHint(); } } }
 function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2; ctx.save(); ctx.translate(p.x,p.y+bob);
   ctx.shadowColor='#ffd85e'; ctx.shadowBlur=14; ctx.fillStyle='rgba(10,8,2,.85)'; ctx.strokeStyle='#ffd85e'; ctx.lineWidth=2.5;
   ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; ctx.font='14px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffd85e'; ctx.fillText('🐾',0,1); ctx.restore(); } }
 
-function activatePower(){
-  if(state!=='play'||!player.alive||powerCursor===0) return;
-  const slot=POWERS[powerCursor-1];
+function usePower(i){ // 🐾ストックを1消費して任意の項目を発動
+  if(state!=='play'||!player.alive||powerStock<=0) return;
+  const slot=POWERS[i];
   if(slot==='SPEED'){ if(player.speedLvl<3){ player.speedLvl++; spawnText(player.x,player.y-24,'SPEED '+player.speedLvl,'#57f6ff',15);} else { addScore(500); } }
   else if(slot==='MISSILE'){ if(player.missileLvl<2){ player.missileLvl++; spawnText(player.x,player.y-24,'MISSILE x'+player.missileLvl,'#ff8a5e',15);} else { addScore(500); } }
   else if(slot==='DOUBLE'){ player.doubleLv=player.doubleLv>=2?1:player.doubleLv+1; spawnText(player.x,player.y-24,player.doubleLv>=2?'TRIPLE':'DOUBLE','#ffd85e',15); }
   else if(slot==='LASER'){ player.laserMode = player.laserMode===0?1 : player.laserMode===1?2 : 1; // off→beam→ring→beam
     spawnText(player.x,player.y-24,player.laserMode===2?'RING LASER':'LASER','#57f6ff',15); }
-  else if(slot==='OPTION'){ if(addOption()) spawnText(player.x,player.y-24,'OPTION x'+options.length,'#ffd0ee',15); else addScore(500); }
+  else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'OPTION x'+options.length,'#ffd0ee',15); }
   else if(slot==='SHIELD'){ // each ring soaks 2 hits, stack up to 3 rings; 4th activation = red 3s invincibility
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
     else { player.shield=Math.min(6,(Math.ceil(player.shield/2)+1)*2); spawnText(player.x,player.y-24,'SHIELD x'+Math.ceil(player.shield/2),'#57f6ff',15); } }
-  Audio2.sfx.up(); powerCursor=0; refreshPowHint();
+  Audio2.sfx.up(); powerStock--; refreshPowHint();
 }
 
 // ================= BULLETS / COLLISIONS =================
@@ -607,25 +622,7 @@ function drawHUD(){ ctx.save();
   ctx.textAlign='left'; ctx.textBaseline='top'; ctx.font='900 24px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=8;
   ctx.fillText(score.toLocaleString(),16,10); ctx.shadowBlur=0; ctx.font='10px "Trebuchet MS"'; ctx.fillStyle='#7f95c9'; ctx.fillText('SCORE',17,36);
   ctx.textAlign='center'; ctx.font='900 15px "Trebuchet MS"'; ctx.fillStyle='#ffd85e'; ctx.fillText('STAGE '+stage,W/2,12);
-  // power-up bar (bottom center, 3 columns x 2 rows, larger text)
-  const cols=3, bw=124, bh=34, gapx=10, gapy=8;
-  const gridW=cols*bw+(cols-1)*gapx, bx=(W-gridW)/2, byTop=H-16-(2*bh+gapy);
-  const pulse=0.5+0.5*Math.sin(performance.now()*0.006);
-  for(let i=0;i<6;i++){ const col=i%cols, row=Math.floor(i/cols);
-    const x=bx+col*(bw+gapx), y=byTop+row*(bh+gapy); const lit=powerCursor===i+1;
-    const on=(i===0&&player.speedLvl>0)||(i===1&&player.missileLvl>0)||(i===2&&player.doubleLv>0)||(i===3&&player.laserMode>0)||(i===4&&options.length>0)||(i===5&&player.shield>0);
-    if(lit){ ctx.fillStyle='rgba(255,216,94,'+(0.75+0.25*pulse)+')'; ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=12+16*pulse; }
-    else if(on){ ctx.fillStyle='rgba(94,255,160,.28)'; ctx.strokeStyle='#5effa0'; ctx.lineWidth=2; ctx.shadowBlur=0; }
-    else { ctx.fillStyle='rgba(9,12,34,.7)'; ctx.strokeStyle='rgba(120,150,210,.5)'; ctx.lineWidth=1.5; ctx.shadowBlur=0; }
-    roundRect(x,y,bw,bh,7); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.fillStyle=lit?'#3a2c00':(on?'#c9ffe0':'#c3d4f2'); ctx.font='900 17px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(POWJP[i],x+bw/2,y+bh/2+1);
-    if(on){ ctx.fillStyle='#5effa0'; ctx.font='900 15px "Trebuchet MS"'; ctx.textAlign='left'; ctx.fillText('✓',x+7,y+bh/2+1); }
-    if(lit){ // bouncing arrow above the ready slot
-      const ay=y-3-4*pulse; ctx.fillStyle='#ffd85e'; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=10;
-      ctx.beginPath(); ctx.moveTo(x+bw/2-8,ay-9); ctx.lineTo(x+bw/2+8,ay-9); ctx.lineTo(x+bw/2,ay); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0; }
-  }
-  if(powerCursor>0){ ctx.globalAlpha=0.7+0.3*pulse; ctx.fillStyle='#ffe7a0'; ctx.font='900 15px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillText('POWERボタンで はつどう！',W/2,byTop-14); ctx.globalAlpha=1; }
+  // (power-up bar is now DOM: #powBar, tappable)
   // boss hp
   if(bossActive&&boss){ const w=W-120,h=9,x=60,y=44; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
     ctx.fillStyle='#ff5ec9'; ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
@@ -643,7 +640,7 @@ function showToast(t,c){ toastEl.textContent=t; toastEl.style.color=c||'#57f6ff'
 // ================= INPUT =================
 const keys={};
 window.addEventListener('keydown',e=>{ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key))e.preventDefault(); keys[e.key.toLowerCase()]=true;
-  if(e.key==='p'||e.key==='P') togglePause(); if((e.key==='x'||e.key==='X')&&state==='play') activatePower(); if(e.key==='m'||e.key==='M') Audio2.toggle();
+  if(e.key==='p'||e.key==='P') togglePause(); if(e.key>='1'&&e.key<='6'&&state==='play') usePower(+e.key-1); if(e.key==='m'||e.key==='M') Audio2.toggle();
   Audio2.init(); Audio2.resume(); });
 window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 window.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')){ if(state==='title')startGame(); else if(state==='over')startGame(); }});
@@ -670,13 +667,27 @@ dpadEl.addEventListener('mousedown',e=>{ dpadTouchId='m'; dpadSet(e.clientX,e.cl
 window.addEventListener('mousemove',e=>{ if(dpadTouchId==='m'&&(e.buttons&1)) dpadSet(e.clientX,e.clientY); });
 window.addEventListener('mouseup',()=>{ if(dpadTouchId==='m') dpadEnd(); });
 
-const powBtn=document.getElementById('powBtn'), powHint=document.getElementById('powHint'), powReady=document.getElementById('powReady');
-function refreshPowHint(){ const ready=powerCursor>0;
-  powHint.textContent = ready? POWJP[powerCursor-1] : 'かいほう';
-  powBtn.classList.toggle('ready', ready); powReady.classList.toggle('show', ready);
-  powReady.firstChild.textContent = ready ? (POWJP[powerCursor-1]) : 'おして！'; }
-powBtn.addEventListener('touchstart',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); activatePower(); },{passive:false});
-powBtn.addEventListener('mousedown',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); activatePower(); });
+const powBtn=document.getElementById('powBtn'), powStock=document.getElementById('powStock');
+const powCells=[...document.querySelectorAll('.powcell')];
+// per-slot "owned level" label shown on each cell
+function powOwnedLabel(i){
+  if(i===0) return player.speedLvl>0?'Lv'+player.speedLvl:'';
+  if(i===1) return player.missileLvl>0?'×'+player.missileLvl:'';
+  if(i===2) return player.doubleLv>=2?'TRIPLE':player.doubleLv===1?'DOUBLE':'';
+  if(i===3) return player.laserMode===2?'RING':player.laserMode===1?'ON':'';
+  if(i===4) return options.length>0?'×'+options.length:'';
+  if(i===5) return player.shield>0?'×'+Math.ceil(player.shield/2):(player.redInvuln>0?'MAX':'');
+  return '';
+}
+function refreshPowHint(){ // update stock counter + cell states
+  powStock.textContent='×'+powerStock; powBtn.classList.toggle('has', powerStock>0);
+  const avail=powerStock>0;
+  for(let i=0;i<powCells.length;i++){ const lab=powOwnedLabel(i);
+    powCells[i].classList.toggle('avail', avail);
+    powCells[i].classList.toggle('owned', !!lab);
+    powCells[i].querySelector('small').textContent=lab; } }
+powCells.forEach(c=>{ const use=e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); if(state==='play') usePower(+c.dataset.i); };
+  c.addEventListener('touchstart',use,{passive:false}); c.addEventListener('mousedown',use); });
 const nekoBtn=document.getElementById('nekoBtn');
 nekoBtn.addEventListener('touchstart',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); if(state==='play') toggleKittens(); },{passive:false});
 nekoBtn.addEventListener('mousedown',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); if(state==='play') toggleKittens(); });
@@ -686,7 +697,7 @@ let state='title', last=performance.now();
 const titleScreen=document.getElementById('titleScreen'), overScreen=document.getElementById('overScreen'), pauseScreen=document.getElementById('pauseScreen'), pauseBtn=document.getElementById('pauseBtn');
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
-function startGame(){ score=0; distance=0; stage=0; powerCursor=0;
+function startGame(){ score=0; distance=0; stage=0; powerStock=0;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';

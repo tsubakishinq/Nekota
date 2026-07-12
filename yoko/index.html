@@ -285,23 +285,28 @@ function fire(){
 }
 function shootBullet(x,y,vx,vy){ bullets.push({x,y,vx,vy,r:5,dmg:1,color:'#ffd85e',kind:'bullet'}); }
 function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang);
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:0.35,color:'#57f6ff',kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang}); }
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:0.22,color:'#57f6ff',kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang}); }
 function shootRing(x,y){ bullets.push({x,y,vx:340,vy:0,r:14,dmg:0.35,color:'#7ef0ff',kind:'ring',pierce:true,grow:340,maxR:H*0.5,hRatio:0.62,vRatio:1.18}); } // 縦長 & 画面端まで成長
 function dropMissile(x,y,vy0){ missiles.push({x,y,vx:300,vy:vy0||0,r:7,spd:340,life:3.2}); Audio2.sfx.hit(); }
 
 // options (子猫)
-const OPT_GAP=32; // 子猫どうし／本機との間隔（重ならない）
-function addOption(){ if(options.length>=4) return false; const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0}); return true; }
+const OPT_GAP=44; // 子猫どうし／本機との間隔（重ならない）
+function addOption(){ const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0, wa:Math.random()*TAU, wanderT:0}); return true; } // 無限に増える
 function updateOptions(dt){
-  if(kittenMode){ for(const o of options){ // 敵の方向へ飛んで引っ掻く
+  if(kittenMode){ for(const o of options){ // あちこち飛び回って引っ掻く
     if(o.claw>0) o.claw-=dt;
+    o.wanderT-=dt; if(o.wanderT<=0){ o.wanderT=rnd(0.22,0.55); o.wa=Math.random()*TAU; } // ランダムに方向転換
     let tgt=null,bd=1e9; for(const e of enemies){ const d=dist2(o.x,o.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
-    if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x), sp=440; o.vx=Math.cos(a)*sp; o.vy=Math.sin(a)*sp; }
-    else { o.vx+= (200-o.vx)*Math.min(1,dt*3); o.vy*=0.9; } // 敵がいなければ前へ流す
+    let ax=Math.cos(o.wa), ay=Math.sin(o.wa);
+    if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); ax=ax*0.7+Math.cos(a); ay=ay*0.7+Math.sin(a); } // 敵に少し引き寄せつつバラバラに
+    const m=Math.hypot(ax,ay)||1, sp=460; o.vx=ax/m*sp; o.vy=ay/m*sp;
     o.x+=o.vx*dt; o.y+=o.vy*dt;
-    o.x=clamp(o.x,12,W-12); o.y=clamp(o.y,12,H-12);
+    if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
+    if(o.y<14){o.y=14;o.wa=-o.wa;} if(o.y>H-14){o.y=H-14;o.wa=-o.wa;}
     if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
-    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){ o.claw=0.16; spawnParticles(o.x,o.y,'#fff',6,150,0.3); hitEnemy(e,2,o.x,o.y); } }
+    for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){
+      o.claw=0.22; spawnParticles(o.x,o.y,'#fff',10,200,0.4); spawnParticles(e.x,e.y,'#ffd0ee',8,180,0.4);
+      if(hitEnemy(e,2,o.x,o.y)) spawnText(e.x,e.y-10,'ひっかき！','#fff',12); } }
   } return; }
   // 隊列モード：本機の後ろに一定間隔でチェーン追従（止まっても重ならず、動けば連なる）
   let lx=player.x, ly=player.y;
@@ -336,8 +341,9 @@ function spawnEnemy(type, y, opt){ opt=opt||{}; const x=W+40;
     case 'gold': Object.assign(e,{hp:3,r:15,vx:-190,vy:0,score:200,color:'#ffd85e',amp:rnd(40,90),baseY:e.y,drop:true}); break; // 倒すとカプセル
   }
   // Early enemies are much softer: stage 1 basics die in one hit, then HP ramps back up.
-  const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3+:0
-  e.hp=Math.max(1, e.hp-soft);
+  const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3:0
+  const hard=Math.max(0, stage-3);  // ボス撃破ごとに硬く: stage4:+1, stage5:+2...
+  e.hp=Math.max(1, e.hp-soft+hard);
   e.maxhp=e.hp; if(opt.vx)e.vx=opt.vx; enemies.push(e); return e;
 }
 function updateEnemies(dt){

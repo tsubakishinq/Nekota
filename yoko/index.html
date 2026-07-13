@@ -289,12 +289,13 @@ function updatePlayer(dt){
   // 猫/ライオンレーザー：目の前の顔が0.5秒チャージ→高速・高出力ビーム発射
   if(player.laserMode===4){ player.chargeT=(player.chargeT||0)+dt; if(player.chargeT>=0.5){ player.chargeT=0; fireChargeBeam(); } }
   else player.chargeT=0;
-  if(player.laserMode>=5){ // 虎：太いまっすぐ一本の連続ビーム。当たった敵から分散ホーミングレーザー
+  if(player.laserMode>=5){ // 虎：太い直線ビーム＋顔から常時3発くらいのホーミングレーザー
     const bx=player.x+player.r+LION_OFF, by=player.y; player.lionTick=(player.lionTick||0)-dt;
-    player.homeTick=(player.homeTick||0)-dt;
     if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*3.5, thick=20;
-      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r && Math.abs(e.y-by)<thick+e.r){ hitEnemy(e,dmg,e.x,by); spawnPaw(e.x,by);
-        if(player.homeTick<=0){ player.homeTick=0.14; spawnTigerHomers(e.x,by,3); } } } } }
+      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r && Math.abs(e.y-by)<thick+e.r){ hitEnemy(e,dmg,e.x,by); spawnPaw(e.x,by); } } }
+    player.homeTick=(player.homeTick||0)-dt; // 常に約3発のホーミングレーザーが飛んでいる状態にする
+    if(player.homeTick<=0){ player.homeTick=0.4; let alive=0; for(const b of bullets) if(b.home) alive++;
+      const need=3-alive; if(need>0) fireTigerHomers(bx,by,need); } }
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -351,9 +352,9 @@ function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+pla
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,lion?'#ffcf6a':'#dff0ff',16,300,0.5); shake(5,0.14); flash(lion?'#ffcf6a':'#bfe6ff',0.12); }
 function shootMega(x,y,ang,lion){ const sp=2000,dx=Math.cos(ang),dy=Math.sin(ang); // 高速・高出力ビーム
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*(lion?4:3),color:lion?'#ffcf6a':'#fff',kind:'laser',pierce:true,len:88,thickV:lion?10:7,hitThick:lion?20:15,dx,dy,ang,mega:true}); }
-function spawnTigerHomers(x,y,n){ const spd=760; // 虎ビーム命中点から分散→ホーミングするレーザー
-  for(let k=0;k<n;k++){ const a=rnd(-Math.PI,Math.PI), dx=Math.cos(a), dy=Math.sin(a);
-    bullets.push({x,y,vx:dx*spd,vy:dy*spd,r:4,dmg:LBASE*1.8,color:'#ffb54a',kind:'laser',pierce:false,home:true,spd,life:1.5,launch:0.13,dx,dy,len:14,thickV:4,hitThick:8,ang:a}); }
+function fireTigerHomers(x,y,n){ const spd=780; // 虎の顔から前方へ発射→ホーミングするレーザー
+  for(let k=0;k<n;k++){ const a=rnd(-0.42,0.42), dx=Math.cos(a), dy=Math.sin(a); // 前方に扇状
+    bullets.push({x,y,vx:dx*spd,vy:dy*spd,r:4,dmg:LBASE*1.8,color:'#ffb54a',kind:'laser',pierce:false,home:true,spd,life:1.8,launch:0.12,dx,dy,len:15,thickV:4.5,hitThick:8,ang:a}); }
   spawnParticles(x,y,'#ffce7a',5,220,0.32); }
 function drawLionFace(s){ // かっこいい虎（トラ）の顔・正面。つり目＋怒り眉＋牙でワイルドに
   ctx.lineCap='round'; ctx.lineJoin='round';

@@ -366,21 +366,22 @@ let catBomb=null;
 function knockEnemy(e,dmg){ if(e.t==='boss'){ hitEnemy(e,dmg,e.x,e.y); return; } // ボスはダメージのみ
   if(e.knocked) return; e.knocked=true; e.vx=rnd(820,1240); e.vy=rnd(-360,360); e.spin=0; // 通常敵は倒さず吹き飛ばす
   spawnParticles(e.x,e.y,e.color||'#ffd0a0',7,220,0.4); addScore(30); }
+const CAT_S=100; // ボム猫の大きさ（画面半分くらい）
 function launchKittenBomb(){ Audio2.sfx.meow(); showToast('🐾 ネコパンチ！','#ffd0ee');
-  catBomb={phase:'roll', t:0, x:-70, y:player.y, r:44, spin:0, vx:660, catX:-180}; }
+  catBomb={phase:'roll', t:0, x:-90, y:H/2, r:60, spin:0, vx:680, catX:-CAT_S*2.4}; } // 画面中央でおおきな猫が待ち構える
 function updateBomb(dt){ if(!catBomb)return; const b=catBomb; b.t+=dt; b.spin+=dt*(b.vx*0.02+2);
-  if(b.phase==='roll'){ b.x+=b.vx*dt; b.y+=(player.y-b.y)*Math.min(1,dt*4); b.catX+=(b.x-90-b.catX)*Math.min(1,dt*7);
-    if(Math.random()<0.5) spawnParticles(b.x-b.r,b.y+b.r*0.6,'#cfe0ff',1,80,0.3);
-    if(b.x>=player.x+130){ b.phase='wind'; b.t=0; b.vx=0; } }
-  else if(b.phase==='wind'){ b.catX+=(b.x-66-b.catX)*Math.min(1,dt*12); // 猫が近づいて溜め
-    if(b.t>0.22){ b.phase='punch'; b.t=0; b.vx=1750; Audio2.sfx.power(); Audio2.sfx.explode(); shake(14,0.35); flash('#ffe0a0',0.28);
-      spawnText(b.x,b.y-64,'ネコパンチ！','#ffd0ee',20); spawnParticles(b.x,b.y,'#ffd0a0',24,420,0.6);
+  if(b.phase==='roll'){ b.x+=b.vx*dt; b.catX+=((b.x-CAT_S*1.9)-b.catX)*Math.min(1,dt*7);
+    if(Math.random()<0.6) spawnParticles(b.x-b.r,b.y+b.r*0.6,'#cfe0ff',1,90,0.3);
+    if(b.x>=W*0.42){ b.phase='wind'; b.t=0; b.vx=0; } }
+  else if(b.phase==='wind'){ b.catX+=((b.x-CAT_S*1.6)-b.catX)*Math.min(1,dt*12); // 大猫が近づいて溜め
+    if(b.t>0.24){ b.phase='punch'; b.t=0; b.vx=1850; Audio2.sfx.power(); Audio2.sfx.explode(); shake(18,0.4); flash('#ffe0a0',0.32);
+      spawnText(b.x,b.y-CAT_S*0.9,'ネコパンチ！','#ffd0ee',26); spawnParticles(b.x,b.y,'#ffd0a0',34,520,0.7);
       for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; knockEnemy(e, e.t==='boss'?10:6); } } }
-  else if(b.phase==='punch'){ b.catX+=(b.x-72-b.catX)*Math.min(1,dt*8); b.x+=b.vx*dt;
+  else if(b.phase==='punch'){ b.catX+=((b.x-CAT_S*1.55)-b.catX)*Math.min(1,dt*8); b.x+=b.vx*dt;
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.knocked)continue; const rr=b.r+e.r+20;
       if(dist2(b.x,b.y,e.x,e.y)<rr*rr) knockEnemy(e, e.t==='boss'?4:6); }
-    if(Math.random()<0.8) spawnParticles(b.x,b.y,'#ffce7a',2,220,0.4);
-    if(b.x>W+100){ catBomb=null; } } }
+    if(Math.random()<0.8) spawnParticles(b.x,b.y,'#ffce7a',2,240,0.4);
+    if(b.x>W+120){ catBomb=null; } } }
 function drawBall(r){ ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; // 毛糸玉
   ctx.fillStyle='#ff9ecf'; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
   ctx.strokeStyle='#d94f96'; ctx.lineWidth=3; ctx.shadowBlur=0;
@@ -415,7 +416,7 @@ function drawPunchCat(s, punch){ // 全身のおすわり猫（右向き）が�
   ctx.fillStyle='#ff7bb0'; ctx.beginPath(); ctx.moveTo(hx-hr*0.14,hy+hr*0.2); ctx.lineTo(hx+hr*0.14,hy+hr*0.2); ctx.lineTo(hx,hy+hr*0.4); ctx.closePath(); ctx.fill();
   ctx.lineCap='butt'; ctx.lineJoin='miter'; }
 function drawBomb(){ if(!catBomb)return; const b=catBomb;
-  ctx.save(); ctx.translate(b.catX,b.y); drawPunchCat(30, b.phase==='punch'); ctx.restore();
+  ctx.save(); ctx.translate(b.catX,b.y); drawPunchCat(CAT_S, b.phase==='punch'); ctx.restore();
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.spin); drawBall(b.r); ctx.restore(); }
 function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
   for(const a of [-0.34,-0.11,0.11,0.34]) shootMega(fx,fy,a,lion); // 白猫レーザーは4つに分裂して前方へ広がる

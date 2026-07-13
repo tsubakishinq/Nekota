@@ -998,16 +998,25 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.bezierCurveTo(-r*0.9,-r*0.95,r*0.2,-r*1.02,r*0.7,-r*0.6); ctx.bezierCurveTo(r*1.15,-r*0.25,r*1.08,r*0.7,r*0.4,r*0.92); ctx.bezierCurveTo(-r*0.4,r*1.14,-r*1.1,r*0.6,-r,-r*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
     ctx.fillStyle='rgba(120,86,40,.5)'; for(const p of [[-0.5,-0.4],[0.45,-0.55],[0.6,0.4],[-0.2,0.55]]){ ctx.beginPath(); ctx.arc(p[0]*r,p[1]*r,r*0.06,0,TAU); ctx.fill(); }
     bossFace(0,0,r,flash,lowHp,'#5a3f1e');
-  } else if(idx===3){ // 牛
-    ctx.fillStyle=flash?'#fff':'#efe9e1'; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2; ctx.shadowColor='#d8d2c8'; ctx.shadowBlur=12;
-    ctx.beginPath(); ctx.ellipse(0,r*0.05,r*0.98,r*0.9,0,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.fillStyle=flash?'#eee':'#e9e4dc'; ctx.beginPath(); ctx.moveTo(-r*0.66,-r*0.7); ctx.lineTo(-r*0.95,-r*1.12); ctx.lineTo(-r*0.34,-r*0.86); ctx.closePath(); ctx.moveTo(r*0.66,-r*0.7); ctx.lineTo(r*0.95,-r*1.12); ctx.lineTo(r*0.34,-r*0.86); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle='#e6c15a'; for(const s of [-1,1]){ ctx.beginPath(); ctx.moveTo(s*r*0.5,-r*0.78); ctx.quadraticCurveTo(s*r*0.9,-r*1.0,s*r*0.86,-r*0.62); ctx.quadraticCurveTo(s*r*0.72,-r*0.66,s*r*0.5,-r*0.78); ctx.closePath(); ctx.fill(); }
-    ctx.fillStyle=flash?'#333':'#2a2018'; ctx.beginPath(); ctx.ellipse(-r*0.3,-r*0.12,r*0.34,r*0.13,0.5,0,TAU); ctx.fill();
-    ctx.fillStyle=flash?'#fff':'#f7c9d4'; ctx.beginPath(); ctx.ellipse(0,r*0.5,r*0.5,r*0.34,0,0,TAU); ctx.fill(); ctx.strokeStyle='#e59ab0'; ctx.stroke();
-    ctx.fillStyle='#d98aa2'; ctx.beginPath(); ctx.arc(-r*0.18,r*0.5,r*0.06,0,TAU); ctx.arc(r*0.18,r*0.5,r*0.06,0,TAU); ctx.fill();
-    ctx.fillStyle=flash?'#fff':'#2a2018'; ctx.beginPath(); ctx.arc(-r*0.34,-r*0.12,r*0.1,0,TAU); ctx.arc(r*0.34,-r*0.12,r*0.1,0,TAU); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.37,-r*0.16,r*0.035,0,TAU); ctx.arc(r*0.31,-r*0.16,r*0.035,0,TAU); ctx.fill();
+  } else if(idx===3){ // 牛（全身・左向き）
+    const cw=flash?'#fff':'#f2ede6', BK=flash?'#444':'#2a2018';
+    ctx.fillStyle=cw; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2;
+    for(const lx of [-r*0.5,-r*0.14,r*0.26,r*0.58]){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(lx-r*0.09,r*0.32,r*0.18,r*0.62,r*0.06); else ctx.rect(lx-r*0.09,r*0.32,r*0.18,r*0.62); ctx.fill(); ctx.stroke(); } // 脚
+    ctx.fillStyle=BK; for(const lx of [-r*0.5,-r*0.14,r*0.26,r*0.58]){ ctx.beginPath(); ctx.rect(lx-r*0.09,r*0.84,r*0.18,r*0.12); ctx.fill(); } // ひづめ
+    ctx.strokeStyle=cw; ctx.lineWidth=r*0.09; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(r*0.92,-r*0.08); ctx.quadraticCurveTo(r*1.24,r*0.2,r*1.06,r*0.62); ctx.stroke(); // しっぽ
+    ctx.fillStyle=BK; ctx.beginPath(); ctx.arc(r*1.06,r*0.68,r*0.1,0,TAU); ctx.fill();
+    ctx.shadowColor='#d8d2c8'; ctx.shadowBlur=12; ctx.fillStyle=cw; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.ellipse(r*0.16,-r*0.04,r*0.9,r*0.56,0,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; // 胴
+    ctx.fillStyle=BK; ctx.beginPath(); ctx.ellipse(r*0.52,-r*0.14,r*0.3,r*0.24,0.3,0,TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(-r*0.02,r*0.16,r*0.22,r*0.15,-0.2,0,TAU); ctx.fill(); // 黒ぶち
+    ctx.fillStyle=flash?'#fff':'#f7c9d4'; ctx.beginPath(); ctx.ellipse(r*0.02,r*0.4,r*0.2,r*0.14,0,0,TAU); ctx.fill(); // 乳
+    ctx.fillStyle=cw; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(-r*0.86,-r*0.1,r*0.42,r*0.4,0,0,TAU); ctx.fill(); ctx.stroke(); // 頭
+    ctx.beginPath(); ctx.ellipse(-r*0.66,-r*0.48,r*0.16,r*0.1,0.6,0,TAU); ctx.fill(); ctx.stroke(); // 耳
+    ctx.fillStyle='#e6c15a'; ctx.strokeStyle='#c99a2a'; ctx.beginPath(); ctx.moveTo(-r*0.98,-r*0.42); ctx.quadraticCurveTo(-r*1.14,-r*0.74,-r*0.84,-r*0.72); ctx.quadraticCurveTo(-r*0.84,-r*0.5,-r*0.98,-r*0.42); ctx.closePath(); ctx.fill(); ctx.stroke(); // ツノ
+    ctx.fillStyle=BK; ctx.beginPath(); ctx.ellipse(-r*1.02,-r*0.22,r*0.16,r*0.2,0,0,TAU); ctx.fill(); // 目まわりの黒
+    ctx.fillStyle=flash?'#fff':'#f7c9d4'; ctx.strokeStyle='#e59ab0'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.ellipse(-r*1.18,r*0.1,r*0.24,r*0.2,0,0,TAU); ctx.fill(); ctx.stroke(); // マズル
+    ctx.fillStyle='#d98aa2'; ctx.beginPath(); ctx.ellipse(-r*1.26,r*0.08,r*0.04,r*0.06,0,0,TAU); ctx.ellipse(-r*1.12,r*0.12,r*0.04,r*0.06,0,0,TAU); ctx.fill(); // 鼻の穴
+    ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':'#2a2018'); ctx.shadowColor=lowHp?'#ff3b3b':'transparent'; ctx.shadowBlur=lowHp?10:0; ctx.beginPath(); ctx.arc(-r*0.98,-r*0.18,r*0.09,0,TAU); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*1.0,-r*0.22,r*0.03,0,TAU); ctx.fill(); ctx.lineCap='butt';
   } else if(idx===4){ // ルー
     ctx.fillStyle=flash?'#fff':'#7a4a24'; ctx.strokeStyle='#4f2f14'; ctx.lineWidth=2; ctx.shadowColor='#5a3418'; ctx.shadowBlur=14;
     const rw=r*0.95, rh=r*0.8; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-rw,-rh,rw*2,rh*2,r*0.18); else ctx.rect(-rw,-rh,rw*2,rh*2); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
@@ -1026,7 +1035,7 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     bossFace(0,-r*0.35,r*0.9,flash,lowHp);
   }
 }
-function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
+function defeatBoss(e){ boss=null; bossActive=false; bossPending=false; bossCooldown=2.6; // 次のボスまで間隔をあける（連続で出さない）
   for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff8a3c':'#ffd85e',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);
   spawnParticles(e.x,e.y,'#ffd85e',40,340,1.1); shake(22,.6); flash('#fff',.5);
   const idx=curryIdx(), ing=CURRY[idx]; curryGot=idx+1; // 材料ゲット→鍋へ
@@ -1040,7 +1049,7 @@ function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
 }
 
 // ================= DIRECTOR =================
-let stage=1, spawnTimer=0, distance=0, stageBanner=0, stageRemaining=0, bossPending=false, stagePool=[], stageTotal=0, katsuoDone=false;
+let stage=1, spawnTimer=0, distance=0, stageBanner=0, stageRemaining=0, bossPending=false, bossCooldown=0, stagePool=[], stageTotal=0, katsuoDone=false;
 // How strong the player currently is (0 when fresh, grows with power-ups).
 function playerPower(){ let p=player.speedLvl*0.4;
   p+=player.doubleLv*1.1; p+=player.laserMode*1.2;
@@ -1054,6 +1063,7 @@ function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanne
   spawnTimer=1.6; }        // grace period so a weak start isn't swarmed
 function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage);
   if(curryFx>0){ curryFx-=dt; if(curryFx<=0){ curryGot=0; startStage(1); } return; } // カレー完成演出中は待機→また1面から
+  if(bossCooldown>0){ bossCooldown-=dt; return; } // ボス撃破後はしばらく次のボスを出さない（連続防止）
   if(bossActive) return;
   const d=diffLevel();
   // 1ステージ1体だけカツオ登場（ステージ折り返しあたり）
@@ -1233,7 +1243,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0; catBomb=null;
-  boss=null; bossActive=false; bossPending=false; stageRemaining=0; curryGot=0; curryFx=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
+  boss=null; bossActive=false; bossPending=false; bossCooldown=0; stageRemaining=0; curryGot=0; curryFx=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
 function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='none';

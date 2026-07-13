@@ -539,7 +539,7 @@ function drawRunningCat(s){ // 跳ねる白猫のシルエット（参照画像�
   ctx.moveTo(1.57*s,-0.46*s); ctx.lineTo(1.78*s,-1.0*s); ctx.lineTo(1.96*s,-0.28*s); ctx.closePath();
   ctx.fill();
   ctx.lineCap='butt'; ctx.lineJoin='miter'; ctx.shadowBlur=0; }
-function dropMissile(x,y,vy0){ missiles.push({x,y,vx:150,vy:vy0||0,r:8,spd:360,life:3.2,launch:0.32}); Audio2.sfx.hit(); } // 発射直後は上下に散る（launch中はホーミングしない）
+function dropMissile(x,y,vy0){ missiles.push({x,y,vx:150,vy:vy0||0,r:13,spd:360,life:3.2,launch:0.32}); Audio2.sfx.hit(); } // 発射直後は上下に散る（launch中はホーミングしない）
 const blasts=[]; // 魚型バースト爆発（0.5秒 当たり判定）
 function spawnFishBlast(x,y){ blasts.push({x,y,life:0.5,r:52,dmgT:0}); Audio2.sfx.explode(); spawnParticles(x,y,'#ff8a3c',18,240,0.6); shake(6,.2); }
 function updateBlasts(dt){ for(let i=blasts.length-1;i>=0;i--){ const b=blasts[i]; b.life-=dt; b.dmgT-=dt;
@@ -791,12 +791,18 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
   // enemy body collision
   if(player.alive&&player.invuln<=0){ for(const e of enemies){ if(e.knocked)continue; const rr=e.r+player.r*0.7; if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(); break; } } }
 }
-function drawFishBone(r){ // なすミサイル（実が進行方向＝右、ヘタが後ろ＝左）
-  ctx.lineJoin='round'; ctx.shadowColor='#9a6cff'; ctx.shadowBlur=8;
-  ctx.fillStyle='#6a3fb0'; ctx.strokeStyle='#472680'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(r*1.7,0); ctx.quadraticCurveTo(r*0.7,-r*1.0,-r*0.7,-r*0.72); ctx.quadraticCurveTo(-r*1.15,0,-r*0.7,r*0.72); ctx.quadraticCurveTo(r*0.7,r*1.0,r*1.7,0); ctx.closePath(); ctx.fill(); ctx.stroke();
-  ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.28)'; ctx.beginPath(); ctx.ellipse(r*0.55,-r*0.4,r*0.6,r*0.18,-0.3,0,TAU); ctx.fill(); // つや
-  ctx.fillStyle='#4aa83a'; for(const a of [-0.55,-0.15,0.25]){ ctx.save(); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-r*0.55,0); ctx.lineTo(-r*1.55,-r*0.2); ctx.lineTo(-r*0.95,r*0.12); ctx.closePath(); ctx.fill(); ctx.restore(); } } // ヘタ
+function drawFishBone(r){ // なすミサイル（右がふくらんだ実、左に緑のヘタと茎）
+  ctx.lineJoin='round'; ctx.lineCap='round'; ctx.shadowColor='#9a6cff'; ctx.shadowBlur=10;
+  // 茎（左うしろ）
+  ctx.strokeStyle='#3a7d2c'; ctx.lineWidth=r*0.22; ctx.beginPath(); ctx.moveTo(-r*0.95,0); ctx.lineTo(-r*1.6,-r*0.5); ctx.stroke();
+  // 実（右がふくらむ卵型）
+  const g=ctx.createLinearGradient(0,-r,0,r); g.addColorStop(0,'#8a5cd0'); g.addColorStop(.5,'#6a3fb0'); g.addColorStop(1,'#4a2688');
+  ctx.fillStyle=g; ctx.strokeStyle='#3c1f70'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(-r*0.85,-r*0.32); ctx.quadraticCurveTo(r*0.35,-r*1.05,r*1.25,-r*0.55); ctx.quadraticCurveTo(r*1.8,0,r*1.25,r*0.55); ctx.quadraticCurveTo(r*0.35,r*1.05,-r*0.85,r*0.32); ctx.quadraticCurveTo(-r*1.12,0,-r*0.85,-r*0.32); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.32)'; ctx.beginPath(); ctx.ellipse(r*0.55,-r*0.5,r*0.6,r*0.2,-0.28,0,TAU); ctx.fill(); // つや
+  // ヘタ（左・緑の星びら）
+  ctx.fillStyle='#57b83f'; ctx.strokeStyle='#3a7d2c'; ctx.lineWidth=1;
+  for(const a of [-0.7,-0.28,0.14,0.56]){ ctx.save(); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-r*0.55,0); ctx.quadraticCurveTo(-r*1.35,-r*0.28,-r*1.5,-r*0.02); ctx.quadraticCurveTo(-r*1.25,r*0.12,-r*0.55,r*0.18); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); } ctx.lineCap='butt'; }
 function drawBeamTail(b, len, w, rgb, glow){ // 進行方向の後ろへ伸びる光る尾
   const bx=b.x-(b.dx||1)*len, by=b.y-(b.dy||0)*len;
   const g=ctx.createLinearGradient(bx,by,b.x,b.y); g.addColorStop(0,'rgba('+rgb+',0)'); g.addColorStop(1,'rgba('+rgb+',.85)');

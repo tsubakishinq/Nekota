@@ -98,7 +98,7 @@
 
   <div id="touch">
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
-    <div id="nekoBtn">🐈<small>こねこ</small></div>
+    <div id="nekoBtn">🌺<small>つばき</small></div>
     <div id="powBar">
       <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🍙1</small></div>
       <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🍙2</small></div>
@@ -117,7 +117,7 @@
       横スクロールシューティング！ すみたまで敵をやっつけろ！ 敵は右から来るぞ。<br>
       <b>🍙おにぎり</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
       必要な🍙数：スピード1・ミサイル2・ダブル3・レーザー4・なかま5・バリア6<br>
-      右下の<b>🍙ボタンを長押し</b>で1個消費→<b>🍉スイカ爆弾</b>！ 敵を吹き飛ばす！
+      右下の<b>🍙ボタンを長押し</b>で1個消費→<b>🦍酒ゴリラ</b>！ 敵を全部やっつける！
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="diffRow"><button class="diffBtn" id="diffBtn" type="button">むずかしさ：ふつう</button></div>
@@ -377,31 +377,39 @@ let catBomb=null;
 function knockEnemy(e,dmg){ if(e.t==='boss'){ hitEnemy(e,dmg,e.x,e.y); return; } // ボスはダメージのみ
   if(e.knocked) return; e.knocked=true; e.vx=rnd(820,1240); e.vy=rnd(-360,360); e.spin=0; // 通常敵は倒さず吹き飛ばす
   spawnParticles(e.x,e.y,e.color||'#ffd0a0',7,220,0.4); addScore(30); }
-function launchKittenBomb(){ Audio2.sfx.power(); showToast('🍉 スイカ爆弾！','#5effa0');
-  catBomb={phase:'roll', t:0, x:-90, y:H/2, r:52, spin:0, vx:740}; } // スイカが転がってきて中央で爆発
-function updateBomb(dt){ if(!catBomb)return; const b=catBomb; b.t+=dt; b.spin+=dt*(b.vx*0.02+2);
-  if(b.phase==='roll'){ b.x+=b.vx*dt;
-    if(Math.random()<0.5) spawnParticles(b.x-b.r,b.y+b.r*0.7,'#3b7d2b',1,90,0.3);
-    if(b.x>=W*0.5){ b.phase='boom'; b.t=0; Audio2.sfx.explode(); Audio2.sfx.big(); shake(22,0.5); flash('#ff5e6e',0.42);
-      spawnText(b.x,b.y-90,'ドカーン！','#ff5e6e',30);
-      spawnParticles(b.x,b.y,'#ff3b5e',44,640,0.85); spawnParticles(b.x,b.y,'#5effa0',22,520,0.7); spawnParticles(b.x,b.y,'#141414',18,460,0.95); // 果肉・皮・種
-      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; knockEnemy(e, e.t==='boss'?14:6); } } }
-  else if(b.phase==='boom'){ if(b.t>0.5) catBomb=null; } }
-function drawWatermelon(r){ // まるごとスイカ（緑の皮＋濃い縞＋ヘタ）
-  ctx.shadowColor='#2e7d32'; ctx.shadowBlur=14;
-  const g=ctx.createRadialGradient(-r*0.3,-r*0.3,r*0.2,0,0,r); g.addColorStop(0,'#5fbf4a'); g.addColorStop(1,'#2f8a2f');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill(); ctx.shadowBlur=0;
-  ctx.strokeStyle='#1f5e22'; ctx.lineWidth=r*0.13; ctx.lineCap='round';
-  for(const o of [-0.62,-0.21,0.21,0.62]){ ctx.beginPath(); ctx.moveTo(o*r*0.92,-r*0.97); ctx.quadraticCurveTo(o*r*1.7,0,o*r*0.92,r*0.97); ctx.stroke(); }
-  ctx.strokeStyle='#7a4a20'; ctx.lineWidth=r*0.1; ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*0.12,-r*1.28); ctx.stroke(); // ヘタ
-  ctx.fillStyle='rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(-r*0.4,-r*0.4,r*0.22,r*0.13,-0.6,0,TAU); ctx.fill(); } // ハイライト
+// ===== ボム：協賛「酒ゴリラ」参上→敵を全てなぎ倒す =====
+function launchKittenBomb(){ Audio2.sfx.big(); showToast('🦍 酒ゴリラ参上！','#ffd85e');
+  catBomb={phase:'rise', t:0, x:W*0.5, y:H+130, r:118}; }
+function updateBomb(dt){ if(!catBomb)return; const b=catBomb; b.t+=dt;
+  if(b.phase==='rise'){ b.y += ((H*0.58)-b.y)*Math.min(1,dt*6);
+    if(b.t>0.5){ b.phase='smash'; b.t=0; Audio2.sfx.explode(); Audio2.sfx.big(); shake(28,0.6); flash('#fff',0.5);
+      spawnText(W*0.5,H*0.2,'ウホーッ！！','#ffd85e',36);
+      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; // 敵を全て倒す（ボスは大ダメージ）
+        if(e.t==='boss'){ spawnParticles(e.x,e.y,'#ffd85e',22,320,0.8); hitEnemy(e, e.maxhp*0.45, e.x,e.y); }
+        else { spawnParticles(e.x,e.y,'#ffd85e',12,280,0.6); spawnParticles(e.x,e.y,'#fff',5,180,0.4); killEnemy(e); } } } }
+  else if(b.phase==='smash'){ b.y += ((H*0.62)-b.y)*Math.min(1,dt*4); if(b.t>1.2) catBomb=null; } }
+function drawGorilla(r){ const dk='#2c2c33', dk2='#3b3b44', fc='#6a574d';
+  ctx.lineJoin='round'; ctx.shadowColor='#000'; ctx.shadowBlur=20;
+  ctx.fillStyle=dk; ctx.beginPath(); ctx.moveTo(-r*0.92,-r*0.15); ctx.quadraticCurveTo(-r*1.12,r*0.95,-r*0.5,r*1.1); ctx.lineTo(r*0.5,r*1.1); ctx.quadraticCurveTo(r*1.12,r*0.95,r*0.92,-r*0.15); ctx.quadraticCurveTo(0,-r*0.5,-r*0.92,-r*0.15); ctx.closePath(); ctx.fill(); // 胴＋肩
+  ctx.fillStyle=dk2; ctx.beginPath(); ctx.ellipse(-r*0.78,r*0.4,r*0.27,r*0.56,0.32,0,TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(r*0.78,r*0.4,r*0.27,r*0.56,-0.32,0,TAU); ctx.fill(); // 腕
+  ctx.beginPath(); ctx.arc(-r*0.24,r*0.4,r*0.2,0,TAU); ctx.arc(r*0.24,r*0.4,r*0.2,0,TAU); ctx.fill(); // こぶし
+  ctx.fillStyle=dk; ctx.beginPath(); ctx.arc(0,-r*0.55,r*0.6,0,TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-r*0.56,-r*0.6,r*0.14,0,TAU); ctx.arc(r*0.56,-r*0.6,r*0.14,0,TAU); ctx.fill(); ctx.shadowBlur=0; // 頭＋耳
+  ctx.fillStyle=fc; ctx.beginPath(); ctx.ellipse(0,-r*0.44,r*0.4,r*0.46,0,0,TAU); ctx.fill(); // 顔
+  ctx.strokeStyle='#171719'; ctx.lineWidth=r*0.07; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*0.3,-r*0.64); ctx.lineTo(-r*0.05,-r*0.54); ctx.moveTo(r*0.3,-r*0.64); ctx.lineTo(r*0.05,-r*0.54); ctx.stroke(); // 怒り眉
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.16,-r*0.46,r*0.09,0,TAU); ctx.arc(r*0.16,-r*0.46,r*0.09,0,TAU); ctx.fill();
+  ctx.fillStyle='#171719'; ctx.beginPath(); ctx.arc(-r*0.15,-r*0.45,r*0.045,0,TAU); ctx.arc(r*0.17,-r*0.45,r*0.045,0,TAU); ctx.fill();
+  ctx.fillStyle='#4a3c34'; ctx.beginPath(); ctx.ellipse(0,-r*0.27,r*0.2,r*0.12,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#171719'; ctx.beginPath(); ctx.ellipse(-r*0.07,-r*0.27,r*0.03,r*0.05,0,0,TAU); ctx.ellipse(r*0.07,-r*0.27,r*0.03,r*0.05,0,0,TAU); ctx.fill();
+  ctx.strokeStyle='#171719'; ctx.lineWidth=r*0.05; ctx.beginPath(); ctx.arc(0,-r*0.18,r*0.15,0.08*Math.PI,0.92*Math.PI); ctx.stroke(); ctx.lineCap='butt';
+  // 一升瓶（酒ゴリラ）
+  ctx.save(); ctx.translate(r*0.95,r*0.1); ctx.rotate(-0.5); ctx.fillStyle='#2f6b3a'; ctx.strokeStyle='#1c4423'; ctx.lineWidth=1.5;
+  ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-r*0.12,-r*0.05,r*0.24,r*0.5,r*0.06); else ctx.rect(-r*0.12,-r*0.05,r*0.24,r*0.5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#2f6b3a'; ctx.fillRect(-r*0.05,-r*0.2,r*0.1,r*0.16); ctx.fillStyle='#e8e0c8'; ctx.fillRect(-r*0.1,r*0.08,r*0.2,r*0.16); ctx.restore(); }
 function drawBomb(){ if(!catBomb)return; const b=catBomb;
-  if(b.phase==='roll'){ ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.spin); drawWatermelon(b.r); ctx.restore(); }
-  else { const k=Math.min(1,b.t/0.5); ctx.save(); ctx.globalCompositeOperation='lighter'; // 爆風リング
-    ctx.strokeStyle='rgba(255,90,110,'+(1-k)+')'; ctx.lineWidth=16*(1-k)+2; ctx.shadowColor='#ff5e6e'; ctx.shadowBlur=22;
-    ctx.beginPath(); ctx.arc(b.x,b.y,40+k*280,0,TAU); ctx.stroke();
-    ctx.strokeStyle='rgba(94,255,160,'+(1-k)*0.8+')'; ctx.lineWidth=10*(1-k)+2; ctx.beginPath(); ctx.arc(b.x,b.y,18+k*210,0,TAU); ctx.stroke();
-    ctx.restore(); } }
+  if(b.phase==='smash'){ const k=Math.min(1,b.t/0.5); ctx.save(); ctx.globalCompositeOperation='lighter'; // 衝撃波
+    ctx.strokeStyle='rgba(255,216,94,'+(1-k)+')'; ctx.lineWidth=18*(1-k)+2; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=24;
+    ctx.beginPath(); ctx.arc(b.x,b.y-b.r*0.4,60+k*360,0,TAU); ctx.stroke(); ctx.restore(); }
+  ctx.save(); ctx.translate(b.x,b.y); if(b.phase==='smash'){ ctx.translate(0,Math.sin(b.t*30)*4); } drawGorilla(b.r); ctx.restore(); }
 function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
   // 白猫レーザーは4つに分裂→それぞれ別の敵へホーミング（あらゆる敵を狙う）
   const cand=enemies.filter(e=>e.x>fx-40).sort((a,b)=>dist2(fx,fy,a.x,a.y)-dist2(fx,fy,b.x,b.y));
@@ -563,7 +571,7 @@ function updateOptions(dt){
     o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootLaser(o.x,o.y,a); o.fcd=rnd(0.12,0.2); } // 敵へレーザー連射
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){
       o.claw=0.22; spawnParticles(o.x,o.y,'#fff',10,200,0.4); spawnParticles(e.x,e.y,'#ffd0ee',8,180,0.4);
-      if(hitEnemy(e,2,o.x,o.y)) spawnText(e.x,e.y-10,'ひっかき！','#fff',12); } }
+      if(hitEnemy(e,2,o.x,o.y)) spawnText(e.x,e.y-10,'アタック！','#ff8098',12); } }
   } return; }
   // 隊列モード：本機の後ろに一定間隔でチェーン追従（止まっても重ならず、動けば連なる）
   let lx=player.x, ly=player.y;
@@ -572,10 +580,10 @@ function updateOptions(dt){
     o.x+=(tx-o.x)*Math.min(1,dt*13); o.y+=(ty-o.y)*Math.min(1,dt*13);
     lx=o.x; ly=o.y; }
 }
-function toggleKittens(){ if(options.length===0){ showToast('子猫がいないニャ','#ffd0ee'); return; }
+function toggleKittens(){ if(options.length===0){ showToast('つばきがないよ','#ffd0ee'); return; }
   kittenMode=!kittenMode; nekoBtn.classList.toggle('on', kittenMode);
-  if(kittenMode){ Audio2.sfx.meow(); showToast('🐾 子猫レーザー乱舞！','#ffd0ee'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
-  else { showToast('子猫アタック OFF','#9fb4de'); } }
+  if(kittenMode){ Audio2.sfx.meow(); showToast('🌺 つばきビーム乱舞！','#ff6e88'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
+  else { showToast('つばき OFF','#9fb4de'); } }
 
 function damagePlayer(){
   if(!player.alive||player.invuln>0||player.redInvuln>0) return;
@@ -723,8 +731,8 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
   if(state!=='play'||!player.alive||powerStock<POWCOST[i]) return;
   const slot=POWERS[i];
   if(slot==='SPEED'){ if(player.speedLvl<3){ player.speedLvl++; spawnText(player.x,player.y-24,'SPEED '+player.speedLvl,'#57f6ff',15);} else { addScore(500); } }
-  else if(slot==='MISSILE'){ if(player.missileLvl<3){ player.missileLvl++; spawnText(player.x,player.y-24,'MISSILE x'+player.missileLvl,'#ff8a5e',15);} // 最大3発
-    else if(!player.missileBurst){ player.missileBurst=true; spawnText(player.x,player.y-24,'🐟 バースト！','#ff8a5e',16); }
+  else if(slot==='MISSILE'){ if(player.missileLvl<3){ player.missileLvl++; spawnText(player.x,player.y-24,'🍆 なす x'+player.missileLvl,'#a06cff',15);} // 最大3発同時
+    else if(!player.missileBurst){ player.missileBurst=true; spawnText(player.x,player.y-24,'🍆 バースト！','#a06cff',16); }
     else if(player.speedLvl<5){ player.speedLvl++; spawnText(player.x,player.y-24,'⚡ SPEED '+player.speedLvl,'#57f6ff',15); } // ミサイル最大後はスピードUP
     else { addScore(500); } }
   else if(slot==='DOUBLE'){ player.doubleLv=player.doubleLv>=2?1:player.doubleLv+1; spawnText(player.x,player.y-24,player.doubleLv>=2?'TRIPLE':'DOUBLE','#ffd85e',15); }
@@ -732,7 +740,7 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
     const nm=['','LASER','黄 x1.2','赤 x1.44','🐱 x1.73','🐯 x2.07'];
     const msg=(player.laserMode>=5 && (player.laserBoost||0)>0) ? '🐯 x'+laserMul().toFixed(1)+' 太' : nm[player.laserMode];
     spawnText(player.x,player.y-24,msg,LCOL[player.laserMode]||'#57f6ff',15); }
-  else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'OPTION x'+options.length,'#ffd0ee',15); }
+  else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'🌺 つばき x'+options.length,'#ff6e88',15); }
   else if(slot==='SHIELD'){ // each ring soaks 2 hits, stack up to 3 rings; 4th activation = red 3s invincibility
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
     else { player.shield=Math.min(6,(Math.ceil(player.shield/2)+1)*2); spawnText(player.x,player.y-24,'SHIELD x'+Math.ceil(player.shield/2),'#57f6ff',15); } }
@@ -783,14 +791,12 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
   // enemy body collision
   if(player.alive&&player.invuln<=0){ for(const e of enemies){ if(e.knocked)continue; const rr=e.r+player.r*0.7; if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(); break; } } }
 }
-function drawFishBone(r){ // 魚の骨ミサイル（頭が進行方向＝右）
-  ctx.strokeStyle='#ffe6c2'; ctx.fillStyle='#ffe6c2'; ctx.shadowColor='#ff9a3c'; ctx.shadowBlur=8; ctx.lineWidth=2; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(-r*1.4,0); ctx.lineTo(r*0.9,0); ctx.stroke(); // 背骨
-  for(let k=0;k<4;k++){ const bx=r*0.7-k*r*0.55; const rib=r*(0.7-k*0.12); // 肋骨
-    ctx.beginPath(); ctx.moveTo(bx,-rib); ctx.lineTo(bx,rib); ctx.stroke(); }
-  ctx.beginPath(); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,-r*0.7); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,r*0.7); ctx.stroke(); // 尾びれ
-  ctx.beginPath(); ctx.arc(r*1.05,0,r*0.5,0,TAU); ctx.stroke(); // 頭
-  ctx.beginPath(); ctx.arc(r*1.15,-r*0.12,r*0.12,0,TAU); ctx.fill(); ctx.lineCap='butt'; } // 目
+function drawFishBone(r){ // なすミサイル（実が進行方向＝右、ヘタが後ろ＝左）
+  ctx.lineJoin='round'; ctx.shadowColor='#9a6cff'; ctx.shadowBlur=8;
+  ctx.fillStyle='#6a3fb0'; ctx.strokeStyle='#472680'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(r*1.7,0); ctx.quadraticCurveTo(r*0.7,-r*1.0,-r*0.7,-r*0.72); ctx.quadraticCurveTo(-r*1.15,0,-r*0.7,r*0.72); ctx.quadraticCurveTo(r*0.7,r*1.0,r*1.7,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.28)'; ctx.beginPath(); ctx.ellipse(r*0.55,-r*0.4,r*0.6,r*0.18,-0.3,0,TAU); ctx.fill(); // つや
+  ctx.fillStyle='#4aa83a'; for(const a of [-0.55,-0.15,0.25]){ ctx.save(); ctx.rotate(a); ctx.beginPath(); ctx.moveTo(-r*0.55,0); ctx.lineTo(-r*1.55,-r*0.2); ctx.lineTo(-r*0.95,r*0.12); ctx.closePath(); ctx.fill(); ctx.restore(); } } // ヘタ
 function drawBeamTail(b, len, w, rgb, glow){ // 進行方向の後ろへ伸びる光る尾
   const bx=b.x-(b.dx||1)*len, by=b.y-(b.dy||0)*len;
   const g=ctx.createLinearGradient(bx,by,b.x,b.y); g.addColorStop(0,'rgba('+rgb+',0)'); g.addColorStop(1,'rgba('+rgb+',.85)');
@@ -907,7 +913,16 @@ function drawOptions(){ for(const o of options){ ctx.save(); ctx.translate(o.x,o
   if(kittenMode){ ctx.save(); ctx.rotate(performance.now()*0.02); ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; ctx.strokeStyle='rgba(255,142,203,.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,21,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
   if(o.claw>0){ ctx.save(); ctx.strokeStyle='rgba(255,255,255,'+(o.claw/0.16)+')'; ctx.shadowColor='#fff'; ctx.shadowBlur=8; ctx.lineWidth=2; // 引っ掻き傷エフェクト
     for(let s=-1;s<=1;s++){ ctx.beginPath(); ctx.moveTo(9+s*5,-17); ctx.lineTo(20+s*5,17); ctx.stroke(); } ctx.restore(); }
-  drawKitten(13, kittenMode); ctx.restore(); } }
+  drawCamellia(15, kittenMode); ctx.restore(); } }
+function drawCamellia(r, glow){ const gb=glow?16:10; // つばき（赤い花）
+  ctx.shadowBlur=0; ctx.fillStyle='#2f8a3a'; // 葉（後ろ）
+  for(const a of [Math.PI*0.78, Math.PI*0.22]){ ctx.save(); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,r*1.1,r*0.42,r*0.82,0,0,TAU); ctx.fill(); ctx.restore(); }
+  ctx.shadowColor='#ff5e7a'; ctx.shadowBlur=gb; ctx.fillStyle=glow?'#ff5470':'#e23a55'; // 外側の花びら5枚
+  for(let k=0;k<5;k++){ ctx.save(); ctx.rotate(k/5*TAU - Math.PI/2); ctx.beginPath(); ctx.ellipse(0,-r*0.62,r*0.5,r*0.64,0,0,TAU); ctx.fill(); ctx.restore(); }
+  ctx.fillStyle=glow?'#ff8098':'#f2536e'; // 内側の花びら
+  for(let k=0;k<5;k++){ ctx.save(); ctx.rotate(k/5*TAU - Math.PI/2 + 0.32); ctx.beginPath(); ctx.ellipse(0,-r*0.4,r*0.32,r*0.42,0,0,TAU); ctx.fill(); ctx.restore(); }
+  ctx.shadowBlur=0; ctx.fillStyle='#ffd94a'; ctx.beginPath(); ctx.arc(0,0,r*0.34,0,TAU); ctx.fill(); // 黄色いしべ
+  ctx.fillStyle='#f5b000'; for(let k=0;k<8;k++){ const a=k/8*TAU; ctx.beginPath(); ctx.arc(Math.cos(a)*r*0.2,Math.sin(a)*r*0.2,r*0.06,0,TAU); ctx.fill(); } }
 function drawKitten(r, glow){ const gb=glow?15:9;
   // ears (outer)
   ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=gb; ctx.fillStyle='#fff6fb';
@@ -1149,7 +1164,7 @@ const powCells=[...document.querySelectorAll('.powcell')];
 // per-slot "owned level" label shown on each cell
 function powOwnedLabel(i){
   if(i===0) return player.speedLvl>0?'Lv'+player.speedLvl:'';
-  if(i===1) return player.missileBurst?'×3🐟':(player.missileLvl>0?'×'+player.missileLvl:'');
+  if(i===1) return player.missileBurst?'×3🍆':(player.missileLvl>0?'×'+player.missileLvl:'');
   if(i===2) return player.doubleLv>=2?'TRIPLE':player.doubleLv===1?'DOUBLE':'';
   if(i===3) return ['','ON','黄','赤','🐱','🐯'][player.laserMode]||'';
   if(i===4) return options.length>0?'×'+options.length:'';

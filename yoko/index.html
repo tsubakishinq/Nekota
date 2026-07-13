@@ -24,6 +24,10 @@
     box-shadow:0 0 22px rgba(87,246,255,.6),0 5px 0 #1d7f88;}
   .btn:active{transform:translateY(3px); box-shadow:0 0 22px rgba(87,246,255,.6),0 2px 0 #1d7f88;}
   .btn.pink{background:linear-gradient(180deg,#ffb8e6,var(--neon2)); box-shadow:0 0 22px rgba(255,94,201,.6),0 5px 0 #8f2f6c;}
+  .diffRow{margin-top:12px;}
+  .diffBtn{font:inherit; font-weight:800; letter-spacing:1px; font-size:clamp(12px,3vw,15px); color:#cfe0ff;
+    background:rgba(9,12,34,.7); border:1.5px solid rgba(120,150,210,.6); border-radius:22px; padding:8px 20px; cursor:pointer;}
+  .diffBtn.easy{ color:#062; background:linear-gradient(180deg,#bff0c4,#5effa0); border-color:#5effa0; box-shadow:0 0 16px rgba(94,255,160,.5);}
   .panel{max-width:520px; background:rgba(9,12,34,.6); border:1px solid rgba(87,246,255,.22); border-radius:14px;
     padding:12px 18px; font-size:clamp(11px,3vw,14px); line-height:1.7; color:#bcd6ff;}
   .panel b{color:var(--neon);} .hs{color:var(--gold); font-weight:800; letter-spacing:1px;}
@@ -113,6 +117,7 @@
       必要な🐾数：スピード1・ミサイル2・ダブル3・レーザー4・子猫5・バリア6
     </div>
     <button class="btn" id="startBtn">▶ START</button>
+    <div class="diffRow"><button class="diffBtn" id="diffBtn" type="button">むずかしさ：ふつう</button></div>
     <div class="panel">
       <b>操作</b>　移動：左下の十字キー / <span>← →↑↓</span>（ショットは自動）<br>
       パワーアップ：🐾を集めて<b>下のパネルをタップ</b>で発動／ポーズ：P
@@ -281,26 +286,21 @@ function updatePlayer(dt){
   // auto fire
   player.fireCd-=dt;
   if(player.fireCd<=0){ fire(); }
+  // 猫/ライオンレーザー：目の前の顔が0.5秒チャージ→高速・高出力ビーム発射
+  if(player.laserMode>=4){ player.chargeT=(player.chargeT||0)+dt; if(player.chargeT>=0.5){ player.chargeT=0; fireChargeBeam(); } }
+  else player.chargeT=0;
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
 }
 let kittenMode=false; // 子猫アタック トグル (ON=敵に飛んで引っ掻く)
+let easyMode=false;   // イージー：敵弾が2/3の速さ
 const DIAG=-0.5; // diagonal-up angle for DOUBLE
 const LBASE=0.11; // レーザー基礎威力（従来の約5割）
 const LMUL=[0,1,1.2,1.5,1.8,2.5], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0','#ffcf6a']; // 段階:1基本/2黄/3赤/4猫/5ライオン
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
-  if(player.laserMode>=5){ player.fireCd=0.4; // ライオンレーザー：ライオンの顔が飛ぶ
-    shootLion(player.x+player.r, player.y, 0);
-    if(dl>=1) shootLion(player.x+player.r*0.7, player.y-8, DIAG);
-    if(dl>=2) shootLion(player.x+player.r*0.7, player.y+8, -DIAG);
-    Audio2.sfx.laser(); }
-  else if(player.laserMode>=4){ player.fireCd=0.32; // 猫レーザー：1発ずつが猫、ゆっくり飛ぶ
-    shootCat(player.x+player.r, player.y, 0);
-    if(dl>=1) shootCat(player.x+player.r*0.7, player.y-6, DIAG);
-    if(dl>=2) shootCat(player.x+player.r*0.7, player.y+6, -DIAG);
-    Audio2.sfx.laser(); }
+  if(player.laserMode>=4){ player.fireCd=0.12; /* 猫/ライオンは目の前の顔がチャージ→高出力ビーム（updatePlayerで処理）*/ }
   else if(player.laserMode>0){ player.fireCd=0.1;
     shootLaser(player.x+player.r, player.y, 0);
     if(dl>=1) shootLaser(player.x+player.r*0.7, player.y-4, DIAG);
@@ -311,8 +311,8 @@ function fire(){
     if(dl>=1) shootBullet(player.x+player.r*0.6, player.y-6, 520, -300);
     if(dl>=2) shootBullet(player.x+player.r*0.6, player.y+6, 520, 300);
     Audio2.sfx.shoot(); }
-  // options fire too (straight only, keeps the screen readable)
-  for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0); else { shootBullet(o.x+10,o.y,600,0); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300);} }
+  // options fire too (charge modes: options rest so the beam is the star)
+  for(const o of options){ if(kittenMode||player.laserMode>=4) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0); else { shootBullet(o.x+10,o.y,600,0); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300);} }
   // homing missiles: 最大3発。まず上下に散ってから、それぞれホーミング
   if(player.missileLvl>0){ player.missileCd=(player.missileCd||0)-1; if((player.missileCd||0)<=0){
     player.missileCd = player.missileLvl>=3?6 : player.missileLvl>=2?7 : 11;
@@ -324,9 +324,18 @@ function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math
 // 3段階目の猫レーザー：1発ずつが跳ねる猫のシルエット。ゆっくり飛ぶので猫だとわかる
 function shootCat(x,y,ang){ ang=ang||0; const sp=480,dx=Math.cos(ang),dy=Math.sin(ang);
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*1.8,color:'#fff',kind:'laser',pierce:true,len:34,thickV:5,hitThick:16,dx,dy,ang,cat:true}); }
-// 5段階目のライオンレーザー：1発ずつがライオンの顔のシルエット
+// 5段階目のライオンレーザー：1発ずつがライオンの顔のシルエット（旧・未使用）
 function shootLion(x,y,ang){ ang=ang||0; const sp=430,dx=Math.cos(ang),dy=Math.sin(ang);
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*2.5,color:'#ffcf6a',kind:'laser',pierce:true,len:18,thickV:5,hitThick:24,dx,dy,ang,lion:true}); }
+// 顔チャージ→高出力ビーム
+const CHARGE_OFF=30; // 顔が出る位置（機体の前）
+function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y, dl=player.doubleLv;
+  shootMega(fx,fy,0,lion);
+  if(dl>=1) shootMega(fx,fy-6,DIAG,lion);
+  if(dl>=2) shootMega(fx,fy+6,-DIAG,lion);
+  Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,lion?'#ffcf6a':'#dff0ff',16,300,0.5); shake(5,0.14); flash(lion?'#ffcf6a':'#bfe6ff',0.12); }
+function shootMega(x,y,ang,lion){ const sp=2000,dx=Math.cos(ang),dy=Math.sin(ang); // 高速・高出力ビーム
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*(lion?4:3),color:lion?'#ffcf6a':'#fff',kind:'laser',pierce:true,len:88,thickV:lion?10:7,hitThick:lion?20:15,dx,dy,ang,mega:true}); }
 function drawLionFace(s){ // ライオンの顔のシルエット（正面）
   ctx.fillStyle='#ffcf6a'; ctx.strokeStyle='#ffcf6a'; ctx.shadowColor='#ffd27a'; ctx.shadowBlur=13;
   // たてがみ（ギザギザの円）
@@ -616,7 +625,7 @@ function updateBullets(dt){
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=m.r+e.r; if(dist2(m.x,m.y,e.x,e.y)<rr*rr){ spawnParticles(m.x,m.y,'#ff8a3c',12,180,0.5); hitEnemy(e,2,m.x,m.y); if(player.missileBurst) spawnFishBlast(m.x,m.y); missiles.splice(i,1); break; } }
   }
 }
-function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt;
+function updateEBullets(dt){ const em=easyMode?0.66:1; for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt*em; b.y+=b.vy*dt*em; // イージーは敵弾2/3速
   if(b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){ eBullets.splice(i,1); damagePlayer(); } } }
   // enemy body collision
@@ -708,6 +717,14 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
       ctx.restore(); ctx.shadowBlur=0; }
   }
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r); ctx.globalAlpha=1;
+  // 猫/ライオンレーザー：目の前でチャージ中の顔
+  if(player.laserMode>=4){ const p=Math.min(1,(player.chargeT||0)/0.5); const lion=player.laserMode>=5;
+    const fx=player.x+player.r+CHARGE_OFF, fy=player.y; ctx.save(); ctx.translate(fx,fy);
+    const sc=0.55+0.6*p; ctx.scale(sc,sc); ctx.globalAlpha=0.55+0.45*p;
+    if(lion) drawLionFace(15); else drawKitten(13, true);
+    ctx.restore(); ctx.globalAlpha=1;
+    if(p>0.82){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=lion?'rgba(255,207,106,.5)':'rgba(220,240,255,.5)'; // 発射直前の光
+      ctx.beginPath(); ctx.arc(fx,fy,10+14*(p-0.82)/0.18,0,TAU); ctx.fill(); ctx.restore(); } }
 }
 function drawOptions(){ for(const o of options){ ctx.save(); ctx.translate(o.x,o.y);
   if(kittenMode){ ctx.save(); ctx.rotate(performance.now()*0.02); ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; ctx.strokeStyle='rgba(255,142,203,.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,21,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
@@ -945,6 +962,9 @@ function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='n
   overScreen.classList.remove('hidden'); showHigh(); }
 function togglePause(){ if(state==='play'){ state='pause'; pauseScreen.classList.remove('hidden'); Audio2.stopMusic(); } else if(state==='pause'){ state='play'; pauseScreen.classList.add('hidden'); Audio2.startMusic(); last=performance.now(); } }
 document.getElementById('startBtn').addEventListener('click',()=>{ Audio2.init();Audio2.resume(); Audio2.sfx.select(); startGame(); });
+const diffBtn=document.getElementById('diffBtn');
+diffBtn.addEventListener('click',()=>{ easyMode=!easyMode; Audio2.init();Audio2.resume();Audio2.sfx.select();
+  diffBtn.classList.toggle('easy',easyMode); diffBtn.textContent = easyMode?'むずかしさ：イージー（敵弾おそめ）':'むずかしさ：ふつう'; });
 document.getElementById('retryBtn').addEventListener('click',()=>{ Audio2.sfx.select(); startGame(); });
 document.getElementById('resumeBtn').addEventListener('click',togglePause);
 document.getElementById('quitBtn').addEventListener('click',()=>{ state='title'; pauseScreen.classList.add('hidden'); pauseBtn.style.display='none'; titleScreen.classList.remove('hidden'); Audio2.stopMusic(); showHigh(); });

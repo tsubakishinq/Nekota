@@ -100,14 +100,14 @@
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
     <div id="nekoBtn">🐈<small>こねこ</small></div>
     <div id="powBar">
-      <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🐾1</small></div>
-      <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🐾2</small></div>
-      <div class="powcell" data-i="2"><span class="lv"></span><b>ダブル</b><small>🐾3</small></div>
-      <div class="powcell" data-i="3"><span class="lv"></span><b>レーザー</b><small>🐾4</small></div>
-      <div class="powcell" data-i="4"><span class="lv"></span><b>オプション</b><small>🐾5</small></div>
-      <div class="powcell" data-i="5"><span class="lv"></span><b>シールド</b><small>🐾6</small></div>
+      <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🍙1</small></div>
+      <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🍙2</small></div>
+      <div class="powcell" data-i="2"><span class="lv"></span><b>ダブル</b><small>🍙3</small></div>
+      <div class="powcell" data-i="3"><span class="lv"></span><b>レーザー</b><small>🍙4</small></div>
+      <div class="powcell" data-i="4"><span class="lv"></span><b>オプション</b><small>🍙5</small></div>
+      <div class="powcell" data-i="5"><span class="lv"></span><b>シールド</b><small>🍙6</small></div>
     </div>
-    <div id="powBtn"><span>🐾</span><small id="powStock">×0</small></div>
+    <div id="powBtn"><span>🍙</span><small id="powStock">×0</small></div>
   </div>
 
   <div class="overlay" id="titleScreen">
@@ -115,15 +115,15 @@
     <div class="logo" style="font-size:clamp(24px,6.5vw,44px);margin-top:-6px">すみたまゲーム<small>オッケー子ども食堂</small></div>
     <div class="panel">
       横スクロールシューティング！ すみたまで敵をやっつけろ！ 敵は右から来るぞ。<br>
-      <b>🐾カプセル</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
-      必要な🐾数：スピード1・ミサイル2・ダブル3・レーザー4・なかま5・バリア6<br>
-      右下の<b>🐾ボタンを長押し</b>で1個消費→<b>🍉スイカ爆弾</b>！ 敵を吹き飛ばす！
+      <b>🍙おにぎり</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
+      必要な🍙数：スピード1・ミサイル2・ダブル3・レーザー4・なかま5・バリア6<br>
+      右下の<b>🍙ボタンを長押し</b>で1個消費→<b>🍉スイカ爆弾</b>！ 敵を吹き飛ばす！
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="diffRow"><button class="diffBtn" id="diffBtn" type="button">むずかしさ：ふつう</button></div>
     <div class="panel">
       <b>操作</b>　移動：左下の十字キー / <span>← →↑↓</span>（ショットは自動）<br>
-      パワーアップ：🐾を集めて<b>下のパネルをタップ</b>で発動／ポーズ：P
+      パワーアップ：🍙を集めて<b>下のパネルをタップ</b>で発動／ポーズ：P
     </div>
     <div class="rotate">📱 スマホは横向きがおすすめ</div>
     <div class="hs" id="titleHigh"></div>
@@ -677,7 +677,7 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.knocked) ctx.rot
       ctx.fillStyle=flash?'#fff':'#dfe9f5'; ctx.beginPath(); ctx.arc(-r*0.55,-r*0.12,r*0.16,0,TAU); ctx.fill(); // 目
       ctx.fillStyle='#122'; ctx.beginPath(); ctx.arc(-r*0.58,-r*0.12,r*0.08,0,TAU); ctx.fill(); break; }
   }
-  if(e.drop){ ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='900 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐾',0,1); }
+  if(e.drop){ ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.font='900 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🍙',0,1); }
   if(e.maxhp>=4 && e.hp<e.maxhp){ ctx.shadowBlur=0; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-e.r,-e.r-8,e.r*2,4); ctx.fillStyle='#5effa0'; ctx.fillRect(-e.r,-e.r-8,e.r*2*(e.hp/e.maxhp),4); }
   ctx.restore();
 }
@@ -698,7 +698,7 @@ function updatePowerups(dt){ for(let i=powerups.length-1;i>=0;i--){ const p=powe
   if(p.x<-40){ powerups.splice(i,1); continue; }
   if(player.alive && dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)*(p.r+player.r)){
     if(p.kind==='sashimi'){ if(lives<3) lives++; Audio2.sfx.up(); spawnParticles(p.x,p.y,'#ff9ecf',12,180,0.5); spawnText(player.x,player.y-26,'🍣 1UP！','#5effa0',16); }
-    else { powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🐾 +1','#ffd85e',14); refreshPowHint(); }
+    else { powerStock++; Audio2.sfx.coin(); spawnParticles(p.x,p.y,'#ffd85e',8,140,0.4); spawnText(player.x,player.y-26,'🍙 +1','#ffd85e',14); refreshPowHint(); }
     powerups.splice(i,1); } } }
 function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2; ctx.save(); ctx.translate(p.x,p.y+bob);
   if(p.kind==='sashimi'){ const s=p.r; // 刺身（白い皿＋ピンクの切り身）
@@ -708,13 +708,15 @@ function drawPowerups(){ for(const p of powerups){ const bob=Math.sin(p.seed)*2;
       ctx.fillStyle='#ff8fb5'; ctx.beginPath(); ctx.ellipse(0,0,s*0.42,s*0.26,0,0,TAU); ctx.fill(); // 切り身
       ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-s*0.3,-s*0.02); ctx.lineTo(s*0.3,s*0.05); ctx.stroke(); ctx.restore(); } // 脂のスジ
     ctx.restore(); continue; }
-  // 金色のグロー
-  ctx.shadowColor='#ffd85e'; ctx.shadowBlur=16; ctx.fillStyle='rgba(255,216,94,.18)'; ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill();
-  // ピンクの肉球マーク
-  ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=8; ctx.fillStyle='#ff9ecf'; const s=p.r*0.98;
-  ctx.beginPath(); ctx.ellipse(0,s*0.24,s*0.5,s*0.42,0,0,TAU); ctx.fill(); // 手のひらパッド
-  for(const [bx,by,br] of [[-s*0.47,-s*0.14,s*0.17],[-s*0.17,-s*0.42,s*0.18],[s*0.17,-s*0.42,s*0.18],[s*0.47,-s*0.14,s*0.17]]){
-    ctx.beginPath(); ctx.ellipse(bx,by,br,br*1.15,0,0,TAU); ctx.fill(); } // 指の肉球
+  // おにぎり（すみたま風・顔つき）
+  ctx.shadowColor='#ffe08a'; ctx.shadowBlur=16; ctx.fillStyle='rgba(255,224,138,.16)'; ctx.beginPath(); ctx.arc(0,0,p.r,0,TAU); ctx.fill(); // ふんわりグロー
+  const s=p.r; ctx.lineJoin='round';
+  ctx.shadowColor='#e7d9bd'; ctx.shadowBlur=8; ctx.fillStyle='#fbf3e0'; ctx.strokeStyle='#e7d9bd'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,-s*0.84); ctx.quadraticCurveTo(s*0.92,-s*0.5,s*0.82,s*0.52); ctx.quadraticCurveTo(0,s*0.8,-s*0.82,s*0.52); ctx.quadraticCurveTo(-s*0.92,-s*0.5,0,-s*0.84); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  ctx.fillStyle='#39414c'; ctx.beginPath(); ctx.moveTo(-s*0.6,s*0.18); ctx.lineTo(s*0.6,s*0.18); ctx.quadraticCurveTo(s*0.5,s*0.66,0,s*0.72); ctx.quadraticCurveTo(-s*0.5,s*0.66,-s*0.6,s*0.18); ctx.closePath(); ctx.fill(); // のり
+  ctx.fillStyle='#5a4636'; ctx.beginPath(); ctx.arc(-s*0.24,-s*0.14,s*0.07,0,TAU); ctx.arc(s*0.24,-s*0.14,s*0.07,0,TAU); ctx.fill(); // 目
+  ctx.strokeStyle='#5a4636'; ctx.lineWidth=2; ctx.lineCap='round'; ctx.beginPath(); ctx.arc(0,-s*0.1,s*0.12,0.15*Math.PI,0.85*Math.PI); ctx.stroke(); ctx.lineCap='butt'; // 口
+  ctx.fillStyle='rgba(255,150,150,.5)'; ctx.beginPath(); ctx.arc(-s*0.4,-s*0.02,s*0.09,0,TAU); ctx.arc(s*0.4,-s*0.02,s*0.09,0,TAU); ctx.fill(); // ほっぺ
   ctx.restore(); } }
 
 function usePower(i){ // 🐾ストックをコスト分消費して発動（足りなければ不可）
@@ -1170,7 +1172,7 @@ let powHoldT=null;
 function powHoldStart(e){ e.preventDefault(); Audio2.init();Audio2.resume(); if(state!=='play')return;
   powBtn.classList.add('charging'); if(powHoldT)clearTimeout(powHoldT);
   powHoldT=setTimeout(()=>{ powHoldT=null; powBtn.classList.remove('charging');
-    if(powerStock>=1){ powerStock--; refreshPowHint(); launchKittenBomb(); } else { showToast('🐾が足りないニャ','#ffd0ee'); } }, 500); }
+    if(powerStock>=1){ powerStock--; refreshPowHint(); launchKittenBomb(); } else { showToast('🍙が足りない！','#ffd0ee'); } }, 500); }
 function powHoldEnd(){ powBtn.classList.remove('charging'); if(powHoldT){ clearTimeout(powHoldT); powHoldT=null; } }
 powBtn.addEventListener('touchstart',powHoldStart,{passive:false});
 powBtn.addEventListener('touchend',powHoldEnd); powBtn.addEventListener('touchcancel',powHoldEnd);

@@ -295,11 +295,13 @@ function updatePlayer(dt){
     const bx=player.x+player.r+LION_OFF, by=player.y, now=performance.now();
     player.beamHist=player.beamHist||[]; player.beamHist.push({t:now,y:player.y}); // y履歴を記録
     while(player.beamHist.length>1 && now-player.beamHist[0].t>2000) player.beamHist.shift();
-    player.lionTick=(player.lionTick||0)-dt;
-    if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*laserMul()*1.7, thick=20*(1+(player.laserBoost||0)*0.22);
-      const TF=0.4, ostep=thick*(1+TF)+6; // 追加ビームは細く（威力は同じ）
+    player.lionTick=(player.lionTick||0)-dt; player.pawTick=(player.pawTick||0)-dt;
+    if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*laserMul()*1.7, thick=11*(1+(player.laserBoost||0)*0.22); // 細いビーム
+      const TF=0.4, ostep=thick*(1+TF)+6; // 追加ビームはさらに細く（威力は同じ）
       const beams=[[0,thick]]; if(player.doubleLv>=1) beams.push([-ostep,thick*TF]); if(player.doubleLv>=2) beams.push([ostep,thick*TF]);
-      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r){ const ly=beamYAt(e.x,now); for(const bm of beams){ if(Math.abs(e.y-(ly+bm[0]))<bm[1]+e.r){ hitEnemy(e,dmg,e.x,ly+bm[0]); spawnPaw(e.x,ly+bm[0]); break; } } } } }
+      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r){ const ly=beamYAt(e.x,now); for(const bm of beams){ if(Math.abs(e.y-(ly+bm[0]))<bm[1]+e.r){ hitEnemy(e,dmg,e.x,ly+bm[0]);
+        if(player.pawTick<=0){ player.pawTick=0.13; spawnPawBlast(e.x,ly+bm[0]); } else spawnPaw(e.x,ly+bm[0]); // 肉球の爆発（範囲ダメージ）
+        break; } } } } }
     player.homeTick=(player.homeTick||0)-dt; // 常に4発のホーミングレーザーが飛んでいる状態にする
     if(player.homeTick<=0){ player.homeTick=0.4; let alive=0; for(const b of bullets) if(b.home) alive++;
       const need=4-alive; if(need>0) fireTigerHomers(bx,by,need); } }
@@ -354,8 +356,13 @@ function beamYAt(x,now){ const bx=player.x+player.r+LION_OFF, hist=player.beamHi
   if(tt<=hist[0].t) return hist[0].y;
   for(let i=hist.length-1;i>0;i--){ const a=hist[i-1],b=hist[i]; if(a.t<=tt&&tt<=b.t){ const f=(tt-a.t)/((b.t-a.t)||1); return a.y+(b.y-a.y)*f; } }
   return player.y; }
-const pawFx=[]; // ライオンビームのヒット肉球エフェクト
+const pawFx=[]; // 虎ビームのヒット肉球エフェクト
 function spawnPaw(x,y){ pawFx.push({x,y,life:0.35,s:rnd(11,16),rot:rnd(-0.4,0.4)}); }
+function spawnPawBlast(x,y){ // 肉球の爆発：大きめエフェクト＋範囲ダメージ
+  pawFx.push({x,y,life:0.4,s:rnd(24,32),rot:rnd(-0.4,0.4)});
+  spawnParticles(x,y,'#ff9ecf',12,300,0.5); spawnParticles(x,y,'#fff',5,180,0.32); Audio2.sfx.hit();
+  const R=54, dmg=LBASE*laserMul()*1.3; // 爆発の当たり判定
+  for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(dist2(x,y,e.x,e.y)<(R+e.r)*(R+e.r)) hitEnemy(e,dmg,e.x,e.y); } }
 function updatePawFx(dt){ for(let i=pawFx.length-1;i>=0;i--){ if((pawFx[i].life-=dt)<=0) pawFx.splice(i,1); } }
 function drawPawFx(){ for(const p of pawFx){ const k=1-p.life/0.35, a=Math.max(0,p.life/0.35), s=p.s*(0.6+k*0.9);
   ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
@@ -889,8 +896,8 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r); ctx.globalAlpha=1;
   if(player.laserMode>=5){ // 虎：機体の動きに合わせて蛇行する太いビーム（虎到達後の強化で太くなる）
     const bx=player.x+player.r+LION_OFF, by=player.y, now=performance.now(), puls=0.85+0.15*Math.sin(now*0.02);
-    const tb=1+(player.laserBoost||0)*0.22, hw=20*tb, cw=5.5*tb; // 太さ倍率
-    const thick=20*tb, TF=0.4, ostep=thick*(1+TF)+6; // 追加ビームは細く
+    const tb=1+(player.laserBoost||0)*0.22, hw=11*tb, cw=3.2*tb; // 細いビーム
+    const thick=11*tb, TF=0.4, ostep=thick*(1+TF)+6; // 追加ビームはさらに細く
     const beams=[[0,1]]; if(player.doubleLv>=1) beams.push([-ostep,TF]); if(player.doubleLv>=2) beams.push([ostep,TF]);
     ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round'; ctx.lineJoin='round';
     const trace=(off)=>{ ctx.beginPath(); ctx.moveTo(bx,beamYAt(bx,now)+off); for(let x=bx+16;x<=W;x+=16) ctx.lineTo(x,beamYAt(x,now)+off); ctx.lineTo(W,beamYAt(W,now)+off); };
@@ -898,7 +905,7 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
       ctx.shadowColor='#ffab5a'; ctx.shadowBlur=24; ctx.strokeStyle='rgba(255,170,80,'+(0.8*puls)+')'; ctx.lineWidth=hw*2*w; trace(off); ctx.stroke(); // 外側グロー
       ctx.shadowBlur=10; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=cw*2*w; trace(off); ctx.stroke(); } // 明るい芯
     ctx.restore();
-    ctx.save(); ctx.translate(bx,by); drawLionFace(26); ctx.restore(); } // 大きい虎の顔
+    ctx.save(); ctx.translate(bx,by); ctx.shadowColor='#ffab5a'; ctx.shadowBlur=16; ctx.font='52px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🐯',0,2); ctx.restore(); } // 🐯マーク
   else if(player.laserMode>=4){ const p=Math.min(1,(player.chargeT||0)/0.5); // 猫：目の前でチャージ中の顔
     const fx=player.x+player.r+CHARGE_OFF, fy=player.y; ctx.save(); ctx.translate(fx,fy);
     const sc=0.55+0.6*p; ctx.scale(sc,sc); ctx.globalAlpha=0.55+0.45*p; drawKitten(13, true); ctx.restore(); ctx.globalAlpha=1;

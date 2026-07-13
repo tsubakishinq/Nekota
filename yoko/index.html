@@ -998,25 +998,33 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.bezierCurveTo(-r*0.9,-r*0.95,r*0.2,-r*1.02,r*0.7,-r*0.6); ctx.bezierCurveTo(r*1.15,-r*0.25,r*1.08,r*0.7,r*0.4,r*0.92); ctx.bezierCurveTo(-r*0.4,r*1.14,-r*1.1,r*0.6,-r,-r*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
     ctx.fillStyle='rgba(120,86,40,.5)'; for(const p of [[-0.5,-0.4],[0.45,-0.55],[0.6,0.4],[-0.2,0.55]]){ ctx.beginPath(); ctx.arc(p[0]*r,p[1]*r,r*0.06,0,TAU); ctx.fill(); }
     bossFace(0,0,r,flash,lowHp,'#5a3f1e');
-  } else if(idx===3){ // 牛（全身・左向き）
-    const cw=flash?'#fff':'#f2ede6', BK=flash?'#444':'#2a2018';
-    ctx.fillStyle=cw; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2;
-    for(const lx of [-r*0.5,-r*0.14,r*0.26,r*0.58]){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(lx-r*0.09,r*0.32,r*0.18,r*0.62,r*0.06); else ctx.rect(lx-r*0.09,r*0.32,r*0.18,r*0.62); ctx.fill(); ctx.stroke(); } // 脚
-    ctx.fillStyle=BK; for(const lx of [-r*0.5,-r*0.14,r*0.26,r*0.58]){ ctx.beginPath(); ctx.rect(lx-r*0.09,r*0.84,r*0.18,r*0.12); ctx.fill(); } // ひづめ
-    ctx.strokeStyle=cw; ctx.lineWidth=r*0.09; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(r*0.92,-r*0.08); ctx.quadraticCurveTo(r*1.24,r*0.2,r*1.06,r*0.62); ctx.stroke(); // しっぽ
-    ctx.fillStyle=BK; ctx.beginPath(); ctx.arc(r*1.06,r*0.68,r*0.1,0,TAU); ctx.fill();
-    ctx.shadowColor='#d8d2c8'; ctx.shadowBlur=12; ctx.fillStyle=cw; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.ellipse(r*0.16,-r*0.04,r*0.9,r*0.56,0,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0; // 胴
-    ctx.fillStyle=BK; ctx.beginPath(); ctx.ellipse(r*0.52,-r*0.14,r*0.3,r*0.24,0.3,0,TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(-r*0.02,r*0.16,r*0.22,r*0.15,-0.2,0,TAU); ctx.fill(); // 黒ぶち
-    ctx.fillStyle=flash?'#fff':'#f7c9d4'; ctx.beginPath(); ctx.ellipse(r*0.02,r*0.4,r*0.2,r*0.14,0,0,TAU); ctx.fill(); // 乳
-    ctx.fillStyle=cw; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(-r*0.86,-r*0.1,r*0.42,r*0.4,0,0,TAU); ctx.fill(); ctx.stroke(); // 頭
-    ctx.beginPath(); ctx.ellipse(-r*0.66,-r*0.48,r*0.16,r*0.1,0.6,0,TAU); ctx.fill(); ctx.stroke(); // 耳
-    ctx.fillStyle='#e6c15a'; ctx.strokeStyle='#c99a2a'; ctx.beginPath(); ctx.moveTo(-r*0.98,-r*0.42); ctx.quadraticCurveTo(-r*1.14,-r*0.74,-r*0.84,-r*0.72); ctx.quadraticCurveTo(-r*0.84,-r*0.5,-r*0.98,-r*0.42); ctx.closePath(); ctx.fill(); ctx.stroke(); // ツノ
-    ctx.fillStyle=BK; ctx.beginPath(); ctx.ellipse(-r*1.02,-r*0.22,r*0.16,r*0.2,0,0,TAU); ctx.fill(); // 目まわりの黒
-    ctx.fillStyle=flash?'#fff':'#f7c9d4'; ctx.strokeStyle='#e59ab0'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.ellipse(-r*1.18,r*0.1,r*0.24,r*0.2,0,0,TAU); ctx.fill(); ctx.stroke(); // マズル
-    ctx.fillStyle='#d98aa2'; ctx.beginPath(); ctx.ellipse(-r*1.26,r*0.08,r*0.04,r*0.06,0,0,TAU); ctx.ellipse(-r*1.12,r*0.12,r*0.04,r*0.06,0,0,TAU); ctx.fill(); // 鼻の穴
-    ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':'#2a2018'); ctx.shadowColor=lowHp?'#ff3b3b':'transparent'; ctx.shadowBlur=lowHp?10:0; ctx.beginPath(); ctx.arc(-r*0.98,-r*0.18,r*0.09,0,TAU); ctx.fill(); ctx.shadowBlur=0;
-    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*1.0,-r*0.22,r*0.03,0,TAU); ctx.fill(); ctx.lineCap='butt';
+  } else if(idx===3){ // 近江牛（イラスト準拠：グレー＋茶色い輪郭＋「近江」の札）
+    const gy=flash?'#fff':'#b4b1ac', OL=flash?'#c9a06a':'#9c6b3a', tan='#d9a76a';
+    ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle=OL; ctx.lineWidth=r*0.085;
+    ctx.shadowColor='#00000030'; ctx.shadowBlur=8;
+    // 体（右うしろの丸い胴）
+    ctx.fillStyle=gy; ctx.beginPath(); ctx.ellipse(r*0.52,r*0.16,r*0.62,r*0.56,0,0,TAU); ctx.fill(); ctx.stroke();
+    // 前脚2本
+    for(const lx of [r*0.35,r*0.74]){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(lx-r*0.12,r*0.5,r*0.24,r*0.42,r*0.1); else ctx.rect(lx-r*0.12,r*0.5,r*0.24,r*0.42); ctx.fill(); ctx.stroke(); }
+    ctx.shadowBlur=0;
+    // 頭（左・大きめの丸四角）
+    ctx.fillStyle=gy; ctx.beginPath(); ctx.ellipse(-r*0.5,-r*0.05,r*0.62,r*0.64,0,0,TAU); ctx.fill(); ctx.stroke();
+    // 耳（2つ・グレー＋タンの内側）
+    ctx.fillStyle=gy; ctx.beginPath(); ctx.ellipse(-r*0.92,-r*0.62,r*0.17,r*0.28,-0.5,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-r*0.16,-r*0.66,r*0.17,r*0.28,0.5,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=tan; ctx.beginPath(); ctx.ellipse(-r*0.9,-r*0.6,r*0.08,r*0.16,-0.5,0,TAU); ctx.ellipse(-r*0.18,-r*0.64,r*0.08,r*0.16,0.5,0,TAU); ctx.fill();
+    // マズル（下の明るいグレー）
+    ctx.fillStyle=flash?'#fff':'#cbc8c2'; ctx.beginPath(); ctx.ellipse(-r*0.5,r*0.34,r*0.4,r*0.28,0,0,TAU); ctx.fill(); ctx.stroke();
+    // 目（茶色い丸・弱点で赤）
+    ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':'#6e4622'); ctx.shadowColor=lowHp?'#ff3b3b':'transparent'; ctx.shadowBlur=lowHp?10:0;
+    ctx.beginPath(); ctx.arc(-r*0.72,-r*0.08,r*0.1,0,TAU); ctx.arc(-r*0.28,-r*0.11,r*0.1,0,TAU); ctx.fill(); ctx.shadowBlur=0;
+    // 「近江」の札（オレンジ・体の右背に掛かる）
+    ctx.save(); ctx.translate(r*0.82,-r*0.12); ctx.rotate(0.16);
+    ctx.fillStyle='#ffd58a'; ctx.strokeStyle='#e0a94e'; ctx.lineWidth=r*0.03;
+    ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-r*0.3,-r*0.36,r*0.6,r*0.72,r*0.08); else ctx.rect(-r*0.3,-r*0.36,r*0.6,r*0.72); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#f0842a'; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-r*0.23,-r*0.29,r*0.46,r*0.58,r*0.05); else ctx.rect(-r*0.23,-r*0.29,r*0.46,r*0.58); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='900 '+Math.round(r*0.3)+'px "Trebuchet MS",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('近',0,-r*0.14); ctx.fillText('江',0,r*0.15); ctx.restore(); ctx.lineCap='butt';
   } else if(idx===4){ // ルー
     ctx.fillStyle=flash?'#fff':'#7a4a24'; ctx.strokeStyle='#4f2f14'; ctx.lineWidth=2; ctx.shadowColor='#5a3418'; ctx.shadowBlur=14;
     const rw=r*0.95, rh=r*0.8; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-rw,-rh,rw*2,rh*2,r*0.18); else ctx.rect(-rw,-rh,rw*2,rh*2); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;

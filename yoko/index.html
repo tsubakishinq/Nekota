@@ -48,12 +48,13 @@
   #dnub{position:absolute; left:50%; top:50%; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%,#8be9ff,#2b7bd6); box-shadow:0 0 16px rgba(87,246,255,.5);}
   /* 🐾 stock counter (was the POWER button) */
-  #powBtn{pointer-events:none; position:absolute; right:16px; bottom:22px; width:78px; height:78px; border-radius:50%;
+  #powBtn{pointer-events:auto; position:absolute; right:16px; bottom:22px; width:78px; height:78px; border-radius:50%;
     background:radial-gradient(circle at 40% 35%,#ffe7a0,var(--gold) 70%); box-shadow:0 0 22px rgba(255,216,94,.55), inset 0 0 16px rgba(255,255,255,.35);
     display:flex; flex-direction:column; align-items:center; justify-content:center; color:#3a2c00; font-weight:900; font-size:26px;
     border:2px solid rgba(255,255,255,.4); line-height:1;}
   #powBtn small{font-size:15px; font-weight:900; margin-top:2px;}
   #powBtn.has{ animation: powPulse .7s ease-in-out infinite; }
+  #powBtn.charging{ transform:scale(.9); box-shadow:0 0 34px 8px rgba(255,142,203,.95), inset 0 0 18px rgba(255,255,255,.6); border-color:#ff8ecb; }
   @keyframes powPulse{ 0%,100%{ box-shadow:0 0 22px rgba(255,216,94,.55), inset 0 0 16px rgba(255,255,255,.35); }
     50%{ box-shadow:0 0 40px 8px rgba(255,216,94,.95), inset 0 0 18px rgba(255,255,255,.55); } }
   /* tappable power-up bar (above the control row so it never overlaps the D-pad/buttons) */
@@ -114,7 +115,8 @@
     <div class="panel">
       横スクロール猫シューティング！ 敵は右から来るぞ。<br>
       <b>🐾カプセル</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
-      必要な🐾数：スピード1・ミサイル2・ダブル3・レーザー4・子猫5・バリア6
+      必要な🐾数：スピード1・ミサイル2・ダブル3・レーザー4・子猫5・バリア6<br>
+      右下の<b>🐾ボタンを長押し</b>で1個消費→<b>子猫の大軍ボム</b>！
     </div>
     <button class="btn" id="startBtn">▶ START</button>
     <div class="diffRow"><button class="diffBtn" id="diffBtn" type="button">むずかしさ：ふつう</button></div>
@@ -345,6 +347,20 @@ function drawPawFx(){ for(const p of pawFx){ const k=1-p.life/0.35, a=Math.max(0
   ctx.beginPath(); ctx.ellipse(0,s*0.22,s*0.5,s*0.42,0,0,TAU); ctx.fill(); // 手のひら
   for(const [bx,by,br] of [[-s*0.47,-s*0.14,s*0.17],[-s*0.17,-s*0.42,s*0.18],[s*0.17,-s*0.42,s*0.18],[s*0.47,-s*0.14,s*0.17]]){ ctx.beginPath(); ctx.ellipse(bx,by,br,br*1.15,0,0,TAU); ctx.fill(); } // 指
   ctx.restore(); } ctx.globalAlpha=1; }
+// ===== 子猫の大軍ボム（🐾ストック長押しで発動）=====
+const army=[]; // 画面を左から右へ押し寄せる子猫の大群。触れた敵にダメージ
+function launchKittenBomb(){ Audio2.sfx.meow(); Audio2.sfx.power(); shake(9,0.45); flash('#ffd0ee',0.22);
+  showToast('🐾 子猫だいぐん！','#ffd0ee'); spawnText(player.x,player.y-28,'ニャニャニャ！','#ff9ecf',16);
+  const N=28;
+  for(let k=0;k<N;k++){ army.push({ x:rnd(-160,-10)-(k%7)*30, y:rnd(18,H-18), vx:rnd(560,820), vy:rnd(-30,30),
+    r:rnd(12,19), spin:Math.random()*TAU, spv:rnd(-7,7), wob:Math.random()*TAU, life:2.6, dmgCd:0 }); } }
+function updateArmy(dt){ for(let i=army.length-1;i>=0;i--){ const a=army[i]; a.life-=dt; a.wob+=dt*8;
+    a.x+=a.vx*dt; a.y+=a.vy*dt+Math.sin(a.wob)*0.8; a.spin+=a.spv*dt; a.dmgCd-=dt;
+    if(Math.random()<0.35) spawnParticles(a.x,a.y,Math.random()<.5?'#ff9ecf':'#fff',1,70,0.25);
+    if(a.dmgCd<=0){ a.dmgCd=0.08; for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=a.r+e.r;
+      if(dist2(a.x,a.y,e.x,e.y)<rr*rr){ hitEnemy(e,2.4,a.x,a.y); } } }
+    if(a.x>W+50||a.life<=0){ army.splice(i,1); } } }
+function drawArmy(){ for(const a of army){ ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(Math.sin(a.spin)*0.35); drawKitten(a.r,true); ctx.restore(); } }
 function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y, dl=player.doubleLv;
   shootMega(fx,fy,0,lion);
   if(dl>=1) shootMega(fx,fy-6,DIAG,lion);
@@ -705,7 +721,7 @@ function updateBullets(dt){
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=m.r+e.r; if(dist2(m.x,m.y,e.x,e.y)<rr*rr){ spawnParticles(m.x,m.y,'#ff8a3c',12,180,0.5); hitEnemy(e,2,m.x,m.y); if(player.missileBurst) spawnFishBlast(m.x,m.y); missiles.splice(i,1); break; } }
   }
 }
-function updateEBullets(dt){ const em=easyMode?0.66:1; for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt*em; b.y+=b.vy*dt*em; // イージーは敵弾2/3速
+function updateEBullets(dt){ const em=easyMode?0.33:1; for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt*em; b.y+=b.vy*dt*em; // イージーは敵弾1/3速
   if(b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){ eBullets.splice(i,1); damagePlayer(); } } }
   // enemy body collision
@@ -1032,6 +1048,16 @@ powCells.forEach(c=>{ const use=e=>{ e.preventDefault(); Audio2.init();Audio2.re
 const nekoBtn=document.getElementById('nekoBtn');
 nekoBtn.addEventListener('touchstart',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); if(state==='play') toggleKittens(); },{passive:false});
 nekoBtn.addEventListener('mousedown',e=>{ e.preventDefault(); Audio2.init();Audio2.resume(); if(state==='play') toggleKittens(); });
+// 🐾ストック長押し：1個消費して子猫の大軍ボム発動
+let powHoldT=null;
+function powHoldStart(e){ e.preventDefault(); Audio2.init();Audio2.resume(); if(state!=='play')return;
+  powBtn.classList.add('charging'); if(powHoldT)clearTimeout(powHoldT);
+  powHoldT=setTimeout(()=>{ powHoldT=null; powBtn.classList.remove('charging');
+    if(powerStock>=1){ powerStock--; refreshPowHint(); launchKittenBomb(); } else { showToast('🐾が足りないニャ','#ffd0ee'); } }, 500); }
+function powHoldEnd(){ powBtn.classList.remove('charging'); if(powHoldT){ clearTimeout(powHoldT); powHoldT=null; } }
+powBtn.addEventListener('touchstart',powHoldStart,{passive:false});
+powBtn.addEventListener('touchend',powHoldEnd); powBtn.addEventListener('touchcancel',powHoldEnd);
+powBtn.addEventListener('mousedown',powHoldStart); powBtn.addEventListener('mouseup',powHoldEnd); powBtn.addEventListener('mouseleave',powHoldEnd);
 
 // ================= STATE =================
 let state='title', last=performance.now();
@@ -1039,7 +1065,7 @@ const titleScreen=document.getElementById('titleScreen'), overScreen=document.ge
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0; army.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
@@ -1068,7 +1094,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   if(state==='play'){
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
-    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updatePawFx(dt);
+    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updatePawFx(dt); updateArmy(dt);
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
   if(flashA>0) flashA=Math.max(0,flashA-dt*2);
@@ -1078,7 +1104,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   ctx.fillStyle='#05060f'; ctx.fillRect(0,0,W,H);
   let ox=0,oy=0; if(shakeMag>0){ ox=rnd(-shakeMag,shakeMag); oy=rnd(-shakeMag,shakeMag); ctx.translate(ox,oy); }
   drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets(); drawBlasts(); drawCatRunners();
-  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawPawFx(); drawTexts();
+  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawPawFx(); drawArmy(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();
   if(flashA>0){ ctx.fillStyle=flashColor; ctx.globalAlpha=flashA*0.5; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }

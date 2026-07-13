@@ -297,7 +297,7 @@ function updatePlayer(dt){
     while(player.beamHist.length>1 && now-player.beamHist[0].t>2000) player.beamHist.shift();
     player.lionTick=(player.lionTick||0)-dt; player.pawTick=(player.pawTick||0)-dt;
     if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*laserMul()*1.7, thick=11*(1+(player.laserBoost||0)*0.22); // 細いビーム
-      const TF=0.4, ostep=thick*(1+TF)+6; // 追加ビームはさらに細く（威力は同じ）
+      const TF=0.4, ostep=thick*(1+TF)+28; // 追加ビームはさらに細く＆上下に間隔をあける（威力は同じ）
       const beams=[[0,thick]]; if(player.doubleLv>=1) beams.push([-ostep,thick*TF]); if(player.doubleLv>=2) beams.push([ostep,thick*TF]);
       for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r){ const ly=beamYAt(e.x,now); for(const bm of beams){ if(Math.abs(e.y-(ly+bm[0]))<bm[1]+e.r){ hitEnemy(e,dmg,e.x,ly+bm[0]);
         if(player.pawTick<=0){ player.pawTick=0.13; spawnPawBlast(e.x,ly+bm[0]); } else spawnPaw(e.x,ly+bm[0]); // 肉球の爆発（範囲ダメージ）
@@ -897,7 +897,7 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
   if(player.laserMode>=5){ // 虎：機体の動きに合わせて蛇行する太いビーム（虎到達後の強化で太くなる）
     const bx=player.x+player.r+LION_OFF, by=player.y, now=performance.now(), puls=0.85+0.15*Math.sin(now*0.02);
     const tb=1+(player.laserBoost||0)*0.22, hw=11*tb, cw=3.2*tb; // 細いビーム
-    const thick=11*tb, TF=0.4, ostep=thick*(1+TF)+6; // 追加ビームはさらに細く
+    const thick=11*tb, TF=0.4, ostep=thick*(1+TF)+28; // 追加ビームはさらに細く＆上下に間隔をあける
     const beams=[[0,1]]; if(player.doubleLv>=1) beams.push([-ostep,TF]); if(player.doubleLv>=2) beams.push([ostep,TF]);
     ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.lineCap='round'; ctx.lineJoin='round';
     const trace=(off)=>{ ctx.beginPath(); ctx.moveTo(bx,beamYAt(bx,now)+off); for(let x=bx+16;x<=W;x+=16) ctx.lineTo(x,beamYAt(x,now)+off); ctx.lineTo(W,beamYAt(W,now)+off); };

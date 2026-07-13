@@ -630,11 +630,20 @@ function drawFishBone(r){ // 魚の骨ミサイル（頭が進行方向＝右）
   ctx.beginPath(); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,-r*0.7); ctx.moveTo(-r*1.4,0); ctx.lineTo(-r*1.9,r*0.7); ctx.stroke(); // 尾びれ
   ctx.beginPath(); ctx.arc(r*1.05,0,r*0.5,0,TAU); ctx.stroke(); // 頭
   ctx.beginPath(); ctx.arc(r*1.15,-r*0.12,r*0.12,0,TAU); ctx.fill(); ctx.lineCap='butt'; } // 目
+function drawBeamTail(b, len, w, rgb, glow){ // 進行方向の後ろへ伸びる光る尾
+  const bx=b.x-(b.dx||1)*len, by=b.y-(b.dy||0)*len;
+  const g=ctx.createLinearGradient(bx,by,b.x,b.y); g.addColorStop(0,'rgba('+rgb+',0)'); g.addColorStop(1,'rgba('+rgb+',.85)');
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.strokeStyle=g; ctx.lineWidth=w; ctx.lineCap='round'; ctx.shadowColor=glow; ctx.shadowBlur=14;
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(b.x,b.y); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=Math.max(2,w*0.3); ctx.shadowBlur=6; // 明るい芯
+  ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(b.x,b.y); ctx.stroke(); ctx.restore(); }
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
   for(const b of bullets){
-    if(b.lion){ // ライオンレーザー弾＝ライオンの顔のシルエット
+    if(b.lion){ // ライオンレーザー弾＝顔のシルエット＋光る尾
+      drawBeamTail(b, 90, 13, '255,207,106', '#ffd27a');
       ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); drawLionFace(16); ctx.restore(); continue; }
-    if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット
+    if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット＋光る尾
+      drawBeamTail(b, 80, 9, '255,255,255', '#cfe0ff');
       ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); drawRunningCat(15); ctx.restore(); continue; }
     ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
     if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }

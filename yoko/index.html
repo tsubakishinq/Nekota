@@ -289,10 +289,12 @@ function updatePlayer(dt){
   // 猫/ライオンレーザー：目の前の顔が0.5秒チャージ→高速・高出力ビーム発射
   if(player.laserMode===4){ player.chargeT=(player.chargeT||0)+dt; if(player.chargeT>=0.5){ player.chargeT=0; fireChargeBeam(); } }
   else player.chargeT=0;
-  if(player.laserMode>=5){ // ライオン：まっすぐ一本の連続ビーム。当たった敵に肉球エフェクト
+  if(player.laserMode>=5){ // 虎：太いまっすぐ一本の連続ビーム。当たった敵から分散ホーミングレーザー
     const bx=player.x+player.r+LION_OFF, by=player.y; player.lionTick=(player.lionTick||0)-dt;
-    if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*3.5, thick=14;
-      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r && Math.abs(e.y-by)<thick+e.r){ hitEnemy(e,dmg,e.x,by); spawnPaw(e.x,by); } } } }
+    player.homeTick=(player.homeTick||0)-dt;
+    if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*3.5, thick=20;
+      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r && Math.abs(e.y-by)<thick+e.r){ hitEnemy(e,dmg,e.x,by); spawnPaw(e.x,by);
+        if(player.homeTick<=0){ player.homeTick=0.14; spawnTigerHomers(e.x,by,3); } } } } }
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -349,6 +351,10 @@ function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+pla
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,lion?'#ffcf6a':'#dff0ff',16,300,0.5); shake(5,0.14); flash(lion?'#ffcf6a':'#bfe6ff',0.12); }
 function shootMega(x,y,ang,lion){ const sp=2000,dx=Math.cos(ang),dy=Math.sin(ang); // 高速・高出力ビーム
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*(lion?4:3),color:lion?'#ffcf6a':'#fff',kind:'laser',pierce:true,len:88,thickV:lion?10:7,hitThick:lion?20:15,dx,dy,ang,mega:true}); }
+function spawnTigerHomers(x,y,n){ const spd=760; // 虎ビーム命中点から分散→ホーミングするレーザー
+  for(let k=0;k<n;k++){ const a=rnd(-Math.PI,Math.PI), dx=Math.cos(a), dy=Math.sin(a);
+    bullets.push({x,y,vx:dx*spd,vy:dy*spd,r:4,dmg:LBASE*1.8,color:'#ffb54a',kind:'laser',pierce:false,home:true,spd,life:1.5,launch:0.13,dx,dy,len:14,thickV:4,hitThick:8,ang:a}); }
+  spawnParticles(x,y,'#ffce7a',5,220,0.32); }
 function drawLionFace(s){ // かっこいい虎（トラ）の顔・正面。つり目＋怒り眉＋牙でワイルドに
   ctx.lineCap='round'; ctx.lineJoin='round';
   const OR='#ff9f3f', ORD='#e87322', DK='#1c0f07', WH='#fff2df';
@@ -663,9 +669,19 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
 
 // ================= BULLETS / COLLISIONS =================
 function updateBullets(dt){
-  for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt;
+  for(let i=bullets.length-1;i>=0;i--){ const b=bullets[i];
+    if(b.home){ b.life-=dt; // 分散→ホーミング
+      if(b.launch>0){ b.launch-=dt; } // 分散フェーズは直進で散る
+      else { let tgt=null,bd=1e9; for(const e of enemies){ if(e.x<b.x-60) continue; const d=dist2(b.x,b.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
+        if(tgt){ const want=Math.atan2(tgt.y-b.y,tgt.x-b.x), cur=Math.atan2(b.vy,b.vx);
+          let da=want-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
+          const na=cur+Math.max(-9*dt,Math.min(9*dt,da)); b.vx=Math.cos(na)*b.spd; b.vy=Math.sin(na)*b.spd; } }
+      b.dx=b.vx/b.spd; b.dy=b.vy/b.spd; b.ang=Math.atan2(b.vy,b.vx);
+      if(b.life<=0){ bullets.splice(i,1); continue; } }
+    b.x+=b.vx*dt; b.y+=b.vy*dt;
     if(b.kind==='ring'){ b.r+=b.grow*dt; if(b.r>b.maxR) b.r=b.maxR; // grow to screen edge, then keep drifting
       if(b.x-b.r*b.hRatio>W+30){ bullets.splice(i,1); continue; } }
+    else if(b.home){ if(b.x<-40||b.x>W+40||b.y<-40||b.y>H+40){ bullets.splice(i,1); continue; } } // ホーミングは画面外で消す
     else if(b.x>W+30||b.x<-30||b.y<-30||b.y>H+30){ bullets.splice(i,1); continue; }
     let hit=false;
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; let overlap;
@@ -717,6 +733,9 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット＋光る尾
       drawBeamTail(b, 80, 9, '255,255,255', '#cfe0ff');
       ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); drawRunningCat(15); ctx.restore(); continue; }
+    if(b.home){ // 虎ホーミングレーザー＝オレンジの光る尾＋明るい芯
+      drawBeamTail(b, 30, 6.5, '255,181,74', '#ffcf7a');
+      ctx.shadowColor='#ffcf7a'; ctx.shadowBlur=10; ctx.fillStyle='#fff3d8'; ctx.beginPath(); ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); ctx.fill(); continue; }
     ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
     if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
@@ -782,10 +801,10 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r); ctx.globalAlpha=1;
   if(player.laserMode>=5){ // 虎：大きい顔＋まっすぐ一本の連続ビーム
     const bx=player.x+player.r+LION_OFF, by=player.y, puls=0.85+0.15*Math.sin(performance.now()*0.02);
-    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='#ffab5a'; ctx.shadowBlur=18;
-    const g=ctx.createLinearGradient(0,by-16,0,by+16); g.addColorStop(0,'rgba(255,154,60,0)'); g.addColorStop(.5,'rgba(255,170,80,'+(0.85*puls)+')'); g.addColorStop(1,'rgba(255,154,60,0)');
-    ctx.fillStyle=g; ctx.fillRect(bx,by-13,W-bx,26);
-    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillRect(bx,by-3.5,W-bx,7); // 明るい芯
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='#ffab5a'; ctx.shadowBlur=24;
+    const g=ctx.createLinearGradient(0,by-24,0,by+24); g.addColorStop(0,'rgba(255,154,60,0)'); g.addColorStop(.5,'rgba(255,170,80,'+(0.85*puls)+')'); g.addColorStop(1,'rgba(255,154,60,0)');
+    ctx.fillStyle=g; ctx.fillRect(bx,by-20,W-bx,40);
+    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillRect(bx,by-5.5,W-bx,11); // 明るい芯
     ctx.restore();
     ctx.save(); ctx.translate(bx,by); drawLionFace(26); ctx.restore(); } // 大きいライオンの顔
   else if(player.laserMode>=4){ const p=Math.min(1,(player.chargeT||0)/0.5); // 猫：目の前でチャージ中の顔

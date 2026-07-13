@@ -571,7 +571,8 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.t==='boss'){ dra
   if(e.maxhp>=4 && e.hp<e.maxhp){ ctx.shadowBlur=0; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-e.r,-e.r-8,e.r*2,4); ctx.fillStyle='#5effa0'; ctx.fillRect(-e.r,-e.r-8,e.r*2*(e.hp/e.maxhp),4); }
   ctx.restore();
 }
-function hitEnemy(e,dmg,x,y){ if(e.t==='boss'&&e.dmgReduce){ dmg*=(1-e.dmgReduce); e.shieldFlash=1; spawnParticles(x,y,'#cfe0ff',2,120,0.2); } // 装備でダメージ軽減
+function hitEnemy(e,dmg,x,y){ if(easyMode) dmg*=3; // イージー：自機の威力3倍
+  if(e.t==='boss'&&e.dmgReduce){ dmg*=(1-e.dmgReduce); e.shieldFlash=1; spawnParticles(x,y,'#cfe0ff',2,120,0.2); } // 装備でダメージ軽減
   e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
@@ -993,7 +994,7 @@ function togglePause(){ if(state==='play'){ state='pause'; pauseScreen.classList
 document.getElementById('startBtn').addEventListener('click',()=>{ Audio2.init();Audio2.resume(); Audio2.sfx.select(); startGame(); });
 const diffBtn=document.getElementById('diffBtn');
 diffBtn.addEventListener('click',()=>{ easyMode=!easyMode; Audio2.init();Audio2.resume();Audio2.sfx.select();
-  diffBtn.classList.toggle('easy',easyMode); diffBtn.textContent = easyMode?'むずかしさ：イージー（敵弾おそめ）':'むずかしさ：ふつう'; });
+  diffBtn.classList.toggle('easy',easyMode); diffBtn.textContent = easyMode?'むずかしさ：イージー（敵弾おそめ・威力3倍）':'むずかしさ：ふつう'; });
 document.getElementById('retryBtn').addEventListener('click',()=>{ Audio2.sfx.select(); startGame(); });
 document.getElementById('resumeBtn').addEventListener('click',togglePause);
 document.getElementById('quitBtn').addEventListener('click',()=>{ state='title'; pauseScreen.classList.add('hidden'); pauseBtn.style.display='none'; titleScreen.classList.remove('hidden'); Audio2.stopMusic(); showHigh(); });

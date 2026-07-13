@@ -288,10 +288,15 @@ function updatePlayer(dt){
 let kittenMode=false; // 子猫アタック トグル (ON=敵に飛んで引っ掻く)
 const DIAG=-0.5; // diagonal-up angle for DOUBLE
 const LBASE=0.11; // レーザー基礎威力（従来の約5割）
-const LMUL=[0,1,1.2,1.5,1.8], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0']; // 段階:1基本/2黄/3赤/4猫
+const LMUL=[0,1,1.2,1.5,1.8,2.5], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0','#ffcf6a']; // 段階:1基本/2黄/3赤/4猫/5ライオン
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
-  if(player.laserMode>=4){ player.fireCd=0.32; // 猫レーザー：1発ずつが猫、ゆっくり飛ぶ
+  if(player.laserMode>=5){ player.fireCd=0.4; // ライオンレーザー：ライオンの顔が飛ぶ
+    shootLion(player.x+player.r, player.y, 0);
+    if(dl>=1) shootLion(player.x+player.r*0.7, player.y-8, DIAG);
+    if(dl>=2) shootLion(player.x+player.r*0.7, player.y+8, -DIAG);
+    Audio2.sfx.laser(); }
+  else if(player.laserMode>=4){ player.fireCd=0.32; // 猫レーザー：1発ずつが猫、ゆっくり飛ぶ
     shootCat(player.x+player.r, player.y, 0);
     if(dl>=1) shootCat(player.x+player.r*0.7, player.y-6, DIAG);
     if(dl>=2) shootCat(player.x+player.r*0.7, player.y+6, -DIAG);
@@ -319,6 +324,29 @@ function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math
 // 3段階目の猫レーザー：1発ずつが跳ねる猫のシルエット。ゆっくり飛ぶので猫だとわかる
 function shootCat(x,y,ang){ ang=ang||0; const sp=480,dx=Math.cos(ang),dy=Math.sin(ang);
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*1.8,color:'#fff',kind:'laser',pierce:true,len:34,thickV:5,hitThick:16,dx,dy,ang,cat:true}); }
+// 5段階目のライオンレーザー：1発ずつがライオンの顔のシルエット
+function shootLion(x,y,ang){ ang=ang||0; const sp=430,dx=Math.cos(ang),dy=Math.sin(ang);
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*2.5,color:'#ffcf6a',kind:'laser',pierce:true,len:18,thickV:5,hitThick:24,dx,dy,ang,lion:true}); }
+function drawLionFace(s){ // ライオンの顔のシルエット（正面）
+  ctx.fillStyle='#ffcf6a'; ctx.strokeStyle='#ffcf6a'; ctx.shadowColor='#ffd27a'; ctx.shadowBlur=13;
+  // たてがみ（ギザギザの円）
+  const spikes=13; ctx.beginPath();
+  for(let i=0;i<=spikes*2;i++){ const a=i/(spikes*2)*TAU-Math.PI/2; const rr=(i%2===0)?s*1.55:s*1.05;
+    const px=Math.cos(a)*rr, py=Math.sin(a)*rr; i===0?ctx.moveTo(px,py):ctx.lineTo(px,py); }
+  ctx.closePath(); ctx.fill();
+  // 顔（内側・明るめ）
+  ctx.shadowBlur=6; ctx.fillStyle='#ffe6ac'; ctx.beginPath(); ctx.arc(0,0,s*0.98,0,TAU); ctx.fill();
+  // 耳
+  ctx.beginPath(); ctx.arc(-s*0.62,-s*0.78,s*0.26,0,TAU); ctx.arc(s*0.62,-s*0.78,s*0.26,0,TAU); ctx.fill();
+  ctx.shadowBlur=0;
+  // 目
+  ctx.fillStyle='#5a3a08'; ctx.beginPath(); ctx.arc(-s*0.34,-s*0.12,s*0.12,0,TAU); ctx.arc(s*0.34,-s*0.12,s*0.12,0,TAU); ctx.fill();
+  // 鼻＋口
+  ctx.fillStyle='#8a4e0c'; ctx.beginPath(); ctx.moveTo(-s*0.17,s*0.16); ctx.lineTo(s*0.17,s*0.16); ctx.lineTo(0,s*0.38); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#8a4e0c'; ctx.lineWidth=s*0.08; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,s*0.38); ctx.lineTo(0,s*0.52);
+  ctx.moveTo(0,s*0.52); ctx.quadraticCurveTo(-s*0.22,s*0.6,-s*0.34,s*0.42);
+  ctx.moveTo(0,s*0.52); ctx.quadraticCurveTo(s*0.22,s*0.6,s*0.34,s*0.42); ctx.stroke(); ctx.lineCap='butt'; }
 // （旧）猫が走るランナー（未使用）
 const catRunners=[]; let catLaserT=0;
 function spawnCatRunner(){ const y=player.y, x0=player.x+player.r;
@@ -552,8 +580,8 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
   else if(slot==='MISSILE'){ if(player.missileLvl<3){ player.missileLvl++; spawnText(player.x,player.y-24,'MISSILE x'+player.missileLvl,'#ff8a5e',15);} // 最大3発
     else if(!player.missileBurst){ player.missileBurst=true; spawnText(player.x,player.y-24,'🐟 バースト！','#ff8a5e',16); } else { addScore(500); } }
   else if(slot==='DOUBLE'){ player.doubleLv=player.doubleLv>=2?1:player.doubleLv+1; spawnText(player.x,player.y-24,player.doubleLv>=2?'TRIPLE':'DOUBLE','#ffd85e',15); }
-  else if(slot==='LASER'){ if(player.laserMode<4){ player.laserMode++; } else { addScore(500); } // 基本→黄→赤→猫
-    const nm=['','LASER','黄 x1.2','赤 x1.5','🐱 x1.8']; spawnText(player.x,player.y-24,nm[player.laserMode],LCOL[player.laserMode]||'#57f6ff',15); }
+  else if(slot==='LASER'){ if(player.laserMode<5){ player.laserMode++; } else { addScore(500); } // 基本→黄→赤→猫→ライオン
+    const nm=['','LASER','黄 x1.2','赤 x1.5','🐱 x1.8','🦁 x2.5']; spawnText(player.x,player.y-24,nm[player.laserMode],LCOL[player.laserMode]||'#57f6ff',15); }
   else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'OPTION x'+options.length,'#ffd0ee',15); }
   else if(slot==='SHIELD'){ // each ring soaks 2 hits, stack up to 3 rings; 4th activation = red 3s invincibility
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
@@ -604,6 +632,8 @@ function drawFishBone(r){ // 魚の骨ミサイル（頭が進行方向＝右）
   ctx.beginPath(); ctx.arc(r*1.15,-r*0.12,r*0.12,0,TAU); ctx.fill(); ctx.lineCap='butt'; } // 目
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
   for(const b of bullets){
+    if(b.lion){ // ライオンレーザー弾＝ライオンの顔のシルエット
+      ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); drawLionFace(16); ctx.restore(); continue; }
     if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット
       ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); drawRunningCat(15); ctx.restore(); continue; }
     ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
@@ -872,7 +902,7 @@ function powOwnedLabel(i){
   if(i===0) return player.speedLvl>0?'Lv'+player.speedLvl:'';
   if(i===1) return player.missileBurst?'×3🐟':(player.missileLvl>0?'×'+player.missileLvl:'');
   if(i===2) return player.doubleLv>=2?'TRIPLE':player.doubleLv===1?'DOUBLE':'';
-  if(i===3) return ['','ON','黄','赤','🐱'][player.laserMode]||'';
+  if(i===3) return ['','ON','黄','赤','🐱','🦁'][player.laserMode]||'';
   if(i===4) return options.length>0?'×'+options.length:'';
   if(i===5) return player.shield>0?'×'+Math.ceil(player.shield/2):(player.redInvuln>0?'MAX':'');
   return '';

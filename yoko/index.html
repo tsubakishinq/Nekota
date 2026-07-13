@@ -559,7 +559,7 @@ function drawBlasts(){ for(const b of blasts){ const k=1-b.life/0.5; const R=b.r
 
 // options (子猫)
 const OPT_GAP=44; // 子猫どうし／本機との間隔（重ならない）
-function addOption(){ const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0, wa:Math.random()*TAU, wanderT:0}); return true; } // 無限に増える
+function addOption(){ const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0, wa:Math.random()*TAU, wanderT:0, fcd:0}); return true; } // 無限に増える
 function updateOptions(dt){
   if(kittenMode){ for(const o of options){ // あちこち飛び回って引っ掻く
     if(o.claw>0) o.claw-=dt;
@@ -572,6 +572,7 @@ function updateOptions(dt){
     if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
     if(o.y<14){o.y=14;o.wa=-o.wa;} if(o.y>H-14){o.y=H-14;o.wa=-o.wa;}
     if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
+    o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootLaser(o.x,o.y,a); o.fcd=rnd(0.12,0.2); } // 敵へレーザー連射
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){
       o.claw=0.22; spawnParticles(o.x,o.y,'#fff',10,200,0.4); spawnParticles(e.x,e.y,'#ffd0ee',8,180,0.4);
       if(hitEnemy(e,2,o.x,o.y)) spawnText(e.x,e.y-10,'ひっかき！','#fff',12); } }
@@ -585,7 +586,7 @@ function updateOptions(dt){
 }
 function toggleKittens(){ if(options.length===0){ showToast('子猫がいないニャ','#ffd0ee'); return; }
   kittenMode=!kittenMode; nekoBtn.classList.toggle('on', kittenMode);
-  if(kittenMode){ Audio2.sfx.meow(); showToast('🐾 子猫アタック ON','#ffd0ee'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
+  if(kittenMode){ Audio2.sfx.meow(); showToast('🐾 子猫レーザー乱舞！','#ffd0ee'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
   else { showToast('子猫アタック OFF','#9fb4de'); } }
 
 function damagePlayer(){

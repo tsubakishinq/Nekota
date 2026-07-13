@@ -417,10 +417,8 @@ function drawPunchCat(s, punch){ // 全身のおすわり猫（右向き）が�
 function drawBomb(){ if(!catBomb)return; const b=catBomb;
   ctx.save(); ctx.translate(b.catX,b.y); drawPunchCat(30, b.phase==='punch'); ctx.restore();
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.spin); drawBall(b.r); ctx.restore(); }
-function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y, dl=player.doubleLv;
-  shootMega(fx,fy,0,lion);
-  if(dl>=1) shootMega(fx,fy-6,DIAG,lion);
-  if(dl>=2) shootMega(fx,fy+6,-DIAG,lion);
+function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
+  for(const a of [-0.34,-0.11,0.11,0.34]) shootMega(fx,fy,a,lion); // 白猫レーザーは4つに分裂して前方へ広がる
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,lion?'#ffcf6a':'#dff0ff',16,300,0.5); shake(5,0.14); flash(lion?'#ffcf6a':'#bfe6ff',0.12); }
 function shootMega(x,y,ang,lion){ const sp=2000,dx=Math.cos(ang),dy=Math.sin(ang); // 高速・高出力ビーム
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul()*(lion?1.7:1.74),color:lion?'#ffcf6a':'#fff',kind:'laser',pierce:true,len:88,thickV:lion?10:7,hitThick:lion?20:15,dx,dy,ang,mega:true}); }

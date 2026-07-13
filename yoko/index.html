@@ -281,8 +281,6 @@ function updatePlayer(dt){
   // auto fire
   player.fireCd-=dt;
   if(player.fireCd<=0){ fire(); }
-  // 猫レーザー（3段階目）：2秒に1回 猫が走る
-  if(player.laserMode>=4){ catLaserT-=dt; if(catLaserT<=0){ catLaserT=1.6; spawnCatRunner(); } } else catLaserT=0;
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -293,7 +291,12 @@ const LBASE=0.11; // レーザー基礎威力（従来の約5割）
 const LMUL=[0,1,1.2,1.5,1.8], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0']; // 段階:1基本/2黄/3赤/4猫
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
-  if(player.laserMode>0){ player.fireCd=0.1;
+  if(player.laserMode>=4){ player.fireCd=0.32; // 猫レーザー：1発ずつが猫、ゆっくり飛ぶ
+    shootCat(player.x+player.r, player.y, 0);
+    if(dl>=1) shootCat(player.x+player.r*0.7, player.y-6, DIAG);
+    if(dl>=2) shootCat(player.x+player.r*0.7, player.y+6, -DIAG);
+    Audio2.sfx.laser(); }
+  else if(player.laserMode>0){ player.fireCd=0.1;
     shootLaser(player.x+player.r, player.y, 0);
     if(dl>=1) shootLaser(player.x+player.r*0.7, player.y-4, DIAG);
     if(dl>=2) shootLaser(player.x+player.r*0.7, player.y+4, -DIAG);
@@ -305,15 +308,18 @@ function fire(){
     Audio2.sfx.shoot(); }
   // options fire too (straight only, keeps the screen readable)
   for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0); else { shootBullet(o.x+10,o.y,600,0); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300);} }
-  // homing missiles: 最大3発（ヒット時はバースト強化なら爆発）
+  // homing missiles: 最大3発。まず上下に散ってから、それぞれホーミング
   if(player.missileLvl>0){ player.missileCd=(player.missileCd||0)-1; if((player.missileCd||0)<=0){
     player.missileCd = player.missileLvl>=3?6 : player.missileLvl>=2?7 : 11;
-    const n=player.missileLvl; for(let k=0;k<n;k++){ const off=(k-(n-1)/2)*13; dropMissile(player.x+6, player.y+off, off*3.5); } } }
+    const n=player.missileLvl; for(let k=0;k<n;k++){ const spread=n===1?0:(k-(n-1)/2)/((n-1)/2); dropMissile(player.x+6, player.y, spread*260); } } }
 }
 function shootBullet(x,y,vx,vy){ bullets.push({x,y,vx,vy,r:5,dmg:1,color:'#ffd85e',kind:'bullet'}); }
 function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang); const m=player.laserMode||1;
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*LMUL[m],color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:m>=4?2.4:5,hitThick:11,dx,dy,ang}); } // 猫レーザーは連続ビームを細く（猫を主役に）
-// 3段階目の猫レーザー：2秒に1回、猫が走って後ろに当たり判定のある線を残す
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*LMUL[m],color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang}); }
+// 3段階目の猫レーザー：1発ずつが跳ねる猫のシルエット。ゆっくり飛ぶので猫だとわかる
+function shootCat(x,y,ang){ ang=ang||0; const sp=480,dx=Math.cos(ang),dy=Math.sin(ang);
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*1.8,color:'#fff',kind:'laser',pierce:true,len:34,thickV:5,hitThick:16,dx,dy,ang,cat:true}); }
+// （旧）猫が走るランナー（未使用）
 const catRunners=[]; let catLaserT=0;
 function spawnCatRunner(){ const y=player.y, x0=player.x+player.r;
   catRunners.push({y, x0, hx:x0, vx:1500, phase:'run', life:0.8, dmgT:0}); Audio2.sfx.laser(); }
@@ -359,7 +365,7 @@ function drawRunningCat(s){ // 跳ねる白猫のシルエット（参照画像�
   ctx.moveTo(1.57*s,-0.46*s); ctx.lineTo(1.78*s,-1.0*s); ctx.lineTo(1.96*s,-0.28*s); ctx.closePath();
   ctx.fill();
   ctx.lineCap='butt'; ctx.lineJoin='miter'; ctx.shadowBlur=0; }
-function dropMissile(x,y,vy0){ missiles.push({x,y,vx:300,vy:vy0||0,r:8,spd:340,life:3.2}); Audio2.sfx.hit(); }
+function dropMissile(x,y,vy0){ missiles.push({x,y,vx:150,vy:vy0||0,r:8,spd:360,life:3.2,launch:0.32}); Audio2.sfx.hit(); } // 発射直後は上下に散る（launch中はホーミングしない）
 const blasts=[]; // 魚型バースト爆発（0.5秒 当たり判定）
 function spawnFishBlast(x,y){ blasts.push({x,y,life:0.5,r:52,dmgT:0}); Audio2.sfx.explode(); spawnParticles(x,y,'#ff8a3c',18,240,0.6); shake(6,.2); }
 function updateBlasts(dt){ for(let i=blasts.length-1;i>=0;i--){ const b=blasts[i]; b.life-=dt; b.dmgT-=dt;
@@ -569,12 +575,13 @@ function updateBullets(dt){
       if(overlap){ hitEnemy(e,b.dmg,b.x,b.y); if(!b.pierce){ bullets.splice(i,1); hit=true; break; } } }
     if(hit) continue;
   }
-  // homing missiles: steer toward the nearest enemy
+  // homing missiles: 発射直後は上下に散り(launch)、その後それぞれホーミング
   for(let i=missiles.length-1;i>=0;i--){ const m=missiles[i]; m.life-=dt;
-    let tgt=null,bd=1e9; for(const e of enemies){ if(e.x<m.x-30) continue; const d=dist2(m.x,m.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
-    if(tgt){ const want=Math.atan2(tgt.y-m.y,tgt.x-m.x); const cur=Math.atan2(m.vy,m.vx);
-      let da=want-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
-      const turn=Math.max(-7*dt,Math.min(7*dt,da)); const na=cur+turn; m.vx=Math.cos(na)*m.spd; m.vy=Math.sin(na)*m.spd; }
+    if(m.launch>0){ m.launch-=dt; if(m.launch<=0){ const sp=Math.hypot(m.vx,m.vy)||1; m.vx=m.vx/sp*m.spd; m.vy=m.vy/sp*m.spd; } } // launch中は直進
+    else { let tgt=null,bd=1e9; for(const e of enemies){ if(e.x<m.x-30) continue; const d=dist2(m.x,m.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
+      if(tgt){ const want=Math.atan2(tgt.y-m.y,tgt.x-m.x); const cur=Math.atan2(m.vy,m.vx);
+        let da=want-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
+        const turn=Math.max(-7*dt,Math.min(7*dt,da)); const na=cur+turn; m.vx=Math.cos(na)*m.spd; m.vy=Math.sin(na)*m.spd; } }
     m.x+=m.vx*dt; m.y+=m.vy*dt; m.ang=Math.atan2(m.vy,m.vx);
     if(Math.random()<0.7) spawnParticles(m.x-Math.cos(m.ang)*6,m.y-Math.sin(m.ang)*6,'#ff8a3c',1,50,0.2);
     if(m.x>W+30||m.x<-30||m.y<-30||m.y>H+30||m.life<=0){ missiles.splice(i,1); continue; }
@@ -596,8 +603,10 @@ function drawFishBone(r){ // 魚の骨ミサイル（頭が進行方向＝右）
   ctx.beginPath(); ctx.arc(r*1.05,0,r*0.5,0,TAU); ctx.stroke(); // 頭
   ctx.beginPath(); ctx.arc(r*1.15,-r*0.12,r*0.12,0,TAU); ctx.fill(); ctx.lineCap='butt'; } // 目
 function drawBullets(){ ctx.globalCompositeOperation='lighter';
-  for(const b of bullets){ ctx.shadowColor=b.color; ctx.shadowBlur=8;
-    ctx.beginPath();
+  for(const b of bullets){
+    if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット
+      ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); drawRunningCat(15); ctx.restore(); continue; }
+    ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
     if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
   for(const m of missiles){ ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.ang||0); drawFishBone(m.r); ctx.restore(); }
@@ -751,6 +760,11 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r; const lowHp=e.hp/e.maxhp<
     ctx.fillStyle=sf?'#ffd85e':'#c7d2e6'; ctx.beginPath(); ctx.arc(-r*0.92,r*0.22,r*0.16,0,TAU); ctx.fill(); // 中央エンブレム
     ctx.strokeStyle='#697390'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.moveTo(-r*0.92,r*0.22-r*0.32); ctx.lineTo(-r*0.92,r*0.22+r*0.32); ctx.moveTo(-r*0.92-r*0.24,r*0.22); ctx.lineTo(-r*0.92+r*0.24,r*0.22); ctx.stroke(); ctx.shadowBlur=0; }
+  // ステージ番号（胴に大きく表示）— 何体目のボスか一目でわかる
+  ctx.shadowBlur=0; ctx.fillStyle=flash?'#334':'#2a3550'; ctx.beginPath(); ctx.arc(r*0.2,r*0.28,r*0.34,0,TAU); ctx.fill();
+  ctx.strokeStyle='#ffd85e'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='#ffd85e'; ctx.font='900 '+Math.round(r*0.46)+'px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='#ffd85e'; ctx.shadowBlur=8; ctx.fillText(String(stage), r*0.2, r*0.3); ctx.shadowBlur=0;
 }
 function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
   for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff5ec9':'#57f6ff',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);

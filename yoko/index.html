@@ -927,15 +927,18 @@ function drawKitten(r, glow){ const gb=glow?15:9;
   ctx.beginPath(); ctx.moveTo(-r*0.3,r*0.28); ctx.lineTo(-r*1.15,r*0.12); ctx.moveTo(-r*0.3,r*0.42); ctx.lineTo(-r*1.1,r*0.52);
   ctx.moveTo(r*0.3,r*0.28); ctx.lineTo(r*1.15,r*0.12); ctx.moveTo(r*0.3,r*0.42); ctx.lineTo(r*1.1,r*0.52); ctx.stroke(); }
 
-// ================= BOSS =================
+// ================= BOSS（カレーの材料）=================
 let boss=null, bossActive=false;
+// 6体のボス＝カレーの材料。6体目（お米）を倒すとカレー完成
+const CURRY=[{n:'にんじん',e:'🥕',c:'#f0821f'},{n:'玉ねぎ',e:'🧅',c:'#e8d48a'},{n:'じゃがいも',e:'🥔',c:'#caa15e'},{n:'牛',e:'🐄',c:'#e9e4dc'},{n:'ルー',e:'🟫',c:'#7a4a24'},{n:'お米',e:'🍚',c:'#f4f4ec'}];
+let curryGot=0, curryFx=0;
+function curryIdx(){ return ((stage-1)%6+6)%6; }
 function spawnBoss(){ Audio2.sfx.warn();
   const gear=clamp(stage-1,0,3); // 倒すたびに 0→盾→兜→鎧 と装備が増える
   const hp=Math.round((50+stage*30)*(1+gear*0.18));
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
     gear, hasShield:stage>=2, hasHelmet:stage>=3, hasArmor:stage>=4, dmgReduce:gear*0.13, shieldFlash:0};
-  const names=['','【盾つき】','【盾＋兜】','【フル装備】'];
-  showToast('⚠ WARNING ⚠ '+names[gear],'#ff5ec9');
+  const ing=CURRY[curryIdx()]; showToast('⚠ WARNING ⚠ '+ing.e+ing.n+'ボス','#ff5ec9');
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
@@ -944,63 +947,73 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
     else { e.fireCd=1.2; const n=easyMode?4:12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e',boss:true});} Audio2.sfx.big(); } } // イージーは12発→4発
 }
-function drawBoss(e){ const flash=e.hitFlash>0, r=e.r; const lowHp=e.hp/e.maxhp<0.5; ctx.shadowColor='#b6c4dc'; ctx.shadowBlur=20;
-  // 巨大ネズミ（左向き＝プレイヤー側に鼻先）
-  // しっぽ（右後方）
-  ctx.strokeStyle=flash?'#fff':'#d69ac0'; ctx.lineWidth=6; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(r*0.85,r*0.25); ctx.quadraticCurveTo(r*1.55,r*0.15,r*1.45,-r*0.55); ctx.quadraticCurveTo(r*1.4,-r*1.05,r*1.75,-r*1.1); ctx.stroke();
-  // 大きな丸い耳
-  ctx.fillStyle=flash?'#fff':'#93a2ba'; ctx.beginPath(); ctx.arc(-r*0.12,-r*0.86,r*0.5,0,TAU); ctx.arc(r*0.58,-r*0.82,r*0.5,0,TAU); ctx.fill();
-  ctx.fillStyle=flash?'#fff':'#f2b8d6'; ctx.beginPath(); ctx.arc(-r*0.12,-r*0.86,r*0.28,0,TAU); ctx.arc(r*0.58,-r*0.82,r*0.28,0,TAU); ctx.fill();
-  // 頭・体（グレー、左に向かって鼻先が細くなる）
-  const grad=ctx.createLinearGradient(0,-r,0,r); grad.addColorStop(0,flash?'#fff':'#bcc8dc'); grad.addColorStop(1,flash?'#fff':'#727f98'); ctx.fillStyle=grad;
-  ctx.beginPath(); ctx.moveTo(-r*1.05,0);
-  ctx.quadraticCurveTo(-r*0.6,-r*0.78,r*0.15,-r*0.86);
-  ctx.quadraticCurveTo(r*0.98,-r*0.72,r*0.98,0);
-  ctx.quadraticCurveTo(r*0.98,r*0.72,r*0.15,r*0.86);
-  ctx.quadraticCurveTo(-r*0.6,r*0.78,-r*1.05,0); ctx.closePath(); ctx.fill();
-  // 鼻先のピンクの鼻
-  ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#ff7bb0'; ctx.beginPath(); ctx.arc(-r*1.02,0,r*0.13,0,TAU); ctx.fill();
-  // 前歯
-  ctx.fillStyle='#fff'; ctx.fillRect(-r*0.99,r*0.12,r*0.12,r*0.3); ctx.fillRect(-r*0.85,r*0.12,r*0.12,r*0.3);
-  // 目（弱点：HP低下で赤く光る）
-  ctx.shadowBlur=14; ctx.shadowColor=lowHp?'#ff3b3b':'#ff5ec9'; ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':'#241019');
-  ctx.beginPath(); ctx.arc(-r*0.36,-r*0.12,r*0.2,0,TAU); ctx.fill();
-  ctx.shadowBlur=0; ctx.fillStyle=flash?'#333':'#fff'; ctx.beginPath(); ctx.arc(-r*0.42,-r*0.18,r*0.07,0,TAU); ctx.fill();
-  // ヒゲ
-  ctx.strokeStyle='rgba(240,245,255,.7)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(-r*0.85,r*0.08); ctx.lineTo(-r*1.65,-r*0.12); ctx.moveTo(-r*0.85,r*0.26); ctx.lineTo(-r*1.62,r*0.3); ctx.moveTo(-r*0.85,r*0.42); ctx.lineTo(-r*1.5,r*0.62); ctx.stroke();
-  ctx.lineCap='butt';
-  // ===== 装備（ボスを倒すたびに増える）=====
-  if(e.hasArmor){ // 鎧（胴＋肩当て）
-    ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#8994a8'; ctx.strokeStyle='#565d6f'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.ellipse(r*0.18,r*0.22,r*0.66,r*0.55,0,-0.5,Math.PI+0.5); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=flash?'#fff':'#a6b0c4'; ctx.beginPath(); ctx.arc(r*0.62,-r*0.06,r*0.26,0,TAU); ctx.fill(); ctx.stroke(); // 肩当て
-    ctx.fillStyle='#e3eaf5'; for(let k=-1;k<=1;k++){ ctx.beginPath(); ctx.arc(r*0.18,r*0.1+k*r*0.26,r*0.05,0,TAU); ctx.fill(); } }
-  if(e.hasHelmet){ // 兜（ドーム＋金の三日月前立て）
-    ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#39415a'; ctx.strokeStyle='#181d2b'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(r*0.22,-r*0.62,r*0.66,Math.PI,TAU); ctx.fill(); ctx.stroke(); // ドーム
-    ctx.beginPath(); ctx.ellipse(r*0.22,-r*0.6,r*0.72,r*0.16,0,0,Math.PI); ctx.fill(); ctx.stroke(); // ひさし
-    ctx.fillStyle=flash?'#fff':'#ffd85e'; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=10; // 前立て（三日月）
-    ctx.beginPath(); ctx.arc(r*0.22,-r*1.06,r*0.34,Math.PI*0.16,Math.PI*0.84);
-    ctx.arc(r*0.22,-r*0.9,r*0.3,Math.PI*0.84,Math.PI*0.16,true); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0; }
-  if(e.hasShield){ // 盾（前面＝プレイヤー側）
-    const sf=e.shieldFlash>0; ctx.shadowColor='#cfe0ff'; ctx.shadowBlur=sf?18:8;
-    ctx.fillStyle=sf?'#fff':'#9aa6bd'; ctx.strokeStyle='#565f74'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.ellipse(-r*0.92,r*0.22,r*0.44,r*0.64,0,0,TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=sf?'#ffd85e':'#c7d2e6'; ctx.beginPath(); ctx.arc(-r*0.92,r*0.22,r*0.16,0,TAU); ctx.fill(); // 中央エンブレム
-    ctx.strokeStyle='#697390'; ctx.lineWidth=2.5;
-    ctx.beginPath(); ctx.moveTo(-r*0.92,r*0.22-r*0.32); ctx.lineTo(-r*0.92,r*0.22+r*0.32); ctx.moveTo(-r*0.92-r*0.24,r*0.22); ctx.lineTo(-r*0.92+r*0.24,r*0.22); ctx.stroke(); ctx.shadowBlur=0; }
-  // ステージ番号（胴に大きく表示）— 何体目のボスか一目でわかる
-  ctx.shadowBlur=0; ctx.fillStyle=flash?'#334':'#2a3550'; ctx.beginPath(); ctx.arc(r*0.2,r*0.28,r*0.34,0,TAU); ctx.fill();
-  ctx.strokeStyle='#ffd85e'; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.fillStyle='#ffd85e'; ctx.font='900 '+Math.round(r*0.46)+'px "Trebuchet MS"'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.shadowColor='#ffd85e'; ctx.shadowBlur=8; ctx.fillText(String(stage), r*0.2, r*0.3); ctx.shadowBlur=0;
+function bossFace(cx,cy,r,flash,lowHp,col){ // 顔（プレイヤー側＝少し左寄り）
+  ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':(col||'#3a2a1a'));
+  ctx.beginPath(); ctx.arc(cx-r*0.2,cy-r*0.04,r*0.1,0,TAU); ctx.arc(cx+r*0.2,cy-r*0.04,r*0.1,0,TAU); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cx-r*0.23,cy-r*0.08,r*0.035,0,TAU); ctx.arc(cx+r*0.17,cy-r*0.08,r*0.035,0,TAU); ctx.fill();
+  ctx.strokeStyle=flash?'#fff':(lowHp?'#ff3b3b':(col||'#3a2a1a')); ctx.lineWidth=r*0.05; ctx.lineCap='round';
+  ctx.beginPath(); if(lowHp){ ctx.moveTo(cx-r*0.17,cy+r*0.26); ctx.quadraticCurveTo(cx,cy+r*0.1,cx+r*0.17,cy+r*0.26);} else { ctx.arc(cx,cy+r*0.1,r*0.17,0.12*Math.PI,0.88*Math.PI);} ctx.stroke();
+  ctx.fillStyle='rgba(255,120,120,.32)'; ctx.beginPath(); ctx.arc(cx-r*0.35,cy+r*0.08,r*0.09,0,TAU); ctx.arc(cx+r*0.35,cy+r*0.08,r*0.09,0,TAU); ctx.fill();
+  ctx.lineCap='butt'; }
+function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, idx=curryIdx(); ctx.lineJoin='round';
+  if(idx===0){ // にんじん
+    ctx.fillStyle=flash?'#fff':'#5aa832';
+    for(const o of [-0.42,0,0.42]){ ctx.beginPath(); ctx.moveTo(o*r*0.5,-r*0.5); ctx.lineTo(o*r*0.5-r*0.14,-r*1.2); ctx.lineTo(o*r*0.5+r*0.22,-r*1.02); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle=flash?'#fff':'#f0821f'; ctx.strokeStyle='#c8600f'; ctx.lineWidth=2; ctx.shadowColor='#ff9a3c'; ctx.shadowBlur=16;
+    ctx.beginPath(); ctx.moveTo(-r*0.78,-r*0.5); ctx.quadraticCurveTo(-r*0.2,-r*0.86,r*0.78,-r*0.5); ctx.quadraticCurveTo(r*0.25,r*0.4,0,r*1.08); ctx.quadraticCurveTo(-r*0.25,r*0.4,-r*0.78,-r*0.5); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(200,96,15,.55)'; ctx.lineWidth=2; for(const o of [-0.32,0.02,0.36]){ ctx.beginPath(); ctx.moveTo(o*r,-r*0.35); ctx.lineTo(o*r*0.5,r*0.55); ctx.stroke(); }
+    bossFace(0,-r*0.02,r,flash,lowHp);
+  } else if(idx===1){ // 玉ねぎ
+    ctx.fillStyle=flash?'#fff':'#7ba63a'; ctx.strokeStyle='#5c8a2a'; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-r*0.08,-r*0.9); ctx.quadraticCurveTo(-r*0.32,-r*1.28,-r*0.5,-r*1.18); ctx.moveTo(r*0.08,-r*0.9); ctx.quadraticCurveTo(r*0.32,-r*1.3,r*0.5,-r*1.16); ctx.stroke(); ctx.lineCap='butt';
+    ctx.fillStyle=flash?'#fff':'#efe1a6'; ctx.strokeStyle='#c9b26a'; ctx.lineWidth=2; ctx.shadowColor='#f0e0a0'; ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.moveTo(0,-r*0.95); ctx.bezierCurveTo(r*1.15,-r*0.7,r*1.05,r*0.95,0,r*1.02); ctx.bezierCurveTo(-r*1.05,r*0.95,-r*1.15,-r*0.7,0,-r*0.95); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(201,178,106,.7)'; ctx.lineWidth=1.5; for(const o of [-0.5,-0.2,0.2,0.5]){ ctx.beginPath(); ctx.moveTo(o*r*0.9,-r*0.85); ctx.quadraticCurveTo(o*r*1.5,0,o*r*0.9,r*0.9); ctx.stroke(); }
+    bossFace(0,0,r,flash,lowHp,'#8a6a2a');
+  } else if(idx===2){ // じゃがいも
+    ctx.fillStyle=flash?'#fff':'#caa15e'; ctx.strokeStyle='#9c7838'; ctx.lineWidth=2; ctx.shadowColor='#d8b878'; ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.bezierCurveTo(-r*0.9,-r*0.95,r*0.2,-r*1.02,r*0.7,-r*0.6); ctx.bezierCurveTo(r*1.15,-r*0.25,r*1.08,r*0.7,r*0.4,r*0.92); ctx.bezierCurveTo(-r*0.4,r*1.14,-r*1.1,r*0.6,-r,-r*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle='rgba(120,86,40,.5)'; for(const p of [[-0.5,-0.4],[0.45,-0.55],[0.6,0.4],[-0.2,0.55]]){ ctx.beginPath(); ctx.arc(p[0]*r,p[1]*r,r*0.06,0,TAU); ctx.fill(); }
+    bossFace(0,0,r,flash,lowHp,'#5a3f1e');
+  } else if(idx===3){ // 牛
+    ctx.fillStyle=flash?'#fff':'#efe9e1'; ctx.strokeStyle='#b8b0a4'; ctx.lineWidth=2; ctx.shadowColor='#d8d2c8'; ctx.shadowBlur=12;
+    ctx.beginPath(); ctx.ellipse(0,r*0.05,r*0.98,r*0.9,0,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle=flash?'#eee':'#e9e4dc'; ctx.beginPath(); ctx.moveTo(-r*0.66,-r*0.7); ctx.lineTo(-r*0.95,-r*1.12); ctx.lineTo(-r*0.34,-r*0.86); ctx.closePath(); ctx.moveTo(r*0.66,-r*0.7); ctx.lineTo(r*0.95,-r*1.12); ctx.lineTo(r*0.34,-r*0.86); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#e6c15a'; for(const s of [-1,1]){ ctx.beginPath(); ctx.moveTo(s*r*0.5,-r*0.78); ctx.quadraticCurveTo(s*r*0.9,-r*1.0,s*r*0.86,-r*0.62); ctx.quadraticCurveTo(s*r*0.72,-r*0.66,s*r*0.5,-r*0.78); ctx.closePath(); ctx.fill(); }
+    ctx.fillStyle=flash?'#333':'#2a2018'; ctx.beginPath(); ctx.ellipse(-r*0.3,-r*0.12,r*0.34,r*0.13,0.5,0,TAU); ctx.fill();
+    ctx.fillStyle=flash?'#fff':'#f7c9d4'; ctx.beginPath(); ctx.ellipse(0,r*0.5,r*0.5,r*0.34,0,0,TAU); ctx.fill(); ctx.strokeStyle='#e59ab0'; ctx.stroke();
+    ctx.fillStyle='#d98aa2'; ctx.beginPath(); ctx.arc(-r*0.18,r*0.5,r*0.06,0,TAU); ctx.arc(r*0.18,r*0.5,r*0.06,0,TAU); ctx.fill();
+    ctx.fillStyle=flash?'#fff':'#2a2018'; ctx.beginPath(); ctx.arc(-r*0.34,-r*0.12,r*0.1,0,TAU); ctx.arc(r*0.34,-r*0.12,r*0.1,0,TAU); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.37,-r*0.16,r*0.035,0,TAU); ctx.arc(r*0.31,-r*0.16,r*0.035,0,TAU); ctx.fill();
+  } else if(idx===4){ // ルー
+    ctx.fillStyle=flash?'#fff':'#7a4a24'; ctx.strokeStyle='#4f2f14'; ctx.lineWidth=2; ctx.shadowColor='#5a3418'; ctx.shadowBlur=14;
+    const rw=r*0.95, rh=r*0.8; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-rw,-rh,rw*2,rh*2,r*0.18); else ctx.rect(-rw,-rh,rw*2,rh*2); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(60,34,14,.8)'; ctx.lineWidth=2.5;
+    for(const gx of [-rw*0.33,rw*0.33]){ ctx.beginPath(); ctx.moveTo(gx,-rh); ctx.lineTo(gx,rh); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(-rw,0); ctx.lineTo(rw,0); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); if(ctx.roundRect){ ctx.roundRect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5,r*0.1);} else ctx.rect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5); ctx.fill();
+    bossFace(0,r*0.08,r,flash,lowHp,'#f0d8b0');
+  } else { // お米（茶碗）
+    ctx.fillStyle=flash?'#fff':'#fbfbf4'; ctx.strokeStyle='#e2e2d2'; ctx.lineWidth=2; ctx.shadowColor='#eaeadd'; ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.arc(0,-r*0.05,r*0.92,Math.PI,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.fillStyle='#fff'; for(let k=0;k<10;k++){ const a=Math.PI+(k+0.5)/10*Math.PI; ctx.save(); ctx.translate(Math.cos(a)*r*0.6,-r*0.05+Math.sin(a)*r*0.5); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,0,r*0.11,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle=flash?'#fff':'#4a7fbf'; ctx.strokeStyle='#2f5c94'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-r*1.02,-r*0.02); ctx.quadraticCurveTo(0,r*0.2,r*1.02,-r*0.02); ctx.quadraticCurveTo(r*0.72,r*1.02,0,r*1.06); ctx.quadraticCurveTo(-r*0.72,r*1.02,-r*1.02,-r*0.02); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-r*0.8,r*0.4); ctx.quadraticCurveTo(0,r*0.62,r*0.8,r*0.4); ctx.stroke();
+    bossFace(0,-r*0.35,r*0.9,flash,lowHp);
+  }
 }
 function defeatBoss(e){ boss=null; bossActive=false; Audio2.sfx.big();
-  for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff5ec9':'#57f6ff',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);
-  spawnParticles(e.x,e.y,'#ffd85e',40,340,1.1); shake(22,.6); flash('#fff',.5); addScore(4000+stage*600); showToast('★ STAGE CLEAR ★','#ffd85e');
-  setTimeout(()=>startStage(stage+1),2200);
+  for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff8a3c':'#ffd85e',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);
+  spawnParticles(e.x,e.y,'#ffd85e',40,340,1.1); shake(22,.6); flash('#fff',.5);
+  const idx=curryIdx(), ing=CURRY[idx]; curryGot=idx+1; // 材料ゲット→鍋へ
+  spawnText(e.x,e.y-20, ing.e+ing.n+' ゲット！', ing.c, 20);
+  if(idx===5){ // お米＝6品目 → カレー完成！
+    addScore(8000); curryFx=4.0; Audio2.sfx.up(); showToast('🍛 カレー完成！','#ffd85e'); // カレー画面（4秒）→また1面から
+  } else {
+    addScore(3000+stage*500); showToast('★ '+ing.n+' クリア ★', ing.c);
+    setTimeout(()=>startStage(stage+1),2200);
+  }
 }
 
 // ================= DIRECTOR =================
@@ -1016,7 +1029,9 @@ function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanne
   stageRemaining=14+n*8;   // total enemies to release this stage
   stageTotal=stageRemaining; katsuoDone=false; // 1ステージ1体のカツオ
   spawnTimer=1.6; }        // grace period so a weak start isn't swarmed
-function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage); if(bossActive) return;
+function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage);
+  if(curryFx>0){ curryFx-=dt; if(curryFx<=0){ curryGot=0; startStage(1); } return; } // カレー完成演出中は待機→また1面から
+  if(bossActive) return;
   const d=diffLevel();
   // 1ステージ1体だけカツオ登場（ステージ折り返しあたり）
   if(!katsuoDone && stageRemaining<=stageTotal*0.6){ katsuoDone=true; Audio2.sfx.warn(); showToast('🐟 カツオ出現！','#5b7fa8'); spawnEnemy('katsuo'); }
@@ -1053,13 +1068,42 @@ function drawHUD(){ ctx.save();
   ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.font='900 34px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=12;
   ctx.fillText('×'+lives, 172, 30); ctx.shadowBlur=0;
   ctx.textAlign='center'; ctx.font='900 15px "Trebuchet MS"'; ctx.fillStyle='#ffd85e'; ctx.fillText('STAGE '+stage,W/2,12);
-  // (power-up bar is now DOM: #powBar, tappable)
+  // カレーの材料そろい具合（🥕🧅🥔🐄🟫🍚）
+  ctx.textBaseline='middle'; ctx.font='17px serif'; const n=CURRY.length, cx0=W/2-(n-1)*13;
+  for(let k=0;k<n;k++){ ctx.globalAlpha = k<curryGot?1:0.26; ctx.fillText(CURRY[k].e, cx0+k*26, 34); } ctx.globalAlpha=1;
   // boss hp
-  if(bossActive&&boss){ const w=W-120,h=9,x=60,y=44; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
-    ctx.fillStyle='#ff5ec9'; ctx.shadowColor='#ff5ec9'; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
-    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 10px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ ボスネズミ CHU-CHU ★',W/2,y-2); }
+  if(bossActive&&boss){ const w=W-120,h=9,x=60,y=52; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
+    const ing=CURRY[curryIdx()]; ctx.fillStyle=ing.c; ctx.shadowColor=ing.c; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 11px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ '+ing.e+ing.n+'ボス ★',W/2,y-3); }
   if(stageBanner>0){ const a=Math.min(1, stageBanner>1.6?(2.2-stageBanner)/0.6:stageBanner/1.0); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
+  if(curryFx>0) drawCurryDone();
+  ctx.restore();
+}
+function drawCurryDone(){ // カレー完成！のクリア画面（カレー皿＋文字）
+  ctx.save(); const a=Math.min(1,(4.0-curryFx)/0.4)*Math.min(1,curryFx/0.5);
+  ctx.globalAlpha=0.82*a; ctx.fillStyle='#0b0a24'; ctx.fillRect(0,0,W,H); ctx.globalAlpha=a;
+  const cx=W/2, cy=H*0.46, pr=100;
+  // お皿
+  ctx.shadowColor='#000'; ctx.shadowBlur=18; ctx.fillStyle='#eef1f6'; ctx.beginPath(); ctx.ellipse(cx,cy+pr*0.7,pr*1.55,pr*0.5,0,0,TAU); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='#dfe4ec'; ctx.beginPath(); ctx.ellipse(cx,cy+pr*0.6,pr*1.15,pr*0.36,0,0,TAU); ctx.fill();
+  // ごはん（左半分）
+  ctx.fillStyle='#fbfbf4'; ctx.beginPath(); ctx.ellipse(cx-pr*0.42,cy+pr*0.55,pr*0.72,pr*0.3,0,Math.PI*0.1,Math.PI*1.9); ctx.fill();
+  // カレールー（右半分・とろっと）
+  ctx.fillStyle='#8a4a1e'; ctx.beginPath(); ctx.moveTo(cx-pr*0.1,cy+pr*0.28);
+  ctx.bezierCurveTo(cx+pr*1.0,cy+pr*0.2,cx+pr*1.05,cy+pr*0.95,cx-pr*0.05,cy+pr*0.9);
+  ctx.bezierCurveTo(cx-pr*0.35,cy+pr*0.9,cx-pr*0.4,cy+pr*0.5,cx-pr*0.1,cy+pr*0.28); ctx.closePath(); ctx.fill();
+  // 具（にんじん・じゃがいも・肉）
+  ctx.fillStyle='#f0821f'; ctx.beginPath(); ctx.arc(cx+pr*0.5,cy+pr*0.45,pr*0.11,0,TAU); ctx.fill();
+  ctx.fillStyle='#caa15e'; ctx.beginPath(); ctx.arc(cx+pr*0.2,cy+pr*0.7,pr*0.13,0,TAU); ctx.fill();
+  ctx.fillStyle='#7a3a2a'; ctx.beginPath(); ctx.arc(cx+pr*0.72,cy+pr*0.72,pr*0.12,0,TAU); ctx.fill();
+  // 湯気
+  ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=4; ctx.lineCap='round';
+  for(let k=-1;k<=1;k++){ const t=performance.now()*0.004+k; ctx.beginPath(); ctx.moveTo(cx+k*pr*0.5,cy+pr*0.1); ctx.quadraticCurveTo(cx+k*pr*0.5+Math.sin(t)*14,cy-pr*0.35,cx+k*pr*0.5,cy-pr*0.7); ctx.stroke(); }
+  // 文字
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#ffd85e'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=18;
+  ctx.font='900 46px "Trebuchet MS"'; ctx.fillText('🍛 カレー完成！', cx, H*0.16);
+  ctx.shadowBlur=0; ctx.font='900 18px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.fillText('みんなでいただきます！ また1面から', cx, H*0.83);
   ctx.restore();
 }
 function roundRect(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
@@ -1166,7 +1210,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0; catBomb=null;
-  boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
+  boss=null; bossActive=false; bossPending=false; stageRemaining=0; curryGot=0; curryFx=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
 function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='none';

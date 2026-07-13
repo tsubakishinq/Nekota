@@ -295,9 +295,9 @@ function updatePlayer(dt){
     const bx=player.x+player.r+LION_OFF, by=player.y; player.lionTick=(player.lionTick||0)-dt;
     if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*3.5, thick=20;
       for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r && Math.abs(e.y-by)<thick+e.r){ hitEnemy(e,dmg,e.x,by); spawnPaw(e.x,by); } } }
-    player.homeTick=(player.homeTick||0)-dt; // 常に約3発のホーミングレーザーが飛んでいる状態にする
+    player.homeTick=(player.homeTick||0)-dt; // 常に4発のホーミングレーザーが飛んでいる状態にする
     if(player.homeTick<=0){ player.homeTick=0.4; let alive=0; for(const b of bullets) if(b.home) alive++;
-      const need=3-alive; if(need>0) fireTigerHomers(bx,by,need); } }
+      const need=4-alive; if(need>0) fireTigerHomers(bx,by,need); } }
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -721,7 +721,7 @@ function updateBullets(dt){
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=m.r+e.r; if(dist2(m.x,m.y,e.x,e.y)<rr*rr){ spawnParticles(m.x,m.y,'#ff8a3c',12,180,0.5); hitEnemy(e,2,m.x,m.y); if(player.missileBurst) spawnFishBlast(m.x,m.y); missiles.splice(i,1); break; } }
   }
 }
-function updateEBullets(dt){ const em=easyMode?0.33:1; for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt*em; b.y+=b.vy*dt*em; // イージーは敵弾1/3速
+function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; const em=easyMode?(b.boss?0.25:0.33):1; b.x+=b.vx*dt*em; b.y+=b.vy*dt*em; // イージー：通常弾1/3速、ボス弾はさらに遅め
   if(b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){ eBullets.splice(i,1); damagePlayer(); } } }
   // enemy body collision
@@ -870,8 +870,8 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
-  if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); for(let k=-1;k<=1;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9'});} Audio2.sfx.hit(); }
-    else { e.fireCd=1.2; const n=12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e'});} Audio2.sfx.big(); } }
+  if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); for(let k=-1;k<=1;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); }
+    else { e.fireCd=1.2; const n=12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e',boss:true});} Audio2.sfx.big(); } }
 }
 function drawBoss(e){ const flash=e.hitFlash>0, r=e.r; const lowHp=e.hp/e.maxhp<0.5; ctx.shadowColor='#b6c4dc'; ctx.shadowBlur=20;
   // 巨大ネズミ（左向き＝プレイヤー側に鼻先）

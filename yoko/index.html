@@ -287,8 +287,12 @@ function updatePlayer(dt){
   player.fireCd-=dt;
   if(player.fireCd<=0){ fire(); }
   // 猫/ライオンレーザー：目の前の顔が0.5秒チャージ→高速・高出力ビーム発射
-  if(player.laserMode>=4){ player.chargeT=(player.chargeT||0)+dt; if(player.chargeT>=0.5){ player.chargeT=0; fireChargeBeam(); } }
+  if(player.laserMode===4){ player.chargeT=(player.chargeT||0)+dt; if(player.chargeT>=0.5){ player.chargeT=0; fireChargeBeam(); } }
   else player.chargeT=0;
+  if(player.laserMode>=5){ // ライオン：まっすぐ一本の連続ビーム。当たった敵に肉球エフェクト
+    const bx=player.x+player.r+LION_OFF, by=player.y; player.lionTick=(player.lionTick||0)-dt;
+    if(player.lionTick<=0){ player.lionTick=0.07; const dmg=LBASE*3.5, thick=14;
+      for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.x>bx-e.r && Math.abs(e.y-by)<thick+e.r){ hitEnemy(e,dmg,e.x,by); spawnPaw(e.x,by); } } } }
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -328,7 +332,16 @@ function shootCat(x,y,ang){ ang=ang||0; const sp=480,dx=Math.cos(ang),dy=Math.si
 function shootLion(x,y,ang){ ang=ang||0; const sp=430,dx=Math.cos(ang),dy=Math.sin(ang);
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*2.5,color:'#ffcf6a',kind:'laser',pierce:true,len:18,thickV:5,hitThick:24,dx,dy,ang,lion:true}); }
 // 顔チャージ→高出力ビーム
-const CHARGE_OFF=30; // 顔が出る位置（機体の前）
+const CHARGE_OFF=30, LION_OFF=42; // 顔が出る位置（機体の前）
+const pawFx=[]; // ライオンビームのヒット肉球エフェクト
+function spawnPaw(x,y){ pawFx.push({x,y,life:0.35,s:rnd(11,16),rot:rnd(-0.4,0.4)}); }
+function updatePawFx(dt){ for(let i=pawFx.length-1;i>=0;i--){ if((pawFx[i].life-=dt)<=0) pawFx.splice(i,1); } }
+function drawPawFx(){ for(const p of pawFx){ const k=1-p.life/0.35, a=Math.max(0,p.life/0.35), s=p.s*(0.6+k*0.9);
+  ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=a; ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+  ctx.fillStyle='#ff9ecf'; ctx.shadowColor='#ff9ecf'; ctx.shadowBlur=12;
+  ctx.beginPath(); ctx.ellipse(0,s*0.22,s*0.5,s*0.42,0,0,TAU); ctx.fill(); // 手のひら
+  for(const [bx,by,br] of [[-s*0.47,-s*0.14,s*0.17],[-s*0.17,-s*0.42,s*0.18],[s*0.17,-s*0.42,s*0.18],[s*0.47,-s*0.14,s*0.17]]){ ctx.beginPath(); ctx.ellipse(bx,by,br,br*1.15,0,0,TAU); ctx.fill(); } // 指
+  ctx.restore(); } ctx.globalAlpha=1; }
 function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y, dl=player.doubleLv;
   shootMega(fx,fy,0,lion);
   if(dl>=1) shootMega(fx,fy-6,DIAG,lion);
@@ -717,13 +730,18 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
       ctx.restore(); ctx.shadowBlur=0; }
   }
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r); ctx.globalAlpha=1;
-  // 猫/ライオンレーザー：目の前でチャージ中の顔
-  if(player.laserMode>=4){ const p=Math.min(1,(player.chargeT||0)/0.5); const lion=player.laserMode>=5;
+  if(player.laserMode>=5){ // ライオン：大きい顔＋まっすぐ一本の連続ビーム
+    const bx=player.x+player.r+LION_OFF, by=player.y, puls=0.85+0.15*Math.sin(performance.now()*0.02);
+    ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.shadowColor='#ffd27a'; ctx.shadowBlur=18;
+    const g=ctx.createLinearGradient(0,by-16,0,by+16); g.addColorStop(0,'rgba(255,207,106,0)'); g.addColorStop(.5,'rgba(255,207,106,'+(0.85*puls)+')'); g.addColorStop(1,'rgba(255,207,106,0)');
+    ctx.fillStyle=g; ctx.fillRect(bx,by-13,W-bx,26);
+    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fillRect(bx,by-3.5,W-bx,7); // 明るい芯
+    ctx.restore();
+    ctx.save(); ctx.translate(bx,by); drawLionFace(26); ctx.restore(); } // 大きいライオンの顔
+  else if(player.laserMode>=4){ const p=Math.min(1,(player.chargeT||0)/0.5); // 猫：目の前でチャージ中の顔
     const fx=player.x+player.r+CHARGE_OFF, fy=player.y; ctx.save(); ctx.translate(fx,fy);
-    const sc=0.55+0.6*p; ctx.scale(sc,sc); ctx.globalAlpha=0.55+0.45*p;
-    if(lion) drawLionFace(15); else drawKitten(13, true);
-    ctx.restore(); ctx.globalAlpha=1;
-    if(p>0.82){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle=lion?'rgba(255,207,106,.5)':'rgba(220,240,255,.5)'; // 発射直前の光
+    const sc=0.55+0.6*p; ctx.scale(sc,sc); ctx.globalAlpha=0.55+0.45*p; drawKitten(13, true); ctx.restore(); ctx.globalAlpha=1;
+    if(p>0.82){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.fillStyle='rgba(220,240,255,.5)';
       ctx.beginPath(); ctx.arc(fx,fy,10+14*(p-0.82)/0.18,0,TAU); ctx.fill(); ctx.restore(); } }
 }
 function drawOptions(){ for(const o of options){ ctx.save(); ctx.translate(o.x,o.y);
@@ -951,7 +969,7 @@ const titleScreen=document.getElementById('titleScreen'), overScreen=document.ge
 function showHigh(){ document.getElementById('titleHigh').textContent= high>0?'BEST  '+high.toLocaleString():''; }
 showHigh();
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0;
   boss=null; bossActive=false; bossPending=false; stageRemaining=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
@@ -980,7 +998,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   if(state==='play'){
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
-    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt);
+    updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updatePawFx(dt);
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
   if(flashA>0) flashA=Math.max(0,flashA-dt*2);
@@ -990,7 +1008,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   ctx.fillStyle='#05060f'; ctx.fillRect(0,0,W,H);
   let ox=0,oy=0; if(shakeMag>0){ ox=rnd(-shakeMag,shakeMag); oy=rnd(-shakeMag,shakeMag); ctx.translate(ox,oy); }
   drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets(); drawBlasts(); drawCatRunners();
-  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawTexts();
+  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawPlayer(); drawPawFx(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();
   if(flashA>0){ ctx.fillStyle=flashColor; ctx.globalAlpha=flashA*0.5; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }

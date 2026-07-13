@@ -385,13 +385,37 @@ function drawBall(r){ ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; // 毛糸玉
   ctx.fillStyle='#ff9ecf'; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
   ctx.strokeStyle='#d94f96'; ctx.lineWidth=3; ctx.shadowBlur=0;
   for(let k=0;k<5;k++){ ctx.beginPath(); ctx.ellipse(0,0,r*0.92,r*0.42,k*0.63,0,TAU); ctx.stroke(); } }
+function drawPunchCat(s, punch){ // 全身のおすわり猫（右向き）が前足でパンチ
+  ctx.lineCap='round'; ctx.lineJoin='round'; const W2='#fff6fb', PK='#ffb3d9';
+  ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=14; ctx.strokeStyle=W2; ctx.fillStyle=W2;
+  // しっぽ（後ろ＝左でくるん）
+  ctx.lineWidth=s*0.34; ctx.beginPath(); ctx.moveTo(-s*0.5,s*0.7); ctx.bezierCurveTo(-s*1.4,s*0.75,-s*1.45,-s*0.45,-s*0.85,-s*0.6); ctx.stroke();
+  // 胴（おすわり）
+  ctx.beginPath(); ctx.moveTo(-s*0.72,s*0.98); ctx.quadraticCurveTo(-s*1.02,s*0.0,-s*0.35,-s*0.5);
+  ctx.quadraticCurveTo(s*0.2,-s*0.92,s*0.66,-s*0.32); ctx.quadraticCurveTo(s*1.02,s*0.42,s*0.7,s*0.98); ctx.closePath(); ctx.fill();
+  // 足先
+  ctx.beginPath(); ctx.ellipse(s*0.32,s*0.95,s*0.34,s*0.2,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-s*0.34,s*1.0,s*0.3,s*0.18,0,0,TAU); ctx.fill();
+  // パンチする前足（右へ）
+  const px=punch?s*1.6:s*0.9, py=punch?-s*0.12:s*0.2;
+  ctx.lineWidth=s*0.28; ctx.beginPath(); ctx.moveTo(s*0.35,-s*0.02); ctx.lineTo(px,py); ctx.stroke();
+  ctx.beginPath(); ctx.arc(px,py,s*0.3,0,TAU); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle=PK; ctx.beginPath(); ctx.ellipse(px+s*0.06,py,s*0.14,s*0.12,0,0,TAU); ctx.fill(); // 肉球
+  // 頭（右上）
+  const hx=s*0.36, hy=-s*0.78, hr=s*0.62;
+  ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=14; ctx.fillStyle=W2;
+  ctx.beginPath(); ctx.moveTo(hx-hr*0.72,hy-hr*0.4); ctx.lineTo(hx-hr*0.95,hy-hr*1.2); ctx.lineTo(hx-hr*0.15,hy-hr*0.75); ctx.closePath();
+  ctx.moveTo(hx+hr*0.72,hy-hr*0.4); ctx.lineTo(hx+hr*0.95,hy-hr*1.2); ctx.lineTo(hx+hr*0.15,hy-hr*0.75); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle=PK;
+  ctx.beginPath(); ctx.moveTo(hx-hr*0.58,hy-hr*0.5); ctx.lineTo(hx-hr*0.75,hy-hr*1.02); ctx.lineTo(hx-hr*0.3,hy-hr*0.72); ctx.closePath();
+  ctx.moveTo(hx+hr*0.58,hy-hr*0.5); ctx.lineTo(hx+hr*0.75,hy-hr*1.02); ctx.lineTo(hx+hr*0.3,hy-hr*0.72); ctx.closePath(); ctx.fill();
+  ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=14; ctx.fillStyle=W2; ctx.beginPath(); ctx.arc(hx,hy,hr,0,TAU); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='#37476a'; ctx.beginPath(); ctx.ellipse(hx-hr*0.38,hy-hr*0.02,hr*0.16,hr*0.24,0,0,TAU); ctx.ellipse(hx+hr*0.38,hy-hr*0.02,hr*0.16,hr*0.24,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(hx-hr*0.34,hy-hr*0.12,hr*0.06,0,TAU); ctx.arc(hx+hr*0.42,hy-hr*0.12,hr*0.06,0,TAU); ctx.fill();
+  ctx.fillStyle='#ff7bb0'; ctx.beginPath(); ctx.moveTo(hx-hr*0.14,hy+hr*0.2); ctx.lineTo(hx+hr*0.14,hy+hr*0.2); ctx.lineTo(hx,hy+hr*0.4); ctx.closePath(); ctx.fill();
+  ctx.lineCap='butt'; ctx.lineJoin='miter'; }
 function drawBomb(){ if(!catBomb)return; const b=catBomb;
-  if(b.phase==='wind'||b.phase==='punch'){ // 猫（左）＋前足の肉球パンチ
-    ctx.save(); ctx.translate(b.catX,b.y);
-    const reach=b.phase==='punch'?46:16; ctx.fillStyle='#ff9ecf'; ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=12;
-    ctx.beginPath(); ctx.arc(reach,2,15,0,TAU); ctx.fill(); ctx.shadowBlur=0; // 肉球
-    drawKitten(30,true); ctx.restore(); }
-  else { ctx.save(); ctx.translate(b.catX,b.y); drawKitten(26,true); ctx.restore(); }
+  ctx.save(); ctx.translate(b.catX,b.y); drawPunchCat(30, b.phase==='punch'); ctx.restore();
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.spin); drawBall(b.r); ctx.restore(); }
 function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y, dl=player.doubleLv;
   shootMega(fx,fy,0,lion);

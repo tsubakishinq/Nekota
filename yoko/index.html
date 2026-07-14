@@ -317,16 +317,16 @@ function fire(){
     if(dl>=2) shootBullet(player.x+player.r*0.6, player.y+6, 520, 300);
     Audio2.sfx.shoot(); }
   // options(子猫) fire too — どのモードでもレーザー/弾を撃つ
-  for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0); else { shootBullet(o.x+10,o.y,600,0); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300);} }
+  for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0,0.8); else { shootBullet(o.x+10,o.y,600,0,0.8); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300,0.8);} } // オプションは自機の8割
   // homing missiles: 最大3発。まず上下に散ってから、それぞれホーミング
   if(player.missileLvl>0){ player.missileCd=(player.missileCd||0)-1; if((player.missileCd||0)<=0){
     player.missileCd = player.missileLvl>=3?6 : player.missileLvl>=2?7 : 11;
     const n=player.missileLvl; for(let k=0;k<n;k++){ const spread=n===1?0:(k-(n-1)/2)/((n-1)/2); dropMissile(player.x+6, player.y, spread*260); } } }
 }
-function shootBullet(x,y,vx,vy){ bullets.push({x,y,vx,vy,r:6,dmg:1,color:'#c98a4a',kind:'bullet',veg:1,ang:Math.atan2(vy,vx)}); } // 箸
-function shootLaser(x,y,ang){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang); const m=player.laserMode||1;
+function shootBullet(x,y,vx,vy,dmgScale){ bullets.push({x,y,vx,vy,r:6,dmg:1*(dmgScale||1),color:'#c98a4a',kind:'bullet',veg:1,ang:Math.atan2(vy,vx)}); } // 箸
+function shootLaser(x,y,ang,dmgScale){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang); const m=player.laserMode||1;
   const vg = m===1?2 : m===2?3 : 0; // 1箸(gun)/2フォーク/3ナイフ、それ以上はレーザーのまま
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul(),color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang,veg:vg}); }
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul()*(dmgScale||1),color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang,veg:vg}); }
 // 3段階目の猫レーザー：1発ずつが跳ねる猫のシルエット。ゆっくり飛ぶので猫だとわかる
 function shootCat(x,y,ang){ ang=ang||0; const sp=480,dx=Math.cos(ang),dy=Math.sin(ang);
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*1.8,color:'#fff',kind:'laser',pierce:true,len:34,thickV:5,hitThick:16,dx,dy,ang,cat:true}); }
@@ -575,7 +575,7 @@ function updateOptions(dt){
     if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
     if(o.y<14){o.y=14;o.wa=-o.wa;} if(o.y>H-14){o.y=H-14;o.wa=-o.wa;}
     if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
-    o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootLaser(o.x,o.y,a); o.fcd=rnd(0.12,0.2); } // 敵へレーザー連射
+    o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootLaser(o.x,o.y,a,0.8); o.fcd=rnd(0.12,0.2); } // 敵へレーザー連射（自機の8割）
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=17+e.r; if(dist2(o.x,o.y,e.x,e.y)<rr*rr){
       o.claw=0.22; spawnParticles(o.x,o.y,'#fff',10,200,0.4); spawnParticles(e.x,e.y,'#ffd0ee',8,180,0.4);
       if(hitEnemy(e,2,o.x,o.y)) spawnText(e.x,e.y-10,'アタック！','#ff8098',12); } }

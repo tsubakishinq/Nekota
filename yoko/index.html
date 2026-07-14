@@ -388,23 +388,30 @@ function updateBomb(dt){ if(!catBomb)return; const b=catBomb; b.t+=dt;
         if(e.t==='boss'){ spawnParticles(e.x,e.y,'#ffd85e',22,320,0.8); hitEnemy(e, e.maxhp*0.45, e.x,e.y); }
         else { spawnParticles(e.x,e.y,'#ffd85e',12,280,0.6); spawnParticles(e.x,e.y,'#fff',5,180,0.4); killEnemy(e); } } } }
   else if(b.phase==='smash'){ b.y += ((H*0.62)-b.y)*Math.min(1,dt*4); if(b.t>1.2) catBomb=null; } }
-function drawGorilla(r){ const dk='#2c2c33', dk2='#3b3b44', fc='#6a574d';
-  ctx.lineJoin='round'; ctx.shadowColor='#000'; ctx.shadowBlur=20;
+function drawGorilla(r){ const dk='#20201f', dk2='#2e2e2d', fc='#5a4a42'; // 黒いゴリラ（スタンド酒ゴリラ）
+  ctx.lineJoin='round'; ctx.lineCap='round'; ctx.shadowColor='#000'; ctx.shadowBlur=20;
   ctx.fillStyle=dk; ctx.beginPath(); ctx.moveTo(-r*0.92,-r*0.15); ctx.quadraticCurveTo(-r*1.12,r*0.95,-r*0.5,r*1.1); ctx.lineTo(r*0.5,r*1.1); ctx.quadraticCurveTo(r*1.12,r*0.95,r*0.92,-r*0.15); ctx.quadraticCurveTo(0,-r*0.5,-r*0.92,-r*0.15); ctx.closePath(); ctx.fill(); // 胴＋肩
-  ctx.fillStyle=dk2; ctx.beginPath(); ctx.ellipse(-r*0.78,r*0.4,r*0.27,r*0.56,0.32,0,TAU); ctx.fill(); ctx.beginPath(); ctx.ellipse(r*0.78,r*0.4,r*0.27,r*0.56,-0.32,0,TAU); ctx.fill(); // 腕
-  ctx.beginPath(); ctx.arc(-r*0.24,r*0.4,r*0.2,0,TAU); ctx.arc(r*0.24,r*0.4,r*0.2,0,TAU); ctx.fill(); // こぶし
+  // 左腕（下）
+  ctx.fillStyle=dk2; ctx.beginPath(); ctx.ellipse(-r*0.8,r*0.45,r*0.26,r*0.55,0.3,0,TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-r*0.64,r*0.92,r*0.2,0,TAU); ctx.fill();
+  // 右腕（上に掲げる）
+  ctx.beginPath(); ctx.moveTo(r*0.28,-r*0.12); ctx.quadraticCurveTo(r*0.95,-r*0.35,r*1.02,-r*1.0); ctx.lineTo(r*0.66,-r*1.02); ctx.quadraticCurveTo(r*0.52,-r*0.42,r*0.28,-r*0.12); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(r*0.86,-r*1.02,r*0.2,0,TAU); ctx.fill(); // こぶし（上）
   ctx.fillStyle=dk; ctx.beginPath(); ctx.arc(0,-r*0.55,r*0.6,0,TAU); ctx.fill(); ctx.beginPath(); ctx.arc(-r*0.56,-r*0.6,r*0.14,0,TAU); ctx.arc(r*0.56,-r*0.6,r*0.14,0,TAU); ctx.fill(); ctx.shadowBlur=0; // 頭＋耳
   ctx.fillStyle=fc; ctx.beginPath(); ctx.ellipse(0,-r*0.44,r*0.4,r*0.46,0,0,TAU); ctx.fill(); // 顔
-  ctx.strokeStyle='#171719'; ctx.lineWidth=r*0.07; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-r*0.3,-r*0.64); ctx.lineTo(-r*0.05,-r*0.54); ctx.moveTo(r*0.3,-r*0.64); ctx.lineTo(r*0.05,-r*0.54); ctx.stroke(); // 怒り眉
+  ctx.strokeStyle='#141414'; ctx.lineWidth=r*0.07; ctx.beginPath(); ctx.moveTo(-r*0.3,-r*0.64); ctx.lineTo(-r*0.05,-r*0.54); ctx.moveTo(r*0.3,-r*0.64); ctx.lineTo(r*0.05,-r*0.54); ctx.stroke(); // 眉
   ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.16,-r*0.46,r*0.09,0,TAU); ctx.arc(r*0.16,-r*0.46,r*0.09,0,TAU); ctx.fill();
-  ctx.fillStyle='#171719'; ctx.beginPath(); ctx.arc(-r*0.15,-r*0.45,r*0.045,0,TAU); ctx.arc(r*0.17,-r*0.45,r*0.045,0,TAU); ctx.fill();
+  ctx.fillStyle='#141414'; ctx.beginPath(); ctx.arc(-r*0.14,-r*0.45,r*0.045,0,TAU); ctx.arc(r*0.18,-r*0.45,r*0.045,0,TAU); ctx.fill();
   ctx.fillStyle='#4a3c34'; ctx.beginPath(); ctx.ellipse(0,-r*0.27,r*0.2,r*0.12,0,0,TAU); ctx.fill();
-  ctx.fillStyle='#171719'; ctx.beginPath(); ctx.ellipse(-r*0.07,-r*0.27,r*0.03,r*0.05,0,0,TAU); ctx.ellipse(r*0.07,-r*0.27,r*0.03,r*0.05,0,0,TAU); ctx.fill();
-  ctx.strokeStyle='#171719'; ctx.lineWidth=r*0.05; ctx.beginPath(); ctx.arc(0,-r*0.18,r*0.15,0.08*Math.PI,0.92*Math.PI); ctx.stroke(); ctx.lineCap='butt';
-  // 一升瓶（酒ゴリラ）
-  ctx.save(); ctx.translate(r*0.95,r*0.1); ctx.rotate(-0.5); ctx.fillStyle='#2f6b3a'; ctx.strokeStyle='#1c4423'; ctx.lineWidth=1.5;
-  ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-r*0.12,-r*0.05,r*0.24,r*0.5,r*0.06); else ctx.rect(-r*0.12,-r*0.05,r*0.24,r*0.5); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#2f6b3a'; ctx.fillRect(-r*0.05,-r*0.2,r*0.1,r*0.16); ctx.fillStyle='#e8e0c8'; ctx.fillRect(-r*0.1,r*0.08,r*0.2,r*0.16); ctx.restore(); }
+  ctx.fillStyle='#141414'; ctx.beginPath(); ctx.ellipse(-r*0.07,-r*0.27,r*0.03,r*0.05,0,0,TAU); ctx.ellipse(r*0.07,-r*0.27,r*0.03,r*0.05,0,0,TAU); ctx.fill();
+  ctx.strokeStyle='#141414'; ctx.lineWidth=r*0.05; ctx.beginPath(); ctx.arc(0,-r*0.16,r*0.16,0.08*Math.PI,0.92*Math.PI); ctx.stroke(); // にっと笑う口
+  // 掲げたビールジョッキ（泡つき）
+  ctx.save(); ctx.translate(r*0.88,-r*1.05); ctx.rotate(-0.12); const mw=r*0.36, mh=r*0.52;
+  ctx.strokeStyle='#e6f0ff'; ctx.lineWidth=r*0.07; ctx.beginPath(); ctx.arc(mw*0.5+r*0.05,r*0.02,r*0.15,-Math.PI*0.55,Math.PI*0.55); ctx.stroke(); // 取っ手
+  ctx.fillStyle='#eca62a'; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-mw/2,-mh*0.32,mw,mh*0.72,r*0.05); else ctx.rect(-mw/2,-mh*0.32,mw,mh*0.72); ctx.fill(); // ビール
+  ctx.fillStyle='rgba(255,255,255,.25)'; ctx.fillRect(-mw*0.4,-mh*0.28,mw*0.16,mh*0.55); // つや
+  ctx.strokeStyle='rgba(226,240,255,.9)'; ctx.lineWidth=r*0.03; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-mw/2,-mh*0.4,mw,mh*0.82,r*0.05); else ctx.rect(-mw/2,-mh*0.4,mw,mh*0.82); ctx.stroke(); // グラス枠
+  ctx.fillStyle='#fff'; for(const p of [[-mw*0.3,-mh*0.4,r*0.1],[-mw*0.05,-mh*0.48,r*0.13],[mw*0.24,-mh*0.4,r*0.1],[mw*0.08,-mh*0.34,r*0.09]]){ ctx.beginPath(); ctx.arc(p[0],p[1],p[2],0,TAU); ctx.fill(); } // 泡
+  ctx.restore(); ctx.lineCap='butt'; }
 function drawBomb(){ if(!catBomb)return; const b=catBomb;
   if(b.phase==='smash'){ const k=Math.min(1,b.t/0.5); ctx.save(); ctx.globalCompositeOperation='lighter'; // 衝撃波
     ctx.strokeStyle='rgba(255,216,94,'+(1-k)+')'; ctx.lineWidth=18*(1-k)+2; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=24;

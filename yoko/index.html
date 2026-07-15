@@ -646,13 +646,14 @@ function spawnEnemy(type, y, opt){ opt=opt||{}; const x=W+40;
     case 'gun': Object.assign(e,{hp:4,r:17,vx:-90,vy:0,score:250,color:'#5ec9ff',shoots:true,aim:true}); break;
     case 'turret': Object.assign(e,{hp:6,r:20,vx:-70,vy:0,score:300,color:'#5effa0',shoots:true,aim:true}); break;
     case 'gold': Object.assign(e,{hp:3,r:15,vx:-190,vy:0,score:200,color:'#ffd85e',amp:rnd(40,90),baseY:e.y,drop:true}); break; // 倒すとカプセル
-    case 'katsuo': Object.assign(e,{hp:14+stage*3,r:28,vx:-64,vy:0,score:900,color:'#5b7fa8',amp:rnd(50,90),baseY:clamp(e.y,90,H-90),katsuo:true}); break; // 硬い！倒すと刺身
+    case 'katsuo': Object.assign(e,{hp:14+stage*3+curryLoop*10,r:28,vx:-64,vy:0,score:900,color:'#5b7fa8',amp:rnd(50,90),baseY:clamp(e.y,90,H-90),katsuo:true}); break; // 硬い！倒すと刺身（周回で更に硬く）
   }
   if(type!=='katsuo'){ // カツオは常に硬いので軟化補正の対象外
     // Early enemies are much softer: stage 1 basics die in one hit, then HP ramps back up.
     const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3:0
     const hard=Math.max(0, stage-3);  // ボス撃破ごとに硬く: stage4:+1, stage5:+2...
     e.hp=Math.max(1, e.hp-soft+hard);
+    if(curryLoop>0) e.hp=Math.max(e.hp+curryLoop, Math.round(e.hp*(1+curryLoop*0.4))); // 周回を重ねるほど敵が固くなる
   }
   e.maxhp=e.hp; if(opt.vx)e.vx=opt.vx; enemies.push(e); return e;
 }
@@ -946,12 +947,12 @@ function drawKitten(r, glow){ const gb=glow?15:9;
 let boss=null, bossActive=false, bossIntro=0; // bossIntro>0 の間は登場演出（約1秒）
 // 6体のボス＝カレーの材料。6体目（お米）を倒すとカレー完成
 const CURRY=[{n:'にんじん',e:'🥕',c:'#f0821f'},{n:'玉ねぎ',e:'🧅',c:'#e8d48a'},{n:'じゃがいも',e:'🥔',c:'#caa15e'},{n:'牛',e:'🐄',c:'#e9e4dc'},{n:'ルー',e:'🟫',c:'#7a4a24'},{n:'お米',e:'🍚',c:'#f4f4ec'}];
-let curryGot=0, curryFx=0, prepFx=null, defeatFreeze=0;
+let curryGot=0, curryFx=0, prepFx=null, defeatFreeze=0, curryLoop=0; // curryLoop=周回数（増えるほど敵が固くなる）
 function curryIdx(){ return ((stage-1)%6+6)%6; }
 function spawnBoss(){ Audio2.sfx.warn();
-  const idx=curryIdx(), loop=Math.floor((stage-1)/6); // 出てくる順（材料）ほどHPが多い
+  const idx=curryIdx(); // 出てくる順（材料）ほどHPが多い＋周回ごとに硬く
   const gear=clamp(stage-1,0,3);
-  const hp=Math.round((60+idx*48)*(1+loop*0.3));
+  const hp=Math.round((60+idx*48)*(1+curryLoop*0.35));
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
     gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false};
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
@@ -1075,7 +1076,7 @@ function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanne
   stageTotal=stageRemaining; katsuoDone=false; // 1ステージ1体のカツオ
   spawnTimer=1.6; }        // grace period so a weak start isn't swarmed
 function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage);
-  if(curryFx>0){ curryFx-=dt; if(curryFx<=0){ curryGot=0; startStage(1); } return; } // カレー完成演出中は待機→また1面から
+  if(curryFx>0){ curryFx-=dt; if(curryFx<=0){ curryGot=0; curryLoop++; startStage(1); showToast((curryLoop+1)+'周目！てきが つよくなった','#ff8a3c'); } return; } // カレー完成→周回アップ→また1面から（敵が固くなる）
   if(bossCooldown>0){ bossCooldown-=dt; return; } // ボス撃破後はしばらく次のボスを出さない（連続防止）
   if(bossActive) return;
   const d=diffLevel();
@@ -1333,7 +1334,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0; catBomb=null;
-  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
+  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
 function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='none';

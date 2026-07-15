@@ -988,10 +988,16 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.fillStyle=flash?'#fff':'#7ba63a'; ctx.strokeStyle='#5c8a2a'; ctx.lineWidth=3; ctx.lineCap='round'; // 芽
     ctx.beginPath(); ctx.moveTo(-r*0.06,-r*0.92); ctx.quadraticCurveTo(-r*0.3,-r*1.26,-r*0.5,-r*1.12); ctx.moveTo(r*0.06,-r*0.92); ctx.quadraticCurveTo(r*0.3,-r*1.28,r*0.5,-r*1.1); ctx.stroke(); ctx.lineCap='butt';
     ctx.fillStyle=flash?'#fff':(peeled?'#fbfbf0':'#efe1a6'); ctx.strokeStyle=peeled?'#e6e0c8':'#c9b26a'; ctx.lineWidth=2; ctx.shadowColor='#f0e0a0'; ctx.shadowBlur=14;
-    ctx.beginPath(); ctx.moveTo(0,r*1.1); ctx.bezierCurveTo(-r*1.16,r*0.5,-r*1.06,-r*0.6,0,-r*0.9); ctx.bezierCurveTo(r*1.06,-r*0.6,r*1.16,r*0.5,0,r*1.1); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.strokeStyle=peeled?'rgba(210,205,180,.7)':'rgba(201,178,106,.75)'; ctx.lineWidth=1.5; // 縦の層
-    for(const o of [-0.6,-0.3,0.3,0.6]){ ctx.beginPath(); ctx.moveTo(0,-r*0.86); ctx.quadraticCurveTo(o*r*1.55,0,0,r*1.02); ctx.stroke(); }
-    bossFace(0,r*0.05,r,flash,lowHp,'#8a6a2a');
+    // 玉ねぎの丸いふくらみ（下ぶくれ）＋上の短いとがり首＋下の小さな根っこ
+    ctx.beginPath(); ctx.moveTo(0,-r*0.98);
+    ctx.bezierCurveTo(r*0.60,-r*0.94, r*1.06,-r*0.30, r*1.02,r*0.22);
+    ctx.bezierCurveTo(r*0.99,r*0.74, r*0.52,r*1.06, 0,r*1.10);
+    ctx.bezierCurveTo(-r*0.52,r*1.06, -r*0.99,r*0.74, -r*1.02,r*0.22);
+    ctx.bezierCurveTo(-r*1.06,-r*0.30, -r*0.60,-r*0.94, 0,-r*0.98);
+    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    ctx.strokeStyle=peeled?'rgba(210,205,180,.7)':'rgba(201,178,106,.75)'; ctx.lineWidth=1.5; // 縦の皮の筋（ふくらみに沿わせる）
+    for(const o of [-0.66,-0.32,0.32,0.66]){ ctx.beginPath(); ctx.moveTo(0,-r*0.9); ctx.quadraticCurveTo(o*r*1.4,r*0.24,0,r*1.04); ctx.stroke(); }
+    bossFace(0,r*0.18,r,flash,lowHp,'#8a6a2a');
   } else if(idx===2){ // じゃがいも
     ctx.fillStyle=flash?'#fff':(peeled?'#f0e2c0':'#caa15e'); ctx.strokeStyle=peeled?'#d8c69a':'#9c7838'; ctx.lineWidth=2; ctx.shadowColor='#d8b878'; ctx.shadowBlur=14;
     ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.bezierCurveTo(-r*0.9,-r*0.95,r*0.2,-r*1.02,r*0.7,-r*0.6); ctx.bezierCurveTo(r*1.15,-r*0.25,r*1.08,r*0.7,r*0.4,r*0.92); ctx.bezierCurveTo(-r*0.4,r*1.14,-r*1.1,r*0.6,-r,-r*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;

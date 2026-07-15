@@ -954,12 +954,11 @@ function spawnBoss(){ Audio2.sfx.warn();
   const hp=Math.round((60+idx*48)*(1+loop*0.3));
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
     gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false};
-  bossIntro=2.4; flash('#ff2e6e',0.35); shake(7,0.35); // 登場演出（約2.4秒）
+  bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
-  if(bossIntro>0) bossIntro=Math.max(0,bossIntro-dt);
+  if(bossIntro>0){ bossIntro=Math.max(0,bossIntro-dt); return; } // 警告表示中はまだ登場しない（画面外で待機）
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
-  if(bossIntro>0) return; // 登場演出中は撃たない・動かない
   if(!e.peeled && e.hp/e.maxhp<0.5 && curryIdx()<3){ e.peeled=true; // 野菜ボスは半分で皮がむける
     Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],['#c9b26a','#efe1a6'],['#9c7838','#caa15e']][curryIdx()];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }
@@ -1187,9 +1186,9 @@ function drawPrepFx(){ // 撃破→スクロール停止して「切られた野
   ctx.fillText(idx===3?'お肉パックに つめたよ！':'カレー用に 切ったよ！', W/2, H*0.2);
   ctx.shadowBlur=0; ctx.restore();
 }
-function drawBossIntro(){ // ボス登場の約2.4秒演出：点滅する大きな WARNING ＋ 材料名
+function drawBossIntro(){ // ボス登場の約1秒警告：点滅する大きな WARNING ＋ 材料名
   const ing=CURRY[curryIdx()], blink=Math.floor(bossIntro*8)%2===0;
-  const pop=Math.min(1,(2.4-bossIntro)/0.35);  // 登場時にビヨンと大きくなる
+  const pop=Math.min(1,(1.0-bossIntro)/0.22);  // 登場時にビヨンと大きくなる
   const ease=1-Math.pow(1-pop,3);
   ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
   const cy=H*0.42;

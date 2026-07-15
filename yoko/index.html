@@ -418,13 +418,14 @@ function drawBomb(){ if(!catBomb)return; const b=catBomb;
     ctx.beginPath(); ctx.arc(b.x,b.y-b.r*0.4,60+k*360,0,TAU); ctx.stroke(); ctx.restore(); }
   ctx.save(); ctx.translate(b.x,b.y); if(b.phase==='smash'){ ctx.translate(0,Math.sin(b.t*30)*4); } drawGorilla(b.r); ctx.restore(); }
 function fireChargeBeam(){ const lion=player.laserMode>=5; const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
-  // 白猫レーザーは4つに分裂→それぞれ別の敵へホーミング（あらゆる敵を狙う）
+  // 白猫レーザーは3つに分裂→それぞれ別の敵へホーミング（あらゆる敵を狙う）
   const cand=enemies.filter(e=>e.x>fx-40).sort((a,b)=>dist2(fx,fy,a.x,a.y)-dist2(fx,fy,b.x,b.y));
-  const angs=[-0.34,-0.11,0.11,0.34];
-  for(let i=0;i<4;i++){ const t=cand.length?cand[i%cand.length]:null; shootMega(fx,fy,angs[i],lion,t); }
+  const angs=[-0.28,0,0.28];
+  for(let i=0;i<3;i++){ const t=cand.length?cand[i%cand.length]:null; shootMega(fx,fy,angs[i],lion,t); }
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,lion?'#ffcf6a':'#dff0ff',16,300,0.5); shake(5,0.14); flash(lion?'#ffcf6a':'#bfe6ff',0.12); }
 function shootMega(x,y,ang,lion,target){ const sp=1250,dx=Math.cos(ang),dy=Math.sin(ang); // 分裂後ホーミングするレーザー
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul()*(lion?1.7:1.74),color:lion?'#ffcf6a':'#fff',kind:'laser',pierce:true,len:46,thickV:lion?9:7,hitThick:lion?18:14,dx,dy,ang,mega:true,home:true,cathome:true,spd:sp,life:2.4,launch:0.1,target:target||null}); }
+  // 白は3方向ホーミングなので、1発の威力はひとつ前（赤）のレーザーと同じに（laserMul()/1.2 で1段下げ）
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul()*(lion?1.7:(1/1.2)),color:lion?'#ffcf6a':'#fff',kind:'laser',pierce:true,len:46,thickV:lion?9:7,hitThick:lion?18:14,dx,dy,ang,mega:true,home:true,cathome:true,spd:sp,life:2.4,launch:0.1,target:target||null}); }
 const HOME_ANG=[-0.5,-0.17,0.17,0.5]; // 前方に扇状に開く4方向（まっすぐ直進）
 function fireTigerHomers(x,y,n){ const spd=900, tb=1+(player.laserBoost||0)*0.22, dm=LBASE*laserMul()*0.9; // 虎の顔から前方へ扇状に直線レーザー
   for(let k=0;k<n;k++){ const base=HOME_ANG[(player.homeSeq=((player.homeSeq||0)+1))%HOME_ANG.length];

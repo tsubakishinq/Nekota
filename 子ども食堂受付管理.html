@@ -105,6 +105,7 @@
   .complete-number-note{font-size:11px;color:var(--ink-light);text-align:center;margin-bottom:20px;line-height:1.6;}
   .complete-table{background:var(--bg);border-radius:10px;padding:4px 16px;margin-bottom:20px;}
 
+  .lookup-entry-btn{display:block;width:100%;box-sizing:border-box;text-align:center;background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:12px;padding:14px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;margin-bottom:20px;}
   .lookup-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;}
   .lookup-card h2{font-size:12px;font-weight:500;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
   .lookup-row{display:flex;gap:8px;}
@@ -139,20 +140,26 @@
   <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28人）に達したため終了しました</div>
 
   <div id="screenLocation">
-    <div class="lookup-card">
-      <h2>予約番号で確認</h2>
-      <div class="lookup-row">
-        <input type="text" id="lookupNumber" placeholder="例：0001" inputmode="numeric" maxlength="4">
-        <button type="button" onclick="lookupReservation()">確認する</button>
-      </div>
-      <div id="lookupResult"></div>
-    </div>
+    <button type="button" class="lookup-entry-btn" onclick="showLookup()">📦 受け取り確認（予約番号をお持ちの方はこちら）</button>
 
     <div class="section-title">受け取り場所を選択</div>
     <div class="loc-list" id="locList"></div>
 
     <div class="admin-link-wrap">
       <button type="button" class="admin-link" onclick="showAdmin()">管理画面</button>
+    </div>
+  </div>
+
+  <div id="screenLookup" style="display:none">
+    <button type="button" class="back-btn" onclick="hideLookup()">‹ 戻る</button>
+    <div class="admin-title">受け取り確認</div>
+    <div class="lookup-card">
+      <h2>予約番号を入力してください</h2>
+      <div class="lookup-row">
+        <input type="text" id="lookupNumber" placeholder="例：0001" inputmode="numeric" maxlength="4">
+        <button type="button" onclick="lookupReservation()">確認する</button>
+      </div>
+      <div id="lookupResult"></div>
     </div>
   </div>
 
@@ -304,6 +311,7 @@ let editingId = null; // {date, locationId, id}
 let adminMode = false;
 let cameFromAdmin = false;
 let showComplete = false;
+let lookupMode = false;
 let lastSubmission = null;
 
 async function apiFetch(path, options={}){
@@ -458,6 +466,7 @@ function renderSummary(){
 function currentScreen(){
   if(adminMode) return 'admin';
   if(showComplete) return 'complete';
+  if(lookupMode) return 'lookup';
   if(!selectedLocationId) return 'location';
   if(!selectedTime) return 'time';
   return 'form';
@@ -470,6 +479,21 @@ function renderScreens(){
   document.getElementById('screenForm').style.display = screen==='form' ? 'block' : 'none';
   document.getElementById('screenAdmin').style.display = screen==='admin' ? 'block' : 'none';
   document.getElementById('screenComplete').style.display = screen==='complete' ? 'block' : 'none';
+  document.getElementById('screenLookup').style.display = screen==='lookup' ? 'block' : 'none';
+}
+
+function showLookup(){
+  lookupMode = true;
+  document.getElementById('lookupNumber').value = '';
+  document.getElementById('lookupResult').innerHTML = '';
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function hideLookup(){
+  lookupMode = false;
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function renderComplete(){

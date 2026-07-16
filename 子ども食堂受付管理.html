@@ -100,6 +100,7 @@
   .complete-title{font-size:17px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:20px;}
   .complete-number-label{font-size:11px;color:var(--ink-light);text-align:center;letter-spacing:.08em;text-transform:uppercase;}
   .complete-number{font-family:'DM Mono',monospace;font-size:40px;font-weight:700;color:var(--accent);text-align:center;letter-spacing:.05em;margin:4px 0 10px;}
+  .complete-screenshot-note{font-size:13px;font-weight:700;color:var(--accent);text-align:center;margin-bottom:8px;}
   .complete-number-note{font-size:11px;color:var(--ink-light);text-align:center;margin-bottom:20px;line-height:1.6;}
   .complete-table{background:var(--bg);border-radius:10px;padding:4px 16px;margin-bottom:20px;}
 
@@ -202,6 +203,7 @@
       <div class="complete-title">申し込みが完了しました</div>
       <div class="complete-number-label">受付番号</div>
       <div class="complete-number" id="completeNumber"></div>
+      <div class="complete-screenshot-note">📷 スクショして保存してください</div>
       <div class="complete-number-note">この番号を控えておくと、後で「予約番号で確認」から日時・場所を確認できます</div>
       <div class="complete-table">
         <div class="complete-row"><span class="c-label">日時</span><span class="c-value" id="completeDateTime"></span></div>
@@ -227,14 +229,15 @@ const SUPABASE_KEY = 'sb_publishable_boiIMnJ4Qy-DUh4dsiN5Jg_Ji9tJHoJ';
 const SYNC_INTERVAL_MS = 8000;
 const WEB3FORMS_ACCESS_KEY = '4a3c879b-aa6a-4a41-80b4-12124fa0f2c8';
 
-async function notifyByEmail(locationName, dateLabel, time, name, people){
+async function notifyByEmail(number, locationName, dateLabel, time, name, people){
   try{
     await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_ACCESS_KEY,
-        subject: `子ども食堂受付: ${locationName} ${dateLabel} ${time}`,
+        subject: `子ども食堂受付 #${number}: ${locationName} ${dateLabel} ${time}`,
+        受付番号: number,
         日時: `${dateLabel} ${time}`,
         場所: locationName,
         お名前: name,
@@ -730,15 +733,16 @@ async function submitEntry(){
   const loc = getLocation(selectedLocationId);
   const {md, dow} = fmtDate(selectedDate);
   const dateLabel = `${md}(${dow})`;
+  const number = padNum(insertedId);
   lastSubmission = {
-    number: padNum(insertedId),
+    number,
     dateLabel,
     time: selectedTime,
     locationName: loc.name,
     name,
     people
   };
-  notifyByEmail(loc.name, dateLabel, selectedTime, name, people);
+  notifyByEmail(number, loc.name, dateLabel, selectedTime, name, people);
   showComplete = true;
   selectedLocationId = null;
   selectedTime = null;

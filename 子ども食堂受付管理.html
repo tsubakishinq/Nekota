@@ -97,7 +97,19 @@
 
   .complete-icon{font-size:40px;text-align:center;margin-bottom:8px;}
   .complete-title{font-size:17px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:20px;}
+  .complete-number-label{font-size:11px;color:var(--ink-light);text-align:center;letter-spacing:.08em;text-transform:uppercase;}
+  .complete-number{font-family:'DM Mono',monospace;font-size:40px;font-weight:700;color:var(--accent);text-align:center;letter-spacing:.05em;margin:4px 0 10px;}
+  .complete-number-note{font-size:11px;color:var(--ink-light);text-align:center;margin-bottom:20px;line-height:1.6;}
   .complete-table{background:var(--bg);border-radius:10px;padding:4px 16px;margin-bottom:20px;}
+
+  .lookup-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;}
+  .lookup-card h2{font-size:12px;font-weight:500;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
+  .lookup-row{display:flex;gap:8px;}
+  .lookup-row input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;font-size:15px;font-family:'DM Mono',monospace;color:var(--ink);background:var(--bg);outline:none;}
+  .lookup-row input:focus{border-color:var(--accent);background:#fff;}
+  .lookup-row button{flex:0 0 auto;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 18px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;}
+  .lookup-result{margin-top:14px;background:var(--bg);border-radius:10px;padding:4px 16px;}
+  .lookup-result.error{color:var(--accent);text-align:center;padding:14px 0;background:none;}
   .complete-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;gap:12px;}
   .complete-row:last-child{border-bottom:none;}
   .complete-row .c-label{color:var(--ink-light);flex:0 0 auto;}
@@ -124,6 +136,15 @@
   <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28人）に達したため終了しました</div>
 
   <div id="screenLocation">
+    <div class="lookup-card">
+      <h2>予約番号で確認</h2>
+      <div class="lookup-row">
+        <input type="text" id="lookupNumber" placeholder="例：0001" inputmode="numeric" maxlength="4">
+        <button type="button" onclick="lookupReservation()">確認する</button>
+      </div>
+      <div id="lookupResult"></div>
+    </div>
+
     <div class="section-title">受け取り場所を選択</div>
     <div class="loc-list" id="locList"></div>
 
@@ -171,6 +192,9 @@
     <div class="input-card">
       <div class="complete-icon">✅</div>
       <div class="complete-title">申し込みが完了しました</div>
+      <div class="complete-number-label">受付番号</div>
+      <div class="complete-number" id="completeNumber"></div>
+      <div class="complete-number-note">この番号を控えておくと、後で「予約番号で確認」から日時・場所を確認できます</div>
       <div class="complete-table">
         <div class="complete-row"><span class="c-label">日時</span><span class="c-value" id="completeDateTime"></span></div>
         <div class="complete-row"><span class="c-label">場所</span><span class="c-value" id="completeLocation"></span></div>
@@ -338,6 +362,42 @@ function fmtDate(d){
   return { md: `${m}/${day}`, dow: DOW[getDow(d)] };
 }
 
+function padNum(n){
+  return String(n).padStart(4,'0');
+}
+
+function findReservationByNumber(numStr){
+  const id = Number(String(numStr).trim().replace(/^0+(?=\d)/, ''));
+  if(!id) return null;
+  for(const date of Object.keys(data)){
+    for(const locId of Object.keys(data[date])){
+      const entry = data[date][locId].find(e => Number(e.id) === id);
+      if(entry) return { date, locId, entry };
+    }
+  }
+  return null;
+}
+
+function lookupReservation(){
+  const input = document.getElementById('lookupNumber').value;
+  const result = document.getElementById('lookupResult');
+  const found = findReservationByNumber(input);
+  if(!found){
+    result.className = 'lookup-result error';
+    result.textContent = '予約が見つかりませんでした。番号をご確認ください。';
+    return;
+  }
+  const loc = getLocation(found.locId);
+  const {md, dow} = fmtDate(found.date);
+  result.className = 'lookup-result';
+  result.innerHTML = `
+    <div class="complete-row"><span class="c-label">日時</span><span class="c-value">${md}(${dow}) ${found.entry.time}</span></div>
+    <div class="complete-row"><span class="c-label">場所</span><span class="c-value">${escapeHtml(loc.name)}</span></div>
+    <div class="complete-row"><span class="c-label">お名前</span><span class="c-value">${escapeHtml(found.entry.name)}</span></div>
+    <div class="complete-row"><span class="c-label">人数</span><span class="c-value">${found.entry.people}人</span></div>
+  `;
+}
+
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -403,6 +463,7 @@ function renderScreens(){
 
 function renderComplete(){
   if(!lastSubmission) return;
+  document.getElementById('completeNumber').textContent = lastSubmission.number;
   document.getElementById('completeDateTime').textContent = `${lastSubmission.dateLabel} ${lastSubmission.time}`;
   document.getElementById('completeLocation').textContent = lastSubmission.locationName;
   document.getElementById('completeName').textContent = lastSubmission.name;
@@ -608,6 +669,7 @@ async function submitEntry(){
 
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
+  let insertedId = null;
   try{
     if(isEdit){
       await apiFetch(`reservations?id=eq.${editingId.id}`, {
@@ -616,11 +678,13 @@ async function submitEntry(){
         body: JSON.stringify({ time: selectedTime, name, people })
       });
     }else{
-      await apiFetch('reservations', {
+      const res = await apiFetch('reservations', {
         method: 'POST',
-        headers: { 'Prefer': 'return=minimal' },
+        headers: { 'Prefer': 'return=representation' },
         body: JSON.stringify({ date: selectedDate, location_id: selectedLocationId, time: selectedTime, name, people })
       });
+      const [row] = await res.json();
+      insertedId = row.id;
     }
     await refreshData();
   }catch(e){
@@ -641,6 +705,7 @@ async function submitEntry(){
   const {md, dow} = fmtDate(selectedDate);
   const dateLabel = `${md}(${dow})`;
   lastSubmission = {
+    number: padNum(insertedId),
     dateLabel,
     time: selectedTime,
     locationName: loc.name,

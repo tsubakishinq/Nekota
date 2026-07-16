@@ -84,8 +84,6 @@
   .record-item:last-child{border-bottom:none;}
   .record-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-light);min-width:44px;}
   .record-name{font-size:14px;color:var(--ink);flex:1;font-weight:500;}
-  .record-name-wrap{display:flex;flex-direction:column;gap:2px;flex:1;}
-  .record-phone{font-size:11px;color:var(--ink-light);font-family:'DM Mono',monospace;}
   .record-people{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);min-width:36px;text-align:right;}
   .record-actions{display:flex;gap:6px;}
   .icon-btn{border:none;background:none;color:var(--ink-light);font-size:15px;cursor:pointer;padding:4px 6px;line-height:1;}
@@ -185,12 +183,6 @@
           <input type="number" id="fPeople" min="1" value="1" inputmode="numeric">
         </div>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>電話番号（任意）</label>
-          <input type="tel" id="fPhone" placeholder="例：090-1234-5678">
-        </div>
-      </div>
       <div class="btn-row">
         <button class="btn-primary" id="submitBtn" onclick="submitEntry()">追加する</button>
         <button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
@@ -235,7 +227,7 @@ const SUPABASE_KEY = 'sb_publishable_boiIMnJ4Qy-DUh4dsiN5Jg_Ji9tJHoJ';
 const SYNC_INTERVAL_MS = 8000;
 const WEB3FORMS_ACCESS_KEY = '4a3c879b-aa6a-4a41-80b4-12124fa0f2c8';
 
-async function notifyByEmail(locationName, dateLabel, time, name, people, phone){
+async function notifyByEmail(locationName, dateLabel, time, name, people){
   try{
     await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
@@ -246,8 +238,7 @@ async function notifyByEmail(locationName, dateLabel, time, name, people, phone)
         日時: `${dateLabel} ${time}`,
         場所: locationName,
         お名前: name,
-        人数: `${people}人`,
-        電話番号: phone || '(未入力)'
+        人数: `${people}人`
       })
     });
   }catch(e){ /* 通知メールの失敗は受付処理自体には影響させない */ }
@@ -336,7 +327,7 @@ function rebuildDataFromRows(rows){
   for(const row of rows){
     if(!d[row.date]) d[row.date] = {};
     if(!d[row.date][row.location_id]) d[row.date][row.location_id] = [];
-    d[row.date][row.location_id].push({ id: row.id, time: row.time, name: row.name, people: row.people, phone: row.phone || '' });
+    d[row.date][row.location_id].push({ id: row.id, time: row.time, name: row.name, people: row.people });
   }
   data = d;
 }
@@ -611,7 +602,6 @@ function selectTime(t){
   if(!editingId){
     document.getElementById('fName').value = '';
     document.getElementById('fPeople').value = 1;
-    document.getElementById('fPhone').value = '';
     document.getElementById('formTitle').textContent = '受付情報を入力';
     document.getElementById('submitBtn').textContent = '追加する';
   }
@@ -648,10 +638,7 @@ function renderEntryList(){
     const rows = list.map(e=>`
       <div class="record-item">
         <span class="record-time">${e.time}</span>
-        <span class="record-name-wrap">
-          <span class="record-name">${escapeHtml(e.name)}</span>
-          ${e.phone ? `<span class="record-phone">📞 ${escapeHtml(e.phone)}</span>` : ''}
-        </span>
+        <span class="record-name">${escapeHtml(e.name)}</span>
         <span class="record-people">${e.people}人</span>
         <span class="record-actions">
           <button class="icon-btn" onclick="startEdit('${loc.id}','${e.id}')">✏️</button>
@@ -690,7 +677,6 @@ function returnFromEdit(){
 async function submitEntry(){
   const name = document.getElementById('fName').value.trim();
   const people = Number(document.getElementById('fPeople').value) || 1;
-  const phone = document.getElementById('fPhone').value.trim();
 
   if(!name){
     alert('お名前を入力してください');
@@ -715,13 +701,13 @@ async function submitEntry(){
       await apiFetch(`reservations?id=eq.${editingId.id}`, {
         method: 'PATCH',
         headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ time: selectedTime, name, people, phone })
+        body: JSON.stringify({ time: selectedTime, name, people })
       });
     }else{
       const res = await apiFetch('reservations', {
         method: 'POST',
         headers: { 'Prefer': 'return=representation' },
-        body: JSON.stringify({ date: selectedDate, location_id: selectedLocationId, time: selectedTime, name, people, phone })
+        body: JSON.stringify({ date: selectedDate, location_id: selectedLocationId, time: selectedTime, name, people })
       });
       const [row] = await res.json();
       insertedId = row.id;
@@ -752,13 +738,12 @@ async function submitEntry(){
     name,
     people
   };
-  notifyByEmail(loc.name, dateLabel, selectedTime, name, people, phone);
+  notifyByEmail(loc.name, dateLabel, selectedTime, name, people);
   showComplete = true;
   selectedLocationId = null;
   selectedTime = null;
   document.getElementById('fName').value = '';
   document.getElementById('fPeople').value = 1;
-  document.getElementById('fPhone').value = '';
   renderAll();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -774,7 +759,6 @@ function startEdit(locId, id){
   renderAll();
   document.getElementById('fName').value = entry.name;
   document.getElementById('fPeople').value = entry.people;
-  document.getElementById('fPhone').value = entry.phone || '';
   document.getElementById('formTitle').textContent = '受付を編集';
   document.getElementById('submitBtn').textContent = '更新する';
   window.scrollTo({top:0,behavior:'smooth'});
@@ -788,10 +772,8 @@ function cancelEdit(skipRender){
   }
   const fName = document.getElementById('fName');
   const fPeople = document.getElementById('fPeople');
-  const fPhone = document.getElementById('fPhone');
   if(fName) fName.value = '';
   if(fPeople) fPeople.value = 1;
-  if(fPhone) fPhone.value = '';
   if(!skipRender) renderAll();
 }
 

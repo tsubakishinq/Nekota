@@ -150,6 +150,21 @@
 
   .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.3s;z-index:300;box-shadow:var(--shadow);}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---- receipts ---- */
+  .rcpt-label{font-size:12px;font-weight:900;color:var(--receipt);letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
+  .receipts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .receipt-thumb{position:relative;width:72px;height:72px;border-radius:12px;overflow:hidden;border:1px solid var(--border);cursor:pointer;background:#f0efe9;}
+  .receipt-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .receipt-thumb .del{position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;font-size:13px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;}
+  .rcpt-add{width:72px;height:72px;border-radius:12px;border:1.5px dashed var(--receipt);background:var(--receipt-light);color:#c07d10;font-size:11px;font-weight:800;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:inherit;}
+  .rcpt-add .pl{font-size:22px;line-height:1;}
+  .cal-cell .rmark{position:absolute;top:2px;right:3px;font-size:9px;}
+
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:400;display:none;align-items:center;justify-content:center;padding:24px;}
+  .lightbox.on{display:flex;animation:fade .2s;}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);}
+  .lightbox .lb-close{position:absolute;top:14px;right:20px;color:#fff;font-size:34px;background:none;border:none;cursor:pointer;line-height:1;}
 </style>
 </head>
 <body>
@@ -180,6 +195,11 @@
         <div class="day-date" id="dayDate"></div>
         <div class="day-mini" id="dayMini"></div>
       </div>
+
+      <div class="rcpt-label">🧾 レシート写真</div>
+      <div class="receipts" id="dayReceipts"></div>
+      <input type="file" id="rcptInput" accept="image/*" multiple hidden>
+
       <div id="dayLog"></div>
       <button class="btn btn-primary" id="addBtn" style="margin-top:12px;">＋ 買ったもの・食べたものを追加</button>
     </div>
@@ -276,6 +296,12 @@
   <button class="tab" data-scr="food"><span class="ti">🥗</span><span class="tl">食材</span></button>
 </nav>
 
+<!-- ============ 写真拡大 ============ -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose">×</button>
+  <img id="lbImg" alt="レシート">
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -344,6 +370,13 @@ let state=load();
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.logs)return s;}catch(e){}return {logs:{}};}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));}
 
+// レシート写真は別キーに保存（本体stateを軽く保つ）
+const PKEY='reshi_eiyou_photos_v1';
+let photos=loadPhotos();
+function loadPhotos(){try{const p=JSON.parse(localStorage.getItem(PKEY));if(p&&typeof p==='object')return p;}catch(e){}return {};}
+function savePhotos(){try{localStorage.setItem(PKEY,JSON.stringify(photos));return true;}catch(e){return false;}}
+function dayPhotos(k){return photos[k]||[];}
+
 function dateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function parseKey(k){const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);}
 const WD=['日','月','火','水','木','金','土'];
@@ -395,8 +428,10 @@ function renderCal(){
     let dots='';
     if(s.lacto>0)dots+='<span class="dot l"></span>';
     if(s.fiber>0)dots+='<span class="dot f"></span>';
+    const hasRcpt=dayPhotos(k).length>0;
     cells+=`<div class="${cls.join(' ')}" data-k="${k}">
       <span class="dnum" style="${dt.getDay()===0?'color:#e0603a':dt.getDay()===6?'color:#3a7ee0':''}">${d}</span>
+      ${hasRcpt?'<span class="rmark">🧾</span>':''}
       ${n?`<span class="cnt">${n}品</span>`:''}
       <span class="dots">${dots}</span>
     </div>`;
@@ -413,9 +448,11 @@ function renderDay(){
   document.getElementById('dayMini').innerHTML=
     `<span class="mini-pill l">乳酸菌 ${s.lacto}</span><span class="mini-pill f">食物繊維 ${s.fiber}g</span>`;
 
+  renderReceipts();
+
   const el=document.getElementById('dayLog');
   const items=dayEntries(selKey);
-  if(!items.length){el.innerHTML='<div class="empty">この日はまだ記録がありません。<br>下のボタンから追加してください 🧾</div>';return;}
+  if(!items.length){el.innerHTML='<div class="empty">この日はまだ品目の記録がありません。<br>レシート写真を見ながら「＋追加」でどうぞ 🧾</div>';return;}
   el.innerHTML=items.map((it,i)=>{
     const f=FOOD_MAP[it.id];if(!f)return '';
     const meta=[];
@@ -437,6 +474,72 @@ document.getElementById('dayLog').addEventListener('click',e=>{
   if(!list.length)delete state.logs[selKey];
   save();renderDay();renderCal();
 });
+
+//========================= レシート写真 =========================
+function renderReceipts(){
+  const el=document.getElementById('dayReceipts');
+  const list=dayPhotos(selKey);
+  let html=`<button class="rcpt-add" id="rcptAdd"><span class="pl">＋</span>写真を追加</button>`;
+  html+=list.map((src,i)=>
+    `<div class="receipt-thumb" data-i="${i}"><img src="${src}" alt="レシート${i+1}"><button class="del" data-del="${i}">×</button></div>`
+  ).join('');
+  el.innerHTML=html;
+}
+
+// 画像を縮小してJPEG DataURLに（localStorage節約）
+function downscale(file,maxSide=1000,quality=0.6){
+  return new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>=h&&w>maxSide){h=Math.round(h*maxSide/w);w=maxSide;}
+      else if(h>w&&h>maxSide){w=Math.round(w*maxSide/h);h=maxSide;}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      try{res(c.toDataURL('image/jpeg',quality));}catch(e){rej(e);}
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('load'));};
+    img.src=url;
+  });
+}
+
+async function handleReceiptFiles(files){
+  const imgs=[...files].filter(f=>f.type.startsWith('image/'));
+  if(!imgs.length)return;
+  const before=JSON.stringify(photos[selKey]||null);
+  const list=photos[selKey]||(photos[selKey]=[]);
+  for(const f of imgs){try{list.push(await downscale(f));}catch(e){}}
+  if(!savePhotos()){
+    // 容量オーバー → 直前の状態に戻す
+    if(before==='null')delete photos[selKey];else photos[selKey]=JSON.parse(before);
+    savePhotos();
+    alert('保存容量がいっぱいです。この日や他の日の古いレシート写真を削除してから、もう一度お試しください。');
+  }else{
+    toast(`レシートを${imgs.length}枚 追加しました`);
+  }
+  renderReceipts();renderCal();
+}
+
+document.getElementById('rcptInput').addEventListener('change',e=>{handleReceiptFiles(e.target.files);e.target.value='';});
+document.getElementById('dayReceipts').addEventListener('click',e=>{
+  if(e.target.closest('#rcptAdd')){document.getElementById('rcptInput').click();return;}
+  const del=e.target.closest('[data-del]');
+  if(del){
+    const i=+del.dataset.del,list=photos[selKey];if(!list)return;
+    if(!confirm('このレシート写真を削除しますか？'))return;
+    list.splice(i,1);if(!list.length)delete photos[selKey];
+    savePhotos();renderReceipts();renderCal();return;
+  }
+  const th=e.target.closest('.receipt-thumb');
+  if(th)openLightbox(dayPhotos(selKey)[+th.dataset.i]);
+});
+
+// 写真拡大
+function openLightbox(src){if(!src)return;document.getElementById('lbImg').src=src;document.getElementById('lightbox').classList.add('on');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('on');document.getElementById('lbImg').src='';}
+document.getElementById('lbClose').addEventListener('click',closeLightbox);
+document.getElementById('lightbox').addEventListener('click',e=>{if(e.target.id==='lightbox')closeLightbox();});
 
 //========================= 今週描画 =========================
 function renderWeek(){
@@ -617,8 +720,9 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 
 //========================= リセット =========================
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  if(confirm('すべての記録を削除します。よろしいですか？')){
+  if(confirm('すべての記録とレシート写真を削除します。よろしいですか？')){
     state={logs:{}};save();
+    photos={};savePhotos();
     selKey=TODAY_KEY;calMonth=new Date(NOW.getFullYear(),NOW.getMonth(),1);wkStart=weekStart(NOW);
     renderCal();renderDay();renderWeek();toast('リセットしました');
   }

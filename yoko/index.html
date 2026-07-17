@@ -868,11 +868,17 @@ function drawJuice(b){ // 玉ねぎの汁：しずく型の半透明スプラッ
   ctx.fillStyle='rgba(233,227,150,.9)'; ctx.beginPath(); // しずく（進行方向に尖る）
   ctx.moveTo(-r*1.4,0); ctx.quadraticCurveTo(-r*0.2,-r*0.95,r*0.85,-r*0.55); ctx.quadraticCurveTo(r*1.15,0,r*0.85,r*0.55); ctx.quadraticCurveTo(-r*0.2,r*0.95,-r*1.4,0); ctx.closePath(); ctx.fill();
   ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.7)'; ctx.beginPath(); ctx.ellipse(r*0.1,-r*0.28,r*0.34,r*0.18,-0.4,0,TAU); ctx.fill(); }
-function drawFry(b){ // ポテトフライ：金色の細い棒（先が少し濃い）
-  ctx.rotate((b.ang||0)); const L=b.r*2.4, W=b.r*0.72; ctx.shadowColor='#f0c257'; ctx.shadowBlur=8;
-  const g=ctx.createLinearGradient(-L/2,0,L/2,0); g.addColorStop(0,'#d99a34'); g.addColorStop(.5,'#f3c85f'); g.addColorStop(1,'#d99a34');
-  ctx.fillStyle=g; roundRect(-L/2,-W/2,L,W,W/2); ctx.fill();
-  ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-L/2+2,-W*0.15); ctx.lineTo(L/2-2,-W*0.15); ctx.stroke(); }
+function drawFry(b){ // フライドポテト：太めの金色の棒（両端カリッ＋ハイライト＋塩）
+  ctx.rotate((b.ang||0)); const L=b.r*2.7, W=b.r*1.05; ctx.shadowColor='#f0b84a'; ctx.shadowBlur=11;
+  const g=ctx.createLinearGradient(0,-W/2,0,W/2); g.addColorStop(0,'#f9d87e'); g.addColorStop(.5,'#eeb64a'); g.addColorStop(1,'#cd8f2b');
+  ctx.fillStyle=g; roundRect(-L/2,-W/2,L,W,W*0.42); ctx.fill();
+  // 両端のカリッとした揚げ色（濃いめ）
+  ctx.fillStyle='#b5761d'; roundRect(-L/2,-W/2,W*0.6,W,W*0.42); ctx.fill(); roundRect(L/2-W*0.6,-W/2,W*0.6,W,W*0.42); ctx.fill();
+  ctx.shadowBlur=0;
+  // 上面のツヤ
+  ctx.fillStyle='rgba(255,255,255,.5)'; roundRect(-L/2+W*0.55,-W*0.36,L-W*1.1,W*0.24,W*0.1); ctx.fill();
+  // 塩つぶ
+  ctx.fillStyle='rgba(255,255,255,.85)'; for(const sx of [-L*0.16,L*0.04,L*0.24]){ ctx.beginPath(); ctx.arc(sx,W*0.14,W*0.09,0,TAU); ctx.fill(); } }
 function drawBull(b){ // 怒った闘牛の頭（黒い突進、赤い目＋角）
   const dir=Math.cos(b.ang||Math.PI)<0?1:-1; ctx.scale(dir,1); const r=b.r; // 進行方向へ向ける
   ctx.shadowColor='#000'; ctx.shadowBlur=12; ctx.fillStyle='#2c211c';
@@ -1005,9 +1011,9 @@ function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
     const n=easyMode?3:5; for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.17, sp=rnd(230,300);
       eBullets.push({x:e.x-e.r*0.5,y:e.y+rnd(-10,10),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:9,color:'#eae59a',boss:true,kind:'juice',ang:aa}); }
     Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-4,'たまねぎ汁！','#eae59a',13); e.spCd=easyMode?2.9:2.2; }
-  else if(idx===2){ // じゃがいも：ポテトフライを飛ばす
-    const n=easyMode?4:7; for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.15, sp=rnd(300,370);
-      eBullets.push({x:e.x-e.r*0.5,y:e.y+rnd(-14,14),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:6,color:'#e7b84e',boss:true,kind:'fry',ang:aa,spin:rnd(-6,6)}); }
+  else if(idx===2){ // じゃがいも：フライドポテトを飛ばす（大きめ）
+    const n=easyMode?4:6; for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.17, sp=rnd(290,360);
+      eBullets.push({x:e.x-e.r*0.5,y:e.y+rnd(-16,16),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:11,color:'#eeb64a',boss:true,kind:'fry',ang:aa,spin:rnd(-6,6)}); }
     Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-4,'ポテトフライ！','#e7b84e',13); e.spCd=easyMode?2.7:2.0; }
   else { // 牛：怒った闘牛が突進してくる
     const sp=470; eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5,r:26,color:'#3a2a24',boss:true,kind:'bull',ang:a});

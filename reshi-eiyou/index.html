@@ -151,6 +151,15 @@
   .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.3s;z-index:300;box-shadow:var(--shadow);}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* ---- 日付タップ時の入力画面 ---- */
+  .day-screen{position:fixed;inset:0;max-width:480px;margin:0 auto;background:var(--bg);z-index:150;display:none;flex-direction:column;}
+  .day-screen.on{display:flex;animation:slidein .24s ease;}
+  @keyframes slidein{from{transform:translateX(28px);opacity:.4;}to{transform:none;opacity:1;}}
+  .day-topbar{background:var(--ink);color:#fff;padding:14px 12px;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .day-topbar .back{background:none;border:none;color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:2px 6px;}
+  .day-topbar .dt{font-size:16px;font-weight:900;}
+  .ds-body{flex:1;overflow-y:auto;padding:16px;}
+
   /* ---- receipts ---- */
   .rcpt-label{font-size:12px;font-weight:900;color:var(--receipt);letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:center;gap:5px;}
   .receipts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
@@ -206,25 +215,35 @@
       <div class="cal-grid" id="calDow"></div>
       <div class="cal-grid" id="calGrid" style="margin-top:5px;"></div>
       <p class="muted" style="margin-top:10px;">
+        📅 <b>日付をタップすると入力画面が開きます。</b><br>
         <span class="dot l" style="display:inline-block;width:7px;height:7px;border-radius:50%;"></span> 乳酸菌
         <span class="dot f" style="display:inline-block;width:7px;height:7px;border-radius:50%;"></span> 食物繊維　の記録がある日に印がつきます
       </p>
     </div>
-
-    <div class="card">
-      <div class="day-head">
-        <div class="day-date" id="dayDate"></div>
-        <div class="day-mini" id="dayMini"></div>
-      </div>
-
-      <div class="rcpt-label">🧾 レシート写真</div>
-      <div class="receipts" id="dayReceipts"></div>
-      <input type="file" id="rcptInput" accept="image/*" multiple hidden>
-
-      <div id="dayLog"></div>
-      <button class="btn btn-primary" id="addBtn" style="margin-top:12px;">＋ 買ったもの・食べたものを追加</button>
-    </div>
   </section>
+
+  <!-- ============ 日付タップ時の入力画面 ============ -->
+  <div class="day-screen" id="dayScreen">
+    <div class="day-topbar">
+      <button class="back" id="dayBack">‹</button>
+      <span class="dt" id="dayTopDate"></span>
+    </div>
+    <div class="ds-body">
+      <div class="card">
+        <div class="day-head">
+          <div class="day-date" id="dayDate"></div>
+          <div class="day-mini" id="dayMini"></div>
+        </div>
+
+        <div class="rcpt-label">🧾 レシート写真</div>
+        <div class="receipts" id="dayReceipts"></div>
+        <input type="file" id="rcptInput" accept="image/*" multiple hidden>
+
+        <div id="dayLog"></div>
+        <button class="btn btn-primary" id="addBtn" style="margin-top:12px;">＋ 買ったもの・食べたものを追加</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ 今週 ============ -->
   <section class="screen" id="scr-week">
@@ -502,6 +521,8 @@ function renderDay(){
   const isToday=selKey===TODAY_KEY;
   document.getElementById('dayDate').innerHTML=
     `${dt.getMonth()+1}/${dt.getDate()} <small>(${WD[dt.getDay()]})${isToday?' きょう':''}</small>`;
+  document.getElementById('dayTopDate').textContent=
+    `${dt.getMonth()+1}月${dt.getDate()}日 (${WD[dt.getDay()]})${isToday?' きょう':''}`;
   document.getElementById('dayMini').innerHTML=
     `<span class="mini-pill l">乳酸菌 ${s.lacto}</span><span class="mini-pill f">食物繊維 ${s.fiber}g</span>`;
 
@@ -888,7 +909,13 @@ document.getElementById('calGrid').addEventListener('click',e=>{
   selKey=c.dataset.k;
   wkStart=weekStart(parseKey(selKey));
   renderCal();renderDay();
+  openDayScreen();
 });
+
+//========================= 入力画面（日付タップ）開閉 =========================
+function openDayScreen(){document.getElementById('dayScreen').classList.add('on');document.querySelector('.ds-body').scrollTop=0;}
+function closeDayScreen(){document.getElementById('dayScreen').classList.remove('on');renderCal();}
+document.getElementById('dayBack').addEventListener('click',closeDayScreen);
 
 //========================= 週操作 =========================
 document.getElementById('prevW').addEventListener('click',()=>{wkStart.setDate(wkStart.getDate()-7);renderWeek();renderCal();});
@@ -896,6 +923,7 @@ document.getElementById('nextW').addEventListener('click',()=>{wkStart.setDate(w
 
 //========================= タブ切替 =========================
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.getElementById('dayScreen').classList.remove('on');
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   t.classList.add('on');

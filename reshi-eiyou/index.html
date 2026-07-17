@@ -282,14 +282,18 @@
       <div class="food-grid" id="refGrid"></div>
     </div>
     <div class="card">
-      <div class="section-title">🤖 AI読み取り設定</div>
-      <p class="muted" style="margin-bottom:10px;">レシート写真をAIで自動読み取りするには、中継サーバー（<code>reshi-eiyou/proxy</code> の手順でデプロイ）のURLを貼り付けて保存してください。未設定でも手入力で使えます。</p>
-      <input class="set-input" id="endpointInput" placeholder="https://....workers.dev">
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary" id="endpointSave" style="flex:1;">保存</button>
-        <button class="btn btn-ghost" id="endpointClear" style="flex:0 0 auto;padding:0 16px;">クリア</button>
-      </div>
-      <div class="set-status off" id="endpointStatus"></div>
+      <div class="section-title">📷 レシート読み取りについて</div>
+      <p class="muted" style="margin-bottom:12px;">レシート写真を開いて「写真から読み取る」を押すと、<b>ブラウザ内で無料</b>で文字を読み取り、食材の候補を出します（初回だけOCRの読み込みに少し時間がかかります）。日本のレシートは読み取り精度に限界があるので、確認画面で手直ししてください。</p>
+      <details>
+        <summary class="muted" style="cursor:pointer;font-weight:700;">精度を上げたい方へ（任意・上級者向け）</summary>
+        <p class="muted" style="margin:10px 0;"><code>reshi-eiyou/proxy</code> の手順でAI中継サーバーを立てると、より正確に読み取れます。そのURLをここに保存すると、OCRの代わりにAIを使います（未設定なら無料OCRのまま）。</p>
+        <input class="set-input" id="endpointInput" placeholder="https://....workers.dev（任意）">
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary" id="endpointSave" style="flex:1;">保存</button>
+          <button class="btn btn-ghost" id="endpointClear" style="flex:0 0 auto;padding:0 16px;">クリア</button>
+        </div>
+        <div class="set-status off" id="endpointStatus"></div>
+      </details>
     </div>
 
     <div class="card">
@@ -333,7 +337,7 @@
   <button class="lb-close" id="lbClose">×</button>
   <img id="lbImg" alt="レシート">
   <div class="lb-foot">
-    <button class="lb-read" id="lbRead">🤖 AIで読み取る</button>
+    <button class="lb-read" id="lbRead">📷 写真から読み取る</button>
   </div>
 </div>
 
@@ -356,6 +360,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 //========================= 食べもの・買い物データ =========================
 // lacto: 乳酸菌スコア(0-3) / fiber: 食物繊維(g・1食分めやす)
@@ -613,25 +618,69 @@ document.getElementById('endpointClear').addEventListener('click',()=>{
   localStorage.removeItem(EPKEY);renderEndpoint();toast('クリアしました');
 });
 
-//========================= AIでレシートを読み取る =========================
+//========================= レシート文字→食材の照合（無料OCR用） =========================
+const KANA_MAP={'ｶﾞ':'ガ','ｷﾞ':'ギ','ｸﾞ':'グ','ｹﾞ':'ゲ','ｺﾞ':'ゴ','ｻﾞ':'ザ','ｼﾞ':'ジ','ｽﾞ':'ズ','ｾﾞ':'ゼ','ｿﾞ':'ゾ','ﾀﾞ':'ダ','ﾁﾞ':'ヂ','ﾂﾞ':'ヅ','ﾃﾞ':'デ','ﾄﾞ':'ド','ﾊﾞ':'バ','ﾋﾞ':'ビ','ﾌﾞ':'ブ','ﾍﾞ':'ベ','ﾎﾞ':'ボ','ﾊﾟ':'パ','ﾋﾟ':'ピ','ﾌﾟ':'プ','ﾍﾟ':'ペ','ﾎﾟ':'ポ','ｳﾞ':'ヴ','ｱ':'ア','ｲ':'イ','ｳ':'ウ','ｴ':'エ','ｵ':'オ','ｶ':'カ','ｷ':'キ','ｸ':'ク','ｹ':'ケ','ｺ':'コ','ｻ':'サ','ｼ':'シ','ｽ':'ス','ｾ':'セ','ｿ':'ソ','ﾀ':'タ','ﾁ':'チ','ﾂ':'ツ','ﾃ':'テ','ﾄ':'ト','ﾅ':'ナ','ﾆ':'ニ','ﾇ':'ヌ','ﾈ':'ネ','ﾉ':'ノ','ﾊ':'ハ','ﾋ':'ヒ','ﾌ':'フ','ﾍ':'ヘ','ﾎ':'ホ','ﾏ':'マ','ﾐ':'ミ','ﾑ':'ム','ﾒ':'メ','ﾓ':'モ','ﾔ':'ヤ','ﾕ':'ユ','ﾖ':'ヨ','ﾗ':'ラ','ﾘ':'リ','ﾙ':'ル','ﾚ':'レ','ﾛ':'ロ','ﾜ':'ワ','ｦ':'ヲ','ﾝ':'ン','ｧ':'ァ','ｨ':'ィ','ｩ':'ゥ','ｪ':'ェ','ｫ':'ォ','ｯ':'ッ','ｬ':'ャ','ｭ':'ュ','ｮ':'ョ','ｰ':'ー'};
+const KANA_RE=new RegExp('('+Object.keys(KANA_MAP).join('|')+')','g');
+function han2zen(s){return s.replace(KANA_RE,m=>KANA_MAP[m]);}
+function hira2kata(s){return s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));}
+function normJa(s){return hira2kata(han2zen(s)).replace(/[\s　・･,，.。\-ｰ]/g,'').toUpperCase();}
+
+const ALIASES={
+  yogurt:['ヨーグルト'],drinkyog:['飲むヨーグルト','ノムヨーグルト'],lacto:['乳酸菌','ヤクルト','ピルクル'],
+  kimchi:['キムチ'],nukazuke:['ぬか漬','ヌカヅケ'],kraut:['ザワークラウト'],
+  natto:['納豆','ナットウ'],miso:['味噌','ミソ'],cheese:['チーズ'],amazake:['甘酒','アマザケ'],pickles:['漬物','ツケモノ'],
+  gobo:['ごぼう','ゴボウ','牛蒡'],broccoli:['ブロッコリー'],spinach:['ほうれん草','ホウレンソウ','ホウレン草'],
+  kabocha:['かぼちゃ','カボチャ','南瓜'],mushroom:['きのこ','キノコ','シメジ','エノキ','シイタケ','マイタケ','エリンギ'],
+  corn:['とうもろこし','トウモロコシ','コーン'],avocado:['アボカド'],konnyaku:['こんにゃく','コンニャク','蒟蒻'],
+  carrot:['にんじん','ニンジン','人参'],cabbage:['キャベツ'],tomato:['トマト'],okra:['オクラ'],
+  banana:['バナナ'],apple:['りんご','リンゴ','林檎'],kiwi:['キウイ'],berry:['ベリー','ブルーベリー','ラズベリー'],
+  mikan:['みかん','ミカン','蜜柑'],prune:['プルーン'],
+  edamame:['枝豆','エダマメ'],daizu:['大豆','ダイズ','煮豆'],hijiki:['ひじき','ヒジキ'],wakame:['わかめ','ワカメ','若布'],
+  kombu:['昆布','コンブ'],lentil:['レンズ豆','レンズマメ'],tofu:['豆腐','トウフ'],
+  genmai:['玄米','ゲンマイ'],oatmeal:['オートミール','オーツ'],satsuma:['さつまいも','サツマイモ','薩摩芋'],
+  ryebread:['ライ麦パン','ライムギパン','ライ麦'],soba:['そば','ソバ','蕎麦'],branflake:['ブランフレーク','オールブラン'],
+};
+function matchFoods(text){
+  const t=normJa(text||'');const out=[];
+  for(const id in ALIASES){ if(FOOD_MAP[id]&&ALIASES[id].some(a=>t.includes(normJa(a)))) out.push({id,qty:1}); }
+  return out;
+}
+
+// Tesseract.js でブラウザ内OCR（完全無料・サーバー不要）
+async function ocrReceipt(dataURL,onProgress){
+  if(typeof Tesseract==='undefined') throw new Error('OCRエンジンを読み込めませんでした（ネット接続を確認してください）');
+  const {data}=await Tesseract.recognize(dataURL,'jpn',{logger:m=>{
+    if(m.status==='recognizing text'&&onProgress) onProgress(Math.round(m.progress*100));
+  }});
+  return data.text||'';
+}
+
+//========================= レシートを読み取る =========================
 document.getElementById('lbRead').addEventListener('click',async()=>{
-  const ep=getEndpoint();
-  if(!ep){alert('先に「🥗 食材」タブの「AI読み取り設定」で中継サーバーのURLを設定してください。');return;}
   if(!lbSrc)return;
   const btn=document.getElementById('lbRead');
+  const ep=getEndpoint();
   btn.disabled=true;btn.innerHTML='<span class="spin"></span>読み取り中…';
   try{
-    const res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:lbSrc})});
-    const data=await res.json().catch(()=>({}));
-    if(!res.ok){alert('読み取りに失敗しました: '+(data.error||res.status));return;}
-    const items=(data.items||[]).filter(it=>FOOD_MAP[it.id]);
-    if(!items.length){toast('該当する食材が見つかりませんでした');return;}
+    let items;
+    if(ep){
+      // 任意: 中継サーバー(Claude等)が設定済みならそちらを使う（高精度）
+      const res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:lbSrc})});
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok)throw new Error(data.error||('サーバーエラー '+res.status));
+      items=(data.items||[]).filter(it=>FOOD_MAP[it.id]);
+    }else{
+      // 既定: 完全無料のブラウザ内OCR
+      const text=await ocrReceipt(lbSrc,pct=>{btn.innerHTML=`<span class="spin"></span>読み取り中… ${pct}%`;});
+      items=matchFoods(text);
+    }
+    if(!items||!items.length){toast('該当する食材が見つかりませんでした');return;}
     closeLightbox();
     openReview(items);
   }catch(e){
-    alert('通信に失敗しました。URLやネットワークを確認してください。');
+    alert('読み取りに失敗しました: '+(e&&e.message?e.message:e));
   }finally{
-    btn.disabled=false;btn.textContent='🤖 AIで読み取る';
+    btn.disabled=false;btn.textContent='📷 写真から読み取る';
   }
 });
 

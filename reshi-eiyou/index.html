@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="レシート栄養カレンダー">
+<title>レシート栄養カレンダー｜買い物から乳酸菌と食物繊維を1週間で管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --bg:#f4f7f5;--surface:#fff;--ink:#22302b;--ink-light:#75857e;
+    --accent:#2f9e83;--accent-dark:#25806a;--accent-light:#e2f4ee;
+    --fiber:#3fa66b;--fiber-light:#e4f4ea;--fiber-dark:#2e844f;
+    --lacto:#8a63d2;--lacto-light:#efe8fb;--lacto-dark:#6f49b8;
+    --receipt:#f5a524;--receipt-light:#fdefd4;
+    --border:#e4ece8;--warn:#e0603a;--warn-light:#fbe6df;
+    --shadow:0 4px 18px rgba(34,48,43,.08);
+  }
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding:0 0 86px;}
+  header{background:var(--ink);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  header h1{font-size:15px;font-weight:900;letter-spacing:.02em;display:flex;align-items:center;gap:7px;}
+  header .today{font-family:'DM Mono',monospace;font-size:12px;color:#9fd8c6;}
+  main{max-width:480px;margin:0 auto;padding:16px;}
+  .screen{display:none;animation:fade .25s ease;}
+  .screen.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:var(--shadow);margin-bottom:14px;}
+  .section-title{font-size:12px;font-weight:900;color:var(--accent-dark);letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .muted{color:var(--ink-light);font-size:12px;line-height:1.7;}
+
+  /* ---- calendar ---- */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .cal-head button{background:var(--accent-light);border:none;color:var(--accent-dark);width:34px;height:34px;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer;}
+  .cal-title{font-size:15px;font-weight:900;font-family:'DM Mono',monospace;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--ink-light);padding:2px 0;}
+  .cal-dow.sun{color:#e0603a;}.cal-dow.sat{color:#3a7ee0;}
+  .cal-cell{aspect-ratio:1/1.05;border:1px solid var(--border);border-radius:11px;background:#fbfdfc;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 2px 3px;cursor:pointer;position:relative;transition:.12s;}
+  .cal-cell.empty{visibility:hidden;}
+  .cal-cell .dnum{font-size:13px;font-weight:700;font-family:'DM Mono',monospace;}
+  .cal-cell.today{border-color:var(--accent);background:var(--accent-light);}
+  .cal-cell.sel{border-color:var(--accent-dark);box-shadow:0 0 0 2px var(--accent);background:#fff;}
+  .cal-cell.thisweek{background:#f0f8f5;}
+  .cal-cell .dots{display:flex;gap:2px;margin-top:auto;padding-bottom:1px;}
+  .cal-cell .dot{width:5px;height:5px;border-radius:50%;}
+  .dot.l{background:var(--lacto);}.dot.f{background:var(--fiber);}
+  .cal-cell .cnt{font-size:9px;color:var(--ink-light);font-family:'DM Mono',monospace;}
+
+  /* ---- selected day panel ---- */
+  .day-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .day-date{font-size:16px;font-weight:900;}
+  .day-date small{font-size:12px;color:var(--ink-light);font-weight:500;margin-left:4px;}
+  .day-mini{display:flex;gap:8px;}
+  .mini-pill{font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;}
+  .mini-pill.l{background:var(--lacto-light);color:var(--lacto-dark);}
+  .mini-pill.f{background:var(--fiber-light);color:var(--fiber-dark);}
+
+  .log-item{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px dashed var(--border);}
+  .log-item:last-child{border-bottom:none;}
+  .log-item .lem{font-size:22px;width:30px;text-align:center;}
+  .log-item .lname{font-size:14px;font-weight:700;}
+  .log-item .lmeta{font-size:11px;color:var(--ink-light);margin-top:1px;}
+  .log-item .lmeta .lc{color:var(--lacto-dark);}
+  .log-item .lmeta .fc{color:var(--fiber-dark);}
+  .qty{display:flex;align-items:center;gap:8px;}
+  .qty button{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;line-height:1;}
+  .qty span{font-family:'DM Mono',monospace;font-size:14px;min-width:16px;text-align:center;}
+  .empty{text-align:center;color:var(--ink-light);font-size:13px;padding:26px 10px;line-height:1.8;}
+
+  .btn{display:block;width:100%;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:900;cursor:pointer;font-family:inherit;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-primary:active{background:var(--accent-dark);}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--ink-light);font-weight:700;font-size:13px;padding:10px;}
+
+  /* ---- weekly ---- */
+  .wk-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .wk-range{font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;}
+  .goal-row{margin:14px 0;}
+  .goal-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .goal-name{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .goal-name .tag{width:11px;height:11px;border-radius:3px;}
+  .goal-num{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;}
+  .goal-num b{font-size:16px;}
+  .bar-track{height:14px;background:#eef2f0;border-radius:8px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:8px;transition:width .5s cubic-bezier(.2,.8,.2,1);}
+  .bar-fill.l{background:linear-gradient(90deg,#a688e0,var(--lacto));}
+  .bar-fill.f{background:linear-gradient(90deg,#6ec48c,var(--fiber));}
+  .goal-note{font-size:11px;color:var(--ink-light);margin-top:5px;}
+
+  .chart{display:flex;align-items:flex-end;gap:6px;height:120px;margin:8px 2px 2px;}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px;}
+  .stack{width:70%;max-width:26px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:5px 5px 0 0;overflow:hidden;flex:1;}
+  .stack .sl{background:var(--lacto);}
+  .stack .sf{background:var(--fiber);}
+  .bar-lbl{font-size:10px;color:var(--ink-light);}
+  .bar-lbl.on{color:var(--accent-dark);font-weight:900;}
+
+  /* ---- advice ---- */
+  .advice-card{border-left:4px solid var(--accent);}
+  .advice-item{display:flex;gap:11px;padding:11px 0;border-bottom:1px dashed var(--border);}
+  .advice-item:last-child{border-bottom:none;}
+  .advice-item .ic{font-size:22px;width:28px;text-align:center;flex-shrink:0;}
+  .advice-item .atxt{font-size:13px;line-height:1.65;}
+  .advice-item .atxt b{color:var(--accent-dark);}
+  .advice-item .sug{margin-top:5px;display:flex;flex-wrap:wrap;gap:5px;}
+  .sug-chip{font-size:11px;font-weight:700;background:var(--fiber-light);color:var(--fiber-dark);padding:3px 9px;border-radius:20px;}
+  .sug-chip.l{background:var(--lacto-light);color:var(--lacto-dark);}
+  .good-banner{background:var(--accent-light);border-radius:14px;padding:16px;text-align:center;}
+  .good-banner .em{font-size:34px;}
+  .good-banner .gt{font-size:15px;font-weight:900;color:var(--accent-dark);margin-top:4px;}
+  .good-banner .gs{font-size:12px;color:var(--ink-light);margin-top:3px;}
+
+  /* ---- food ref / picker list ---- */
+  .cats{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-ms-overflow-style:none;scrollbar-width:none;}
+  .cats::-webkit-scrollbar{display:none;}
+  .cat-chip{white-space:nowrap;font-size:12px;font-weight:700;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;color:var(--ink-light);cursor:pointer;}
+  .cat-chip.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .search{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:14px;font-family:inherit;margin-bottom:10px;background:#fbfdfc;}
+  .food-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .food-card{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);border-radius:13px;padding:10px;cursor:pointer;transition:.12s;}
+  .food-card:active{transform:scale(.97);border-color:var(--accent);}
+  .food-card .fe{font-size:22px;}
+  .food-card .fn{font-size:12.5px;font-weight:700;line-height:1.2;}
+  .food-card .fm{font-size:10px;color:var(--ink-light);margin-top:2px;}
+  .food-card .fm .l{color:var(--lacto-dark);}.food-card .fm .f{color:var(--fiber-dark);}
+
+  /* ---- add sheet ---- */
+  .sheet-bg{position:fixed;inset:0;background:rgba(34,48,43,.42);z-index:200;display:none;align-items:flex-end;}
+  .sheet-bg.on{display:flex;animation:fade .2s;}
+  .sheet{background:var(--bg);width:100%;max-width:480px;margin:0 auto;border-radius:22px 22px 0 0;max-height:86vh;display:flex;flex-direction:column;animation:up .28s cubic-bezier(.2,.8,.2,1);}
+  @keyframes up{from{transform:translateY(100%);}to{transform:none;}}
+  .sheet-head{padding:14px 18px 8px;display:flex;align-items:center;justify-content:space-between;}
+  .sheet-head .sh-title{font-size:15px;font-weight:900;}
+  .sheet-head .sh-title small{display:block;font-size:11px;color:var(--ink-light);font-weight:500;}
+  .sheet-head .close{background:none;border:none;font-size:24px;color:var(--ink-light);cursor:pointer;line-height:1;}
+  .sheet-body{padding:0 16px 8px;overflow-y:auto;}
+  .sheet-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);}
+  .basket-info{font-size:12px;color:var(--ink-light);text-align:center;}
+
+  /* ---- tabbar ---- */
+  .tabbar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);max-width:480px;margin:0 auto;}
+  .tab{flex:1;border:none;background:none;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;color:var(--ink-light);}
+  .tab .ti{font-size:20px;line-height:1;}
+  .tab .tl{font-size:10px;font-weight:700;}
+  .tab.on{color:var(--accent-dark);}
+  .tab.on .ti{transform:scale(1.08);}
+
+  .toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.3s;z-index:300;box-shadow:var(--shadow);}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<header>
+  <h1>🧾 レシート栄養カレンダー</h1>
+  <span class="today" id="todayLabel"></span>
+</header>
+
+<main>
+  <!-- ============ カレンダー ============ -->
+  <section class="screen active" id="scr-cal">
+    <div class="card">
+      <div class="cal-head">
+        <button id="prevM">‹</button>
+        <span class="cal-title" id="calTitle"></span>
+        <button id="nextM">›</button>
+      </div>
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid" style="margin-top:5px;"></div>
+      <p class="muted" style="margin-top:10px;">
+        <span class="dot l" style="display:inline-block;width:7px;height:7px;border-radius:50%;"></span> 乳酸菌
+        <span class="dot f" style="display:inline-block;width:7px;height:7px;border-radius:50%;"></span> 食物繊維　の記録がある日に印がつきます
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="day-head">
+        <div class="day-date" id="dayDate"></div>
+        <div class="day-mini" id="dayMini"></div>
+      </div>
+      <div id="dayLog"></div>
+      <button class="btn btn-primary" id="addBtn" style="margin-top:12px;">＋ 買ったもの・食べたものを追加</button>
+    </div>
+  </section>
+
+  <!-- ============ 今週 ============ -->
+  <section class="screen" id="scr-week">
+    <div class="card">
+      <div class="wk-head">
+        <div class="section-title" style="margin:0;">📊 今週のトータル</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="qty" style="all:unset;cursor:pointer;color:var(--accent-dark);font-size:20px;padding:0 6px;" id="prevW">‹</button>
+          <span class="wk-range" id="wkRange"></span>
+          <button class="qty" style="all:unset;cursor:pointer;color:var(--accent-dark);font-size:20px;padding:0 6px;" id="nextW">›</button>
+        </div>
+      </div>
+
+      <div class="goal-row">
+        <div class="goal-label">
+          <span class="goal-name"><span class="tag" style="background:var(--lacto)"></span>乳酸菌・発酵食品</span>
+          <span class="goal-num" id="lNum"></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill l" id="lBar"></div></div>
+        <div class="goal-note" id="lNote"></div>
+      </div>
+
+      <div class="goal-row">
+        <div class="goal-label">
+          <span class="goal-name"><span class="tag" style="background:var(--fiber)"></span>食物繊維</span>
+          <span class="goal-num" id="fNum"></span>
+        </div>
+        <div class="bar-track"><div class="bar-fill f" id="fBar"></div></div>
+        <div class="goal-note" id="fNote"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🗓 日ごとの摂取</div>
+      <div class="chart" id="wkChart"></div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:11px;color:var(--ink-light);">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--lacto)"></span> 乳酸菌スコア</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--fiber)"></span> 食物繊維(g)</span>
+      </div>
+    </div>
+
+    <div class="card advice-card">
+      <div class="section-title">💡 不足を補うアドバイス</div>
+      <div id="adviceBox"></div>
+    </div>
+  </section>
+
+  <!-- ============ 食材リスト ============ -->
+  <section class="screen" id="scr-food">
+    <div class="card">
+      <div class="section-title">🥗 食材の栄養めやす</div>
+      <p class="muted" style="margin-bottom:10px;">1品（約1食分）あたりの乳酸菌スコア（0〜3）と食物繊維量の目安です。買い物の記録にも使えます。</p>
+      <input class="search" id="refSearch" placeholder="食材を検索（例：ヨーグルト）">
+      <div class="cats" id="refCats"></div>
+      <div class="food-grid" id="refGrid"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">ℹ️ このアプリについて</div>
+      <p class="muted">
+        買い物や食事をカレンダーに記録すると、1週間の<b>乳酸菌（発酵食品）</b>と<b>食物繊維</b>の合計を自動集計し、目標に対して足りない分を補う食材を提案します。<br><br>
+        栄養値は一般的な目安に基づく概算で、医療・診断を目的としたものではありません。データはこの端末内（ブラウザ）にのみ保存されます。
+      </p>
+      <button class="btn btn-ghost" id="resetBtn" style="margin-top:14px;">すべてのデータをリセット</button>
+    </div>
+  </section>
+</main>
+
+<!-- ============ 追加シート ============ -->
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sh-title">追加する食材<small id="sheetDate"></small></div>
+      <button class="close" id="sheetClose">×</button>
+    </div>
+    <div class="sheet-body">
+      <input class="search" id="pickSearch" placeholder="食材を検索">
+      <div class="cats" id="pickCats"></div>
+      <div class="food-grid" id="pickGrid" style="padding-bottom:8px;"></div>
+    </div>
+    <div class="sheet-foot">
+      <div class="basket-info" id="basketInfo">タップした食材がその日に追加されます</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ タブバー ============ -->
+<nav class="tabbar">
+  <button class="tab on" data-scr="cal"><span class="ti">📅</span><span class="tl">カレンダー</span></button>
+  <button class="tab" data-scr="week"><span class="ti">📊</span><span class="tl">今週</span></button>
+  <button class="tab" data-scr="food"><span class="ti">🥗</span><span class="tl">食材</span></button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+//========================= 食べもの・買い物データ =========================
+// lacto: 乳酸菌スコア(0-3) / fiber: 食物繊維(g・1食分めやす)
+const FOODS=[
+  // --- 発酵（乳酸菌） ---
+  {id:'yogurt',n:'ヨーグルト',e:'🥛',c:'発酵',lacto:3,fiber:0},
+  {id:'drinkyog',n:'飲むヨーグルト',e:'🥤',c:'発酵',lacto:3,fiber:0},
+  {id:'lacto',n:'乳酸菌飲料',e:'🧴',c:'発酵',lacto:3,fiber:0},
+  {id:'kimchi',n:'キムチ',e:'🌶️',c:'発酵',lacto:3,fiber:1.5},
+  {id:'nukazuke',n:'ぬか漬け',e:'🥒',c:'発酵',lacto:3,fiber:1.5},
+  {id:'kraut',n:'ザワークラウト',e:'🥬',c:'発酵',lacto:3,fiber:2},
+  {id:'natto',n:'納豆',e:'🫘',c:'発酵',lacto:2,fiber:3.3},
+  {id:'miso',n:'味噌',e:'🍲',c:'発酵',lacto:2,fiber:1},
+  {id:'cheese',n:'チーズ',e:'🧀',c:'発酵',lacto:2,fiber:0},
+  {id:'amazake',n:'甘酒',e:'🍶',c:'発酵',lacto:2,fiber:0.5},
+  {id:'pickles',n:'漬物',e:'🥗',c:'発酵',lacto:2,fiber:1.2},
+  // --- 野菜（食物繊維） ---
+  {id:'gobo',n:'ごぼう',e:'🥕',c:'野菜',lacto:0,fiber:5.7},
+  {id:'broccoli',n:'ブロッコリー',e:'🥦',c:'野菜',lacto:0,fiber:2.5},
+  {id:'spinach',n:'ほうれん草',e:'🥬',c:'野菜',lacto:0,fiber:2},
+  {id:'kabocha',n:'かぼちゃ',e:'🎃',c:'野菜',lacto:0,fiber:2.8},
+  {id:'mushroom',n:'きのこ',e:'🍄',c:'野菜',lacto:0,fiber:2.2},
+  {id:'corn',n:'とうもろこし',e:'🌽',c:'野菜',lacto:0,fiber:2.5},
+  {id:'avocado',n:'アボカド',e:'🥑',c:'野菜',lacto:0,fiber:3.5},
+  {id:'konnyaku',n:'こんにゃく',e:'⬜',c:'野菜',lacto:0,fiber:2.2},
+  {id:'carrot',n:'にんじん',e:'🥕',c:'野菜',lacto:0,fiber:1.4},
+  {id:'cabbage',n:'キャベツ',e:'🥬',c:'野菜',lacto:0,fiber:1.4},
+  {id:'tomato',n:'トマト',e:'🍅',c:'野菜',lacto:0,fiber:1},
+  {id:'okra',n:'オクラ',e:'🌿',c:'野菜',lacto:0,fiber:2.6},
+  // --- 果物 ---
+  {id:'banana',n:'バナナ',e:'🍌',c:'果物',lacto:0,fiber:1.1},
+  {id:'apple',n:'りんご',e:'🍎',c:'果物',lacto:0,fiber:1.5},
+  {id:'kiwi',n:'キウイ',e:'🥝',c:'果物',lacto:0,fiber:2.5},
+  {id:'berry',n:'ベリー',e:'🫐',c:'果物',lacto:0,fiber:2},
+  {id:'mikan',n:'みかん',e:'🍊',c:'果物',lacto:0,fiber:1},
+  {id:'prune',n:'プルーン',e:'🟣',c:'果物',lacto:0,fiber:3.5},
+  // --- 豆・海藻 ---
+  {id:'edamame',n:'枝豆',e:'🫛',c:'豆・海藻',lacto:0,fiber:2.5},
+  {id:'daizu',n:'大豆・煮豆',e:'🟤',c:'豆・海藻',lacto:0,fiber:3},
+  {id:'hijiki',n:'ひじき',e:'⚫',c:'豆・海藻',lacto:0,fiber:3},
+  {id:'wakame',n:'わかめ',e:'🌿',c:'豆・海藻',lacto:0,fiber:1.5},
+  {id:'kombu',n:'昆布',e:'🟢',c:'豆・海藻',lacto:0,fiber:2},
+  {id:'lentil',n:'レンズ豆',e:'🟠',c:'豆・海藻',lacto:0,fiber:3.5},
+  {id:'tofu',n:'豆腐',e:'⬜',c:'豆・海藻',lacto:0,fiber:0.7},
+  // --- 主食 ---
+  {id:'genmai',n:'玄米',e:'🍚',c:'主食',lacto:0,fiber:1.4},
+  {id:'oatmeal',n:'オートミール',e:'🥣',c:'主食',lacto:0,fiber:3},
+  {id:'satsuma',n:'さつまいも',e:'🍠',c:'主食',lacto:0,fiber:2.8},
+  {id:'ryebread',n:'ライ麦パン',e:'🍞',c:'主食',lacto:0,fiber:3},
+  {id:'soba',n:'そば',e:'🍜',c:'主食',lacto:0,fiber:2},
+  {id:'branflake',n:'ブランフレーク',e:'🥣',c:'主食',lacto:0,fiber:4},
+];
+const CATS=['すべて','発酵','野菜','果物','豆・海藻','主食'];
+const FOOD_MAP=Object.fromEntries(FOODS.map(f=>[f.id,f]));
+
+//========================= 目標値 =========================
+// 食物繊維: 1日20g（成人めやす）→ 週140g / 乳酸菌スコア: 1日3（発酵食品1食分）→ 週21
+const FIBER_DAILY=20, FIBER_WEEK=FIBER_DAILY*7;
+const LACTO_DAILY=3,  LACTO_WEEK=LACTO_DAILY*7;
+
+//========================= 状態 =========================
+const KEY='reshi_eiyou_v1';
+let state=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.logs)return s;}catch(e){}return {logs:{}};}
+function save(){localStorage.setItem(KEY,JSON.stringify(state));}
+
+function dateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function parseKey(k){const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d);}
+const WD=['日','月','火','水','木','金','土'];
+const NOW=new Date();
+const TODAY_KEY=dateKey(NOW);
+
+let selKey=TODAY_KEY;                 // 選択中の日
+let calMonth=new Date(NOW.getFullYear(),NOW.getMonth(),1); // 表示中の月
+let wkStart=weekStart(NOW);           // 表示中の週（日曜始まり）
+
+function weekStart(d){const s=new Date(d);s.setDate(s.getDate()-s.getDay());s.setHours(0,0,0,0);return s;}
+function weekDays(start){const a=[];for(let i=0;i<7;i++){const d=new Date(start);d.setDate(d.getDate()+i);a.push(d);}return a;}
+
+//========================= 集計 =========================
+function dayEntries(k){return state.logs[k]||[];}
+function daySummary(k){
+  let lacto=0,fiber=0;
+  dayEntries(k).forEach(it=>{const f=FOOD_MAP[it.id];if(!f)return;lacto+=f.lacto*it.qty;fiber+=f.fiber*it.qty;});
+  return {lacto:+lacto.toFixed(1),fiber:+fiber.toFixed(1)};
+}
+function weekSummary(start){
+  let lacto=0,fiber=0;
+  weekDays(start).forEach(d=>{const s=daySummary(dateKey(d));lacto+=s.lacto;fiber+=s.fiber;});
+  return {lacto:+lacto.toFixed(1),fiber:+fiber.toFixed(1)};
+}
+
+//========================= トースト =========================
+let toastT;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),1600);}
+
+//========================= カレンダー描画 =========================
+function renderCal(){
+  document.getElementById('calTitle').textContent=`${calMonth.getFullYear()}年 ${calMonth.getMonth()+1}月`;
+  const dow=document.getElementById('calDow');
+  dow.innerHTML=WD.map((w,i)=>`<div class="cal-dow ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('');
+
+  const y=calMonth.getFullYear(),m=calMonth.getMonth();
+  const first=new Date(y,m,1),days=new Date(y,m+1,0).getDate();
+  const wkKeys=weekDays(wkStart).map(dateKey);
+  let cells='';
+  for(let i=0;i<first.getDay();i++)cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const dt=new Date(y,m,d),k=dateKey(dt);
+    const s=daySummary(k),n=dayEntries(k).length;
+    const cls=['cal-cell'];
+    if(k===TODAY_KEY)cls.push('today');
+    if(k===selKey)cls.push('sel');
+    if(wkKeys.includes(k))cls.push('thisweek');
+    let dots='';
+    if(s.lacto>0)dots+='<span class="dot l"></span>';
+    if(s.fiber>0)dots+='<span class="dot f"></span>';
+    cells+=`<div class="${cls.join(' ')}" data-k="${k}">
+      <span class="dnum" style="${dt.getDay()===0?'color:#e0603a':dt.getDay()===6?'color:#3a7ee0':''}">${d}</span>
+      ${n?`<span class="cnt">${n}品</span>`:''}
+      <span class="dots">${dots}</span>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=cells;
+}
+
+//========================= 選択日パネル =========================
+function renderDay(){
+  const dt=parseKey(selKey),s=daySummary(selKey);
+  const isToday=selKey===TODAY_KEY;
+  document.getElementById('dayDate').innerHTML=
+    `${dt.getMonth()+1}/${dt.getDate()} <small>(${WD[dt.getDay()]})${isToday?' きょう':''}</small>`;
+  document.getElementById('dayMini').innerHTML=
+    `<span class="mini-pill l">乳酸菌 ${s.lacto}</span><span class="mini-pill f">食物繊維 ${s.fiber}g</span>`;
+
+  const el=document.getElementById('dayLog');
+  const items=dayEntries(selKey);
+  if(!items.length){el.innerHTML='<div class="empty">この日はまだ記録がありません。<br>下のボタンから追加してください 🧾</div>';return;}
+  el.innerHTML=items.map((it,i)=>{
+    const f=FOOD_MAP[it.id];if(!f)return '';
+    const meta=[];
+    if(f.lacto)meta.push(`<span class="lc">乳酸菌+${f.lacto*it.qty}</span>`);
+    if(f.fiber)meta.push(`<span class="fc">食物繊維+${(f.fiber*it.qty).toFixed(1)}g</span>`);
+    return `<div class="log-item">
+      <span class="lem">${f.e}</span>
+      <div style="flex:1"><div class="lname">${f.n}</div><div class="lmeta">${meta.join(' ・ ')||'—'}</div></div>
+      <div class="qty"><button data-act="dec" data-i="${i}">−</button><span>${it.qty}</span><button data-act="inc" data-i="${i}">＋</button></div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('dayLog').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');if(!b)return;
+  const i=+b.dataset.i,list=state.logs[selKey];if(!list||!list[i])return;
+  if(b.dataset.act==='inc')list[i].qty++;
+  else{list[i].qty--;if(list[i].qty<=0)list.splice(i,1);}
+  if(!list.length)delete state.logs[selKey];
+  save();renderDay();renderCal();
+});
+
+//========================= 今週描画 =========================
+function renderWeek(){
+  const days=weekDays(wkStart),keys=days.map(dateKey);
+  const sum=weekSummary(wkStart);
+  const isCur=dateKey(wkStart)===dateKey(weekStart(NOW));
+  document.getElementById('wkRange').textContent=
+    `${wkStart.getMonth()+1}/${wkStart.getDate()}〜${days[6].getMonth()+1}/${days[6].getDate()}`+(isCur?' 今週':'');
+
+  // 乳酸菌
+  const lPct=Math.min(100,sum.lacto/LACTO_WEEK*100);
+  document.getElementById('lNum').innerHTML=`<b>${sum.lacto}</b> / ${LACTO_WEEK}`;
+  document.getElementById('lBar').style.width=lPct+'%';
+  document.getElementById('lNote').textContent=
+    sum.lacto>=LACTO_WEEK?'✓ 発酵食品はしっかり摂れています':`目標まで あと ${(+(LACTO_WEEK-sum.lacto).toFixed(1))}（発酵食品の記録）`;
+
+  // 食物繊維
+  const fPct=Math.min(100,sum.fiber/FIBER_WEEK*100);
+  document.getElementById('fNum').innerHTML=`<b>${sum.fiber}</b> / ${FIBER_WEEK}<span style="font-size:11px">g</span>`;
+  document.getElementById('fBar').style.width=fPct+'%';
+  document.getElementById('fNote').textContent=
+    sum.fiber>=FIBER_WEEK?'✓ 食物繊維は目標を達成しています':`目標まで あと ${(+(FIBER_WEEK-sum.fiber).toFixed(1))}g`;
+
+  // 日ごとチャート（乳酸菌スコアと食物繊維gを積み上げ表示）
+  const dsum=keys.map(daySummary);
+  const maxV=Math.max(FIBER_DAILY, ...dsum.map(s=>s.lacto+s.fiber));
+  document.getElementById('wkChart').innerHTML=days.map((d,i)=>{
+    const s=dsum[i];const total=s.lacto+s.fiber;
+    const lh=total?s.lacto/maxV*100:0, fh=total?s.fiber/maxV*100:0;
+    const isToday=keys[i]===TODAY_KEY;
+    return `<div class="bar-col">
+      <div class="stack">
+        <div class="sf" style="height:${fh}%"></div>
+        <div class="sl" style="height:${lh}%"></div>
+      </div>
+      <div class="bar-lbl ${isToday?'on':''}">${WD[d.getDay()]}</div>
+    </div>`;
+  }).join('');
+
+  renderAdvice(sum);
+}
+
+//========================= アドバイス生成 =========================
+function renderAdvice(sum){
+  const box=document.getElementById('adviceBox');
+  const fiberGap=+(FIBER_WEEK-sum.fiber).toFixed(1);
+  const lactoGap=+(LACTO_WEEK-sum.lacto).toFixed(1);
+  const items=[];
+
+  // --- 食物繊維の不足 ---
+  if(fiberGap>0){
+    // 食物繊維の多い食材トップから提案
+    const top=FOODS.filter(f=>f.fiber>=2.5).sort((a,b)=>b.fiber-a.fiber).slice(0,5);
+    const chips=top.map(f=>{const n=Math.max(1,Math.round(fiberGap/f.fiber));return `<span class="sug-chip">${f.e}${f.n} ×${n}</span>`;}).join('');
+    items.push(`<div class="advice-item"><span class="ic">🥦</span><div class="atxt">
+      食物繊維があと <b>${fiberGap}g</b> 足りません。下のどれかを足すと目標に届きます。
+      <div class="sug">${chips}</div></div></div>`);
+  }
+
+  // --- 乳酸菌の不足 ---
+  if(lactoGap>0){
+    const top=FOODS.filter(f=>f.lacto>=2).sort((a,b)=>b.lacto-a.lacto).slice(0,4);
+    const chips=top.map(f=>{const n=Math.max(1,Math.round(lactoGap/f.lacto));return `<span class="sug-chip l">${f.e}${f.n} ×${n}</span>`;}).join('');
+    items.push(`<div class="advice-item"><span class="ic">🥛</span><div class="atxt">
+      発酵食品（乳酸菌）が不足ぎみです。<b>1日1品</b>を目安に、こまめに取り入れましょう。
+      <div class="sug">${chips}</div></div></div>`);
+  }
+
+  // --- シンバイオティクスのすすめ ---
+  if(fiberGap<=0 && lactoGap<=0){
+    box.innerHTML=`<div class="good-banner">
+      <div class="em">🎉</div>
+      <div class="gt">今週の目標を達成！</div>
+      <div class="gs">乳酸菌と食物繊維、どちらもばっちりです。この調子で腸内フローラを整えましょう。</div>
+    </div>`;
+    return;
+  }
+
+  // --- 組み合わせヒント ---
+  items.push(`<div class="advice-item"><span class="ic">🤝</span><div class="atxt">
+    <b>発酵食品＋食物繊維</b>を一緒に摂ると、乳酸菌のエサになって相乗効果（シンバイオティクス）が期待できます。
+    例：<b>納豆</b>×<b>キムチ</b>、<b>ヨーグルト</b>×<b>ベリー</b>、<b>味噌汁</b>×<b>わかめ</b>。</div></div>`);
+
+  box.innerHTML=items.join('');
+}
+
+//========================= 食材リスト / ピッカー描画 =========================
+function foodCardHTML(f){
+  const m=[];
+  if(f.lacto)m.push(`<span class="l">乳酸菌${f.lacto}</span>`);
+  if(f.fiber)m.push(`<span class="f">繊維${f.fiber}g</span>`);
+  return `<div class="food-card" data-id="${f.id}">
+    <span class="fe">${f.e}</span>
+    <div><div class="fn">${f.n}</div><div class="fm">${m.join(' / ')||'—'}</div></div>
+  </div>`;
+}
+function renderCats(elId,active){
+  document.getElementById(elId).innerHTML=CATS.map(c=>`<button class="cat-chip ${c===active?'on':''}" data-cat="${c}">${c}</button>`).join('');
+}
+function filterFoods(cat,q){
+  return FOODS.filter(f=>(cat==='すべて'||f.c===cat)&&(!q||f.n.includes(q)));
+}
+
+// --- 食材タブ（参照）---
+let refCat='すべて';
+function renderRef(){
+  renderCats('refCats',refCat);
+  const q=document.getElementById('refSearch').value.trim();
+  document.getElementById('refGrid').innerHTML=filterFoods(refCat,q).map(foodCardHTML).join('')||'<div class="empty">該当なし</div>';
+}
+document.getElementById('refSearch').addEventListener('input',renderRef);
+document.getElementById('refCats').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;refCat=b.dataset.cat;renderRef();});
+document.getElementById('refGrid').addEventListener('click',e=>{const c=e.target.closest('[data-id]');if(!c)return;addFood(c.dataset.id);});
+
+// --- ピッカー（追加シート）---
+let pickCat='すべて';
+function renderPick(){
+  renderCats('pickCats',pickCat);
+  const q=document.getElementById('pickSearch').value.trim();
+  document.getElementById('pickGrid').innerHTML=filterFoods(pickCat,q).map(foodCardHTML).join('')||'<div class="empty">該当なし</div>';
+}
+document.getElementById('pickSearch').addEventListener('input',renderPick);
+document.getElementById('pickCats').addEventListener('click',e=>{const b=e.target.closest('[data-cat]');if(!b)return;pickCat=b.dataset.cat;renderPick();});
+document.getElementById('pickGrid').addEventListener('click',e=>{const c=e.target.closest('[data-id]');if(!c)return;addFood(c.dataset.id,true);});
+
+//========================= 追加処理 =========================
+function addFood(id,fromSheet){
+  const f=FOOD_MAP[id];if(!f)return;
+  const list=state.logs[selKey]||(state.logs[selKey]=[]);
+  const ex=list.find(it=>it.id===id);
+  if(ex)ex.qty++;else list.push({id,qty:1});
+  save();renderDay();renderCal();
+  toast(`${f.e} ${f.n} を追加`);
+  if(fromSheet){
+    const cnt=list.reduce((a,it)=>a+it.qty,0);
+    document.getElementById('basketInfo').textContent=`${parseKey(selKey).getMonth()+1}/${parseKey(selKey).getDate()} に ${cnt}品 記録中`;
+  }
+}
+
+//========================= 追加シート開閉 =========================
+function openSheet(){
+  const dt=parseKey(selKey);
+  document.getElementById('sheetDate').textContent=`　${dt.getMonth()+1}/${dt.getDate()}(${WD[dt.getDay()]}) に追加`;
+  const cnt=dayEntries(selKey).reduce((a,it)=>a+it.qty,0);
+  document.getElementById('basketInfo').textContent=cnt?`この日は現在 ${cnt}品 記録中`:'タップした食材がこの日に追加されます';
+  pickCat='すべて';document.getElementById('pickSearch').value='';renderPick();
+  document.getElementById('sheetBg').classList.add('on');
+}
+function closeSheet(){document.getElementById('sheetBg').classList.remove('on');renderWeek();}
+document.getElementById('addBtn').addEventListener('click',openSheet);
+document.getElementById('sheetClose').addEventListener('click',closeSheet);
+document.getElementById('sheetBg').addEventListener('click',e=>{if(e.target.id==='sheetBg')closeSheet();});
+
+//========================= カレンダー操作 =========================
+document.getElementById('prevM').addEventListener('click',()=>{calMonth.setMonth(calMonth.getMonth()-1);renderCal();});
+document.getElementById('nextM').addEventListener('click',()=>{calMonth.setMonth(calMonth.getMonth()+1);renderCal();});
+document.getElementById('calGrid').addEventListener('click',e=>{
+  const c=e.target.closest('[data-k]');if(!c)return;
+  selKey=c.dataset.k;
+  wkStart=weekStart(parseKey(selKey));
+  renderCal();renderDay();
+});
+
+//========================= 週操作 =========================
+document.getElementById('prevW').addEventListener('click',()=>{wkStart.setDate(wkStart.getDate()-7);renderWeek();renderCal();});
+document.getElementById('nextW').addEventListener('click',()=>{wkStart.setDate(wkStart.getDate()+7);renderWeek();renderCal();});
+
+//========================= タブ切替 =========================
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
+  t.classList.add('on');
+  document.getElementById('scr-'+t.dataset.scr).classList.add('active');
+  if(t.dataset.scr==='week')renderWeek();
+  if(t.dataset.scr==='food')renderRef();
+  window.scrollTo(0,0);
+}));
+
+//========================= リセット =========================
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  if(confirm('すべての記録を削除します。よろしいですか？')){
+    state={logs:{}};save();
+    selKey=TODAY_KEY;calMonth=new Date(NOW.getFullYear(),NOW.getMonth(),1);wkStart=weekStart(NOW);
+    renderCal();renderDay();renderWeek();toast('リセットしました');
+  }
+});
+
+//========================= 初期化 =========================
+document.getElementById('todayLabel').textContent=`${NOW.getMonth()+1}/${NOW.getDate()} (${WD[NOW.getDay()]})`;
+renderCal();renderDay();renderWeek();renderRef();
+</script>
+</body>
+</html>

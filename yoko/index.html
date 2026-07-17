@@ -260,10 +260,11 @@ const BASE_SPEED=210;
 const player={ x:170, y:H/2, r:15, alive:true, invuln:0, thrust:0,
   fireCd:0, laserMode:0, doubleLv:0, // laserMode 0=off 1=beam 2=ring ; doubleLv 0=single 1=double 2=triple
   speedLvl:0, // 0..5
+  slowT:0, // 玉ねぎ汁を浴びると一定時間スピードダウン
   missileLvl:0, missileBurst:false, shield:0, redInvuln:0, dead:false }; // missileLvl 0-3, laserMode 0-4
-function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0;
+function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0; player.slowT=0;
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; }
-function playerSpeed(){ return BASE_SPEED*(1+player.speedLvl*0.33); } // 3段階で最大約2倍
+function playerSpeed(){ let s=BASE_SPEED*(1+player.speedLvl*0.33); if(player.slowT>0) s*=0.4; return s; } // 3段階で最大約2倍（汁で0.4倍）
 
 // power-up bar (Gradius)
 const POWERS=['SPEED','MISSILE','DOUBLE','LASER','OPTION','SHIELD'];
@@ -286,6 +287,7 @@ function updatePlayer(dt){
   player.x=clamp(player.x,player.r+4, W*0.62); player.y=clamp(player.y,player.r+8,H-player.r-8);
   if(player.invuln>0) player.invuln-=dt;
   if(player.redInvuln>0) player.redInvuln-=dt;
+  if(player.slowT>0){ player.slowT-=dt; if(Math.random()<0.4) spawnParticles(player.x-player.r,player.y,'#eae59a',1,60,0.3); } // 汁でスロー中はしずくが滴る
   // auto fire
   player.fireCd-=dt;
   if(player.fireCd<=0){ fire(); }
@@ -607,7 +609,7 @@ function updateCarrier(dt){ if(!carrier) return; carrier.t+=dt;
   if(carrier.t>1.5) carrier=null; // 余韻を残して消える
 }
 function revive(){ if(state!=='play') return; player.x=carrier?carrier.x:170; player.y=carrier?carrier.y:H/2; player.alive=true;
-  player.invuln=1; player.redInvuln=0; // 1秒間 点滅無敵で復活
+  player.invuln=1; player.redInvuln=0; player.slowT=0; // 1秒間 点滅無敵で復活
   // 初期状態で復活：パワーアップを全部リセット
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.beamHist=null;
   options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); refreshPowHint();
@@ -793,7 +795,10 @@ function updateBullets(dt){
 }
 function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt; // 弾速はそのまま（イージーは弾の数を減らす）
   if(b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){ eBullets.splice(i,1); continue; }
-  if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){ eBullets.splice(i,1); damagePlayer(); } } }
+  if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){
+    if(b.kind==='juice'){ eBullets.splice(i,1); const was=player.slowT; player.slowT=3.0; // 汁はライフを奪わずスピードダウン
+      spawnParticles(player.x,player.y,'#eae59a',12,180,0.4); if(was<=0){ Audio2.sfx.hurt(); shake(5,0.18); spawnText(player.x,player.y-22,'スロー！','#d8d060',13); } continue; }
+    eBullets.splice(i,1); damagePlayer(); } } }
   // enemy body collision
   if(player.alive&&player.invuln<=0){ for(const e of enemies){ if(e.knocked)continue; const rr=e.r+player.r*0.7; if(dist2(e.x,e.y,player.x,player.y)<rr*rr){ damagePlayer(); break; } } }
 }
@@ -851,8 +856,35 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
   for(const m of missiles){ ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.ang||0); drawFishBone(m.r); ctx.restore(); }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='source-over';
-  for(const b of eBullets){ ctx.save(); ctx.translate(b.x,b.y); ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); ctx.restore(); } ctx.shadowBlur=0; }
+  for(const b of eBullets){ ctx.save(); ctx.translate(b.x,b.y);
+    if(b.kind==='juice') drawJuice(b);
+    else if(b.kind==='fry') drawFry(b);
+    else if(b.kind==='bull') drawBull(b);
+    else { ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); }
+    ctx.restore(); } ctx.shadowBlur=0; }
+function drawJuice(b){ // 玉ねぎの汁：しずく型の半透明スプラッシュ
+  ctx.rotate((b.ang||0)+Math.PI); const r=b.r; ctx.shadowColor='#f2eca0'; ctx.shadowBlur=10;
+  ctx.fillStyle='rgba(233,227,150,.9)'; ctx.beginPath(); // しずく（進行方向に尖る）
+  ctx.moveTo(-r*1.4,0); ctx.quadraticCurveTo(-r*0.2,-r*0.95,r*0.85,-r*0.55); ctx.quadraticCurveTo(r*1.15,0,r*0.85,r*0.55); ctx.quadraticCurveTo(-r*0.2,r*0.95,-r*1.4,0); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.7)'; ctx.beginPath(); ctx.ellipse(r*0.1,-r*0.28,r*0.34,r*0.18,-0.4,0,TAU); ctx.fill(); }
+function drawFry(b){ // ポテトフライ：金色の細い棒（先が少し濃い）
+  ctx.rotate((b.ang||0)); const L=b.r*2.4, W=b.r*0.72; ctx.shadowColor='#f0c257'; ctx.shadowBlur=8;
+  const g=ctx.createLinearGradient(-L/2,0,L/2,0); g.addColorStop(0,'#d99a34'); g.addColorStop(.5,'#f3c85f'); g.addColorStop(1,'#d99a34');
+  ctx.fillStyle=g; roundRect(-L/2,-W/2,L,W,W/2); ctx.fill();
+  ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-L/2+2,-W*0.15); ctx.lineTo(L/2-2,-W*0.15); ctx.stroke(); }
+function drawBull(b){ // 怒った闘牛の頭（黒い突進、赤い目＋角）
+  const dir=Math.cos(b.ang||Math.PI)<0?1:-1; ctx.scale(dir,1); const r=b.r; // 進行方向へ向ける
+  ctx.shadowColor='#000'; ctx.shadowBlur=12; ctx.fillStyle='#2c211c';
+  ctx.beginPath(); ctx.ellipse(0,0,r*0.95,r*0.82,0,0,TAU); ctx.fill(); // 頭
+  ctx.beginPath(); ctx.moveTo(-r*0.5,r*0.2); ctx.quadraticCurveTo(-r*1.15,r*0.1,-r*1.25,r*0.55); ctx.quadraticCurveTo(-r*0.7,r*0.5,-r*0.4,r*0.7); ctx.closePath(); ctx.fill(); // 鼻先
+  ctx.shadowBlur=0; ctx.fillStyle='#efe6dd'; // 角
+  ctx.beginPath(); ctx.moveTo(r*0.35,-r*0.6); ctx.quadraticCurveTo(r*1.05,-r*1.15,r*1.2,-r*0.55); ctx.quadraticCurveTo(r*0.7,-r*0.55,r*0.55,-r*0.35); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-r*0.05,-r*0.72); ctx.quadraticCurveTo(r*0.55,-r*1.2,r*0.78,-r*0.72); ctx.quadraticCurveTo(r*0.35,-r*0.62,r*0.15,-r*0.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#ff3b3b'; ctx.shadowColor='#ff3b3b'; ctx.shadowBlur=8; // 怒った赤い目
+  ctx.beginPath(); ctx.arc(r*0.2,-r*0.12,r*0.16,0,TAU); ctx.arc(r*0.5,-r*0.06,r*0.13,0,TAU); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.72,r*0.42,r*0.12,0,TAU); ctx.fill(); // 鼻息
+  ctx.beginPath(); ctx.arc(-r*0.95,r*0.2,r*0.09,0,TAU); ctx.fill(); }
 
 // ================= OPTIONS / PLAYER DRAW =================
 function drawCatShip(x,y,r,skinGlow){ // 普通の戦闘機（右向き）
@@ -952,7 +984,7 @@ function spawnBoss(){ Audio2.sfx.warn();
   const gear=clamp(stage-1,0,3);
   const hp=Math.round((60+idx*48)*(1+curryLoop*0.35));
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
-    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false};
+    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, spCd:1.8};
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
@@ -965,6 +997,21 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
     else { e.fireCd=1.2; const n=easyMode?4:12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e',boss:true});} Audio2.sfx.big(); } } // イージーは12発→4発
+  // 材料ごとの必殺攻撃（玉ねぎ＝汁／じゃがいも＝ポテトフライ／牛＝闘牛突進）
+  const bi=curryIdx(); if(bi>=1 && bi<=3){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); }
+}
+function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
+  if(idx===1){ // 玉ねぎ：汁を飛ばす（食らうとスピードダウン、ライフは減らない）
+    const n=easyMode?3:5; for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.17, sp=rnd(230,300);
+      eBullets.push({x:e.x-e.r*0.5,y:e.y+rnd(-10,10),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:9,color:'#eae59a',boss:true,kind:'juice',ang:aa}); }
+    Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-4,'たまねぎ汁！','#eae59a',13); e.spCd=easyMode?2.9:2.2; }
+  else if(idx===2){ // じゃがいも：ポテトフライを飛ばす
+    const n=easyMode?4:7; for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.15, sp=rnd(300,370);
+      eBullets.push({x:e.x-e.r*0.5,y:e.y+rnd(-14,14),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:6,color:'#e7b84e',boss:true,kind:'fry',ang:aa,spin:rnd(-6,6)}); }
+    Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-4,'ポテトフライ！','#e7b84e',13); e.spCd=easyMode?2.7:2.0; }
+  else { // 牛：怒った闘牛が突進してくる
+    const sp=470; eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5,r:26,color:'#3a2a24',boss:true,kind:'bull',ang:a});
+    Audio2.sfx.big(); shake(7,0.2); flash('#c8102e',0.14); spawnText(e.x,e.y-e.r-6,'とつげき闘牛！','#ff5a5a',14); e.spCd=easyMode?3.6:2.8; }
 }
 function bossFace(cx,cy,r,flash,lowHp,col){ // 顔（プレイヤー側＝少し左寄り）
   ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':(col||'#3a2a1a'));
@@ -1362,7 +1409,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   updateStars(frozen?0:dt); updateParticles(dt); updateTexts(dt);  // 演出中は背景スクロールも止める
   if(state==='play' && !frozen){
     // drag → set player toward target
-    if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,520*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
+    if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,(player.slowT>0?210:520)*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
     updatePlayer(dt); updateDirector(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updatePawFx(dt); updateBomb(dt);
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }

@@ -646,20 +646,30 @@ function han2zen(s){return s.replace(KANA_RE,m=>KANA_MAP[m]);}
 function hira2kata(s){return s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));}
 function normJa(s){return hira2kata(han2zen(s)).replace(/[\s　・･,，.。\-ｰ]/g,'').toUpperCase();}
 
+// 各食材の別名。食材名だけでなく、その食材を主に使う料理名・惣菜名も入れておく
+// （名前に食材名が含まれる料理は自動で拾えるので、含まれない料理名だけ足す）
 const ALIASES={
-  yogurt:['ヨーグルト'],drinkyog:['飲むヨーグルト','ノムヨーグルト'],lacto:['乳酸菌','ヤクルト','ピルクル'],
+  yogurt:['ヨーグルト'],drinkyog:['飲むヨーグルト','ノムヨーグルト'],lacto:['乳酸菌','ヤクルト','ピルクル','カルピス'],
   kimchi:['キムチ'],nukazuke:['ぬか漬','ヌカヅケ'],kraut:['ザワークラウト'],
-  natto:['納豆','ナットウ'],miso:['味噌','ミソ'],cheese:['チーズ'],amazake:['甘酒','アマザケ'],pickles:['漬物','ツケモノ'],
-  gobo:['ごぼう','ゴボウ','牛蒡'],broccoli:['ブロッコリー'],spinach:['ほうれん草','ホウレンソウ','ホウレン草'],
-  kabocha:['かぼちゃ','カボチャ','南瓜'],mushroom:['きのこ','キノコ','シメジ','エノキ','シイタケ','マイタケ','エリンギ'],
-  corn:['とうもろこし','トウモロコシ','コーン'],avocado:['アボカド'],konnyaku:['こんにゃく','コンニャク','蒟蒻'],
-  carrot:['にんじん','ニンジン','人参'],cabbage:['キャベツ'],tomato:['トマト'],okra:['オクラ'],
-  banana:['バナナ'],apple:['りんご','リンゴ','林檎'],kiwi:['キウイ'],berry:['ベリー','ブルーベリー','ラズベリー'],
+  natto:['納豆','ナットウ'],miso:['味噌','ミソ','みそ汁','味噌汁'],cheese:['チーズ'],amazake:['甘酒','アマザケ'],
+  pickles:['漬物','ツケモノ','浅漬','お新香','おしんこ','たくあん','沢庵','しば漬'],
+  gobo:['ごぼう','ゴボウ','牛蒡','きんぴら','筑前煮','豚汁','とん汁','けんちん'],
+  broccoli:['ブロッコリー'],spinach:['ほうれん草','ホウレンソウ','ホウレン草','おひたし'],
+  kabocha:['かぼちゃ','カボチャ','南瓜'],
+  mushroom:['きのこ','キノコ','シメジ','エノキ','シイタケ','マイタケ','エリンギ','なめこ'],
+  corn:['とうもろこし','トウモロコシ','コーン'],avocado:['アボカド'],
+  konnyaku:['こんにゃく','コンニャク','蒟蒻','おでん','しらたき','白滝'],
+  carrot:['にんじん','ニンジン','人参','なます'],cabbage:['キャベツ','コールスロー','野菜炒め'],
+  tomato:['トマト','ミニトマト'],okra:['オクラ'],
+  banana:['バナナ'],apple:['りんご','リンゴ','林檎'],kiwi:['キウイ'],berry:['ベリー','ブルーベリー','ラズベリー','いちご','イチゴ'],
   mikan:['みかん','ミカン','蜜柑'],prune:['プルーン'],
-  edamame:['枝豆','エダマメ'],daizu:['大豆','ダイズ','煮豆'],hijiki:['ひじき','ヒジキ'],wakame:['わかめ','ワカメ','若布'],
-  kombu:['昆布','コンブ'],lentil:['レンズ豆','レンズマメ'],tofu:['豆腐','トウフ'],
-  genmai:['玄米','ゲンマイ'],oatmeal:['オートミール','オーツ'],satsuma:['さつまいも','サツマイモ','薩摩芋'],
-  ryebread:['ライ麦パン','ライムギパン','ライ麦'],soba:['そば','ソバ','蕎麦'],branflake:['ブランフレーク','オールブラン'],
+  edamame:['枝豆','エダマメ'],daizu:['大豆','ダイズ','煮豆','おから','卯の花','五目豆'],
+  hijiki:['ひじき','ヒジキ','ひじき煮'],wakame:['わかめ','ワカメ','若布','めかぶ','もずく','モズク'],
+  kombu:['昆布','コンブ','とろろ昆布'],lentil:['レンズ豆','レンズマメ'],
+  tofu:['豆腐','トウフ','冷奴','ひややっこ','白和え'],
+  genmai:['玄米','ゲンマイ'],oatmeal:['オートミール','オーツ','グラノーラ'],
+  satsuma:['さつまいも','サツマイモ','薩摩芋','大学芋','焼き芋'],
+  ryebread:['ライ麦パン','ライムギパン','ライ麦'],soba:['そば','ソバ','蕎麦'],branflake:['ブランフレーク','オールブラン','ブラン'],
 };
 function matchFoods(text){
   const t=normJa(text||'');const out=[];
@@ -848,7 +858,15 @@ function renderCats(elId,active){
   document.getElementById(elId).innerHTML=CATS.map(c=>`<button class="cat-chip ${c===active?'on':''}" data-cat="${c}">${c}</button>`).join('');
 }
 function filterFoods(cat,q){
-  return FOODS.filter(f=>(cat==='すべて'||f.c===cat)&&(!q||f.n.includes(q)));
+  const nq=q?normJa(q):'';
+  return FOODS.filter(f=>{
+    if(cat!=='すべて'&&f.c!==cat)return false;
+    if(!q)return true;
+    if(f.n.includes(q))return true;
+    // 料理名・別名でもヒットさせる（例:「冷奴」→豆腐）
+    const al=(typeof ALIASES!=='undefined')&&ALIASES[f.id];
+    return al?al.some(a=>normJa(a).includes(nq)):false;
+  });
 }
 
 // --- 食材タブ（参照）---

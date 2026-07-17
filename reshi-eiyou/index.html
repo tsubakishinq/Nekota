@@ -161,10 +161,31 @@
   .rcpt-add .pl{font-size:22px;line-height:1;}
   .cal-cell .rmark{position:absolute;top:2px;right:3px;font-size:9px;}
 
-  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:400;display:none;align-items:center;justify-content:center;padding:24px;}
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px 24px 90px;}
   .lightbox.on{display:flex;animation:fade .2s;}
-  .lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);}
-  .lightbox .lb-close{position:absolute;top:14px;right:20px;color:#fff;font-size:34px;background:none;border:none;cursor:pointer;line-height:1;}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);object-fit:contain;}
+  .lightbox .lb-close{position:absolute;top:14px;right:20px;color:#fff;font-size:34px;background:none;border:none;cursor:pointer;line-height:1;z-index:1;}
+  .lightbox .lb-foot{position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;padding:14px 16px calc(14px + env(safe-area-inset-bottom));}
+  .lb-read{display:block;width:100%;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:900;cursor:pointer;font-family:inherit;background:var(--accent);color:#fff;}
+  .lb-read:disabled{opacity:.7;}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  /* ---- AI review sheet ---- */
+  .rv-item{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px dashed var(--border);}
+  .rv-item:last-child{border-bottom:none;}
+  .rv-item .chk{width:22px;height:22px;flex-shrink:0;accent-color:var(--accent);}
+  .rv-item .rem{font-size:22px;width:28px;text-align:center;}
+  .rv-item .rname{font-size:14px;font-weight:700;}
+  .rv-item .rmeta{font-size:11px;color:var(--ink-light);margin-top:1px;}
+  .rv-item .rmeta .l{color:var(--lacto-dark);}.rv-item .rmeta .f{color:var(--fiber-dark);}
+  .rv-item.off{opacity:.4;}
+
+  /* ---- settings ---- */
+  .set-input{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 14px;font-size:13px;font-family:'DM Mono',monospace;background:#fbfdfc;margin-bottom:10px;}
+  .set-status{font-size:12px;font-weight:700;margin-top:8px;}
+  .set-status.ok{color:var(--fiber-dark);}
+  .set-status.off{color:var(--ink-light);}
 </style>
 </head>
 <body>
@@ -261,6 +282,17 @@
       <div class="food-grid" id="refGrid"></div>
     </div>
     <div class="card">
+      <div class="section-title">🤖 AI読み取り設定</div>
+      <p class="muted" style="margin-bottom:10px;">レシート写真をAIで自動読み取りするには、中継サーバー（<code>reshi-eiyou/proxy</code> の手順でデプロイ）のURLを貼り付けて保存してください。未設定でも手入力で使えます。</p>
+      <input class="set-input" id="endpointInput" placeholder="https://....workers.dev">
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" id="endpointSave" style="flex:1;">保存</button>
+        <button class="btn btn-ghost" id="endpointClear" style="flex:0 0 auto;padding:0 16px;">クリア</button>
+      </div>
+      <div class="set-status off" id="endpointStatus"></div>
+    </div>
+
+    <div class="card">
       <div class="section-title">ℹ️ このアプリについて</div>
       <p class="muted">
         買い物や食事をカレンダーに記録すると、1週間の<b>乳酸菌（発酵食品）</b>と<b>食物繊維</b>の合計を自動集計し、目標に対して足りない分を補う食材を提案します。<br><br>
@@ -300,6 +332,26 @@
 <div class="lightbox" id="lightbox">
   <button class="lb-close" id="lbClose">×</button>
   <img id="lbImg" alt="レシート">
+  <div class="lb-foot">
+    <button class="lb-read" id="lbRead">🤖 AIで読み取る</button>
+  </div>
+</div>
+
+<!-- ============ 読み取り結果の確認シート ============ -->
+<div class="sheet-bg" id="reviewBg">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="sh-title">読み取り結果<small id="reviewDate"></small></div>
+      <button class="close" id="reviewClose">×</button>
+    </div>
+    <div class="sheet-body">
+      <p class="muted" style="margin-bottom:10px;">チェックした食材がこの日に追加されます。数量は調整できます。読み取りは目安なので、違う所は外してください。</p>
+      <div id="reviewList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="reviewAdd">選んだ食材を追加</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -536,10 +588,96 @@ document.getElementById('dayReceipts').addEventListener('click',e=>{
 });
 
 // 写真拡大
-function openLightbox(src){if(!src)return;document.getElementById('lbImg').src=src;document.getElementById('lightbox').classList.add('on');}
-function closeLightbox(){document.getElementById('lightbox').classList.remove('on');document.getElementById('lbImg').src='';}
+let lbSrc='';
+function openLightbox(src){if(!src)return;lbSrc=src;document.getElementById('lbImg').src=src;document.getElementById('lightbox').classList.add('on');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('on');document.getElementById('lbImg').src='';lbSrc='';}
 document.getElementById('lbClose').addEventListener('click',closeLightbox);
 document.getElementById('lightbox').addEventListener('click',e=>{if(e.target.id==='lightbox')closeLightbox();});
+
+//========================= AI読み取り設定 =========================
+const EPKEY='reshi_eiyou_endpoint';
+function getEndpoint(){return (localStorage.getItem(EPKEY)||'').trim();}
+function renderEndpoint(){
+  const ep=getEndpoint();
+  document.getElementById('endpointInput').value=ep;
+  const st=document.getElementById('endpointStatus');
+  if(ep){st.textContent='✓ 設定済み。レシート写真から自動読み取りできます。';st.className='set-status ok';}
+  else{st.textContent='未設定（手入力で利用中）';st.className='set-status off';}
+}
+document.getElementById('endpointSave').addEventListener('click',()=>{
+  const v=document.getElementById('endpointInput').value.trim();
+  if(v&&!/^https?:\/\//.test(v)){alert('http(s):// で始まるURLを入力してください');return;}
+  localStorage.setItem(EPKEY,v);renderEndpoint();toast('保存しました');
+});
+document.getElementById('endpointClear').addEventListener('click',()=>{
+  localStorage.removeItem(EPKEY);renderEndpoint();toast('クリアしました');
+});
+
+//========================= AIでレシートを読み取る =========================
+document.getElementById('lbRead').addEventListener('click',async()=>{
+  const ep=getEndpoint();
+  if(!ep){alert('先に「🥗 食材」タブの「AI読み取り設定」で中継サーバーのURLを設定してください。');return;}
+  if(!lbSrc)return;
+  const btn=document.getElementById('lbRead');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>読み取り中…';
+  try{
+    const res=await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:lbSrc})});
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok){alert('読み取りに失敗しました: '+(data.error||res.status));return;}
+    const items=(data.items||[]).filter(it=>FOOD_MAP[it.id]);
+    if(!items.length){toast('該当する食材が見つかりませんでした');return;}
+    closeLightbox();
+    openReview(items);
+  }catch(e){
+    alert('通信に失敗しました。URLやネットワークを確認してください。');
+  }finally{
+    btn.disabled=false;btn.textContent='🤖 AIで読み取る';
+  }
+});
+
+//========================= 読み取り結果の確認 =========================
+let reviewItems=[];
+function openReview(items){
+  // {id, qty, on} の配列に整形（同じidはまとめる）
+  const map={};
+  items.forEach(it=>{const q=Math.max(1,Math.round(it.qty||1));if(map[it.id])map[it.id]+=q;else map[it.id]=q;});
+  reviewItems=Object.keys(map).map(id=>({id,qty:map[id],on:true}));
+  const dt=parseKey(selKey);
+  document.getElementById('reviewDate').textContent=`　${dt.getMonth()+1}/${dt.getDate()}(${WD[dt.getDay()]}) に追加`;
+  renderReview();
+  document.getElementById('reviewBg').classList.add('on');
+}
+function renderReview(){
+  document.getElementById('reviewList').innerHTML=reviewItems.map((it,i)=>{
+    const f=FOOD_MAP[it.id];
+    const meta=[];
+    if(f.lacto)meta.push(`<span class="l">乳酸菌+${f.lacto*it.qty}</span>`);
+    if(f.fiber)meta.push(`<span class="f">食物繊維+${(f.fiber*it.qty).toFixed(1)}g</span>`);
+    return `<div class="rv-item ${it.on?'':'off'}">
+      <input type="checkbox" class="chk" data-i="${i}" ${it.on?'checked':''}>
+      <span class="rem">${f.e}</span>
+      <div style="flex:1"><div class="rname">${f.n}</div><div class="rmeta">${meta.join(' ・ ')||'—'}</div></div>
+      <div class="qty"><button data-rdec="${i}">−</button><span>${it.qty}</span><button data-rinc="${i}">＋</button></div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('reviewList').addEventListener('click',e=>{
+  const chk=e.target.closest('.chk');
+  if(chk){reviewItems[+chk.dataset.i].on=chk.checked;renderReview();return;}
+  const inc=e.target.closest('[data-rinc]');if(inc){reviewItems[+inc.dataset.rinc].qty++;renderReview();return;}
+  const dec=e.target.closest('[data-rdec]');if(dec){const it=reviewItems[+dec.dataset.rdec];it.qty=Math.max(1,it.qty-1);renderReview();return;}
+});
+document.getElementById('reviewClose').addEventListener('click',()=>document.getElementById('reviewBg').classList.remove('on'));
+document.getElementById('reviewBg').addEventListener('click',e=>{if(e.target.id==='reviewBg')e.currentTarget.classList.remove('on');});
+document.getElementById('reviewAdd').addEventListener('click',()=>{
+  const chosen=reviewItems.filter(it=>it.on);
+  if(!chosen.length){toast('食材が選ばれていません');return;}
+  const list=state.logs[selKey]||(state.logs[selKey]=[]);
+  chosen.forEach(it=>{const ex=list.find(x=>x.id===it.id);if(ex)ex.qty+=it.qty;else list.push({id:it.id,qty:it.qty});});
+  save();renderDay();renderCal();renderWeek();
+  document.getElementById('reviewBg').classList.remove('on');
+  toast(`${chosen.length}種類を追加しました`);
+});
 
 //========================= 今週描画 =========================
 function renderWeek(){
@@ -730,7 +868,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 
 //========================= 初期化 =========================
 document.getElementById('todayLabel').textContent=`${NOW.getMonth()+1}/${NOW.getDate()} (${WD[NOW.getDay()]})`;
-renderCal();renderDay();renderWeek();renderRef();
+renderCal();renderDay();renderWeek();renderRef();renderEndpoint();
 </script>
 </body>
 </html>

@@ -98,7 +98,7 @@
 
   <div id="touch">
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
-    <div id="nekoBtn">🟠<small>ポッド</small></div>
+    <div id="nekoBtn">🛸<small>ドローン</small></div>
     <div id="powBar">
       <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🍙1</small></div>
       <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🍙2</small></div>
@@ -116,7 +116,7 @@
     <div class="panel">
       横スクロールシューティング！ すみたまで敵をやっつけろ！ 敵は右から来るぞ。<br>
       <b>🍙おにぎり</b>を集めて、下のパネルの<b>光ってる項目をタップ</b>で発動！<br>
-      必要な🍙数：スピード1・ミサイル2・ダブル3・レーザー4・ポッド5・バリア6<br>
+      必要な🍙数：スピード1・ミサイル2・ダブル3・レーザー4・ドローン5・バリア6<br>
       右下の<b>🍙ボタンを長押し</b>で1個消費→<b>🦍酒ゴリラ</b>！ 敵を全部やっつける！
     </div>
     <button class="btn" id="startBtn">▶ START</button>
@@ -319,7 +319,7 @@ function fire(){
     if(dl>=2) shootBullet(player.x+player.r*0.6, player.y+6, 520, 300);
     Audio2.sfx.shoot(); }
   // options(子猫) fire too — どのモードでもレーザー/弾を撃つ
-  for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0,0.2); else { shootBullet(o.x+10,o.y,600,0,0.2); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300,0.2);} } // オプションのビームは本機の1/5（ポッド自体の攻撃判定はなし）
+  for(const o of options){ if(kittenMode) continue; if(player.laserMode) shootLaser(o.x+10,o.y,0,0.2); else { shootBullet(o.x+10,o.y,600,0,0.2); if(dl>=1) shootBullet(o.x+6,o.y-6,500,-300,0.2);} } // オプションのビームは本機の1/5（ドローン自体の攻撃判定はなし）
   // homing missiles: 最大3発。まず上下に散ってから、それぞれホーミング
   if(player.missileLvl>0){ player.missileCd=(player.missileCd||0)-1; if((player.missileCd||0)<=0){
     player.missileCd = player.missileLvl>=3?6 : player.missileLvl>=2?7 : 11;
@@ -578,7 +578,7 @@ function updateOptions(dt){
     if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
     if(o.y<14){o.y=14;o.wa=-o.wa;} if(o.y>H-14){o.y=H-14;o.wa=-o.wa;}
     if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
-    o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootLaser(o.x,o.y,a,0.2); o.fcd=rnd(0.12,0.2); } // ビームのみで攻撃（本機の1/5）。ポッド自体には攻撃判定なし
+    o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootLaser(o.x,o.y,a,0.2); o.fcd=rnd(0.12,0.2); } // ビームのみで攻撃（本機の1/5）。ドローン自体には攻撃判定なし
   } return; }
   // 隊列モード：本機の後ろに一定間隔でチェーン追従（止まっても重ならず、動けば連なる）
   let lx=player.x, ly=player.y;
@@ -587,10 +587,10 @@ function updateOptions(dt){
     o.x+=(tx-o.x)*Math.min(1,dt*13); o.y+=(ty-o.y)*Math.min(1,dt*13);
     lx=o.x; ly=o.y; }
 }
-function toggleKittens(){ if(options.length===0){ showToast('ポッドがないよ','#ffd0ee'); return; }
+function toggleKittens(){ if(options.length===0){ showToast('ドローンがないよ','#ffd0ee'); return; }
   kittenMode=!kittenMode; nekoBtn.classList.toggle('on', kittenMode);
-  if(kittenMode){ Audio2.sfx.meow(); showToast('🟠 ポッド乱舞！','#ffbe4a'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
-  else { showToast('ポッド OFF','#9fb4de'); } }
+  if(kittenMode){ Audio2.sfx.meow(); showToast('🛸 ドローン乱舞！','#ffbe4a'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
+  else { showToast('ドローン OFF','#9fb4de'); } }
 
 function damagePlayer(){
   if(!player.alive||player.invuln>0||player.redInvuln>0) return;
@@ -748,7 +748,7 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
     const nm=['','LASER','黄 x1.2','赤 x1.44','🐱 ホーミング'];
     const msg=(player.laserMode>=4 && (player.laserBoost||0)>0) ? '🐱 x'+laserMul().toFixed(1) : nm[player.laserMode];
     spawnText(player.x,player.y-24,msg,LCOL[player.laserMode]||'#57f6ff',15); }
-  else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'🟠 ポッド x'+options.length,'#ffbe4a',15); }
+  else if(slot==='OPTION'){ addOption(); spawnText(player.x,player.y-24,'🛸 ドローン x'+options.length,'#ffbe4a',15); }
   else if(slot==='SHIELD'){ // each ring soaks 2 hits, stack up to 3 rings; 4th activation = red 3s invincibility
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
     else { player.shield=Math.min(6,(Math.ceil(player.shield/2)+1)*2); spawnText(player.x,player.y-24,'SHIELD x'+Math.ceil(player.shield/2),'#57f6ff',15); } }
@@ -794,6 +794,7 @@ function updateBullets(dt){
   }
 }
 function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt; // 弾速はそのまま（イージーは弾の数を減らす）
+  if(b.life!==undefined){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } b.r*=1+dt*1.6; } // 火炎はだんだん大きくなって消える
   if(b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){
     if(b.kind==='juice'){ eBullets.splice(i,1); const was=player.slowT; player.slowT=3.0; // 汁はライフを奪わずスピードダウン
@@ -860,6 +861,7 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     if(b.kind==='juice') drawJuice(b);
     else if(b.kind==='fry') drawFry(b);
     else if(b.kind==='bull') drawBull(b);
+    else if(b.kind==='flame') drawFlame(b);
     else { ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); }
     ctx.restore(); } ctx.shadowBlur=0; }
@@ -891,6 +893,12 @@ function drawBull(b){ // 怒った闘牛の頭（黒い突進、赤い目＋角�
   ctx.beginPath(); ctx.arc(r*0.2,-r*0.12,r*0.16,0,TAU); ctx.arc(r*0.5,-r*0.06,r*0.13,0,TAU); ctx.fill();
   ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.72,r*0.42,r*0.12,0,TAU); ctx.fill(); // 鼻息
   ctx.beginPath(); ctx.arc(-r*0.95,r*0.2,r*0.09,0,TAU); ctx.fill(); }
+function drawFlame(b){ // 火炎放射の火の玉（加算合成で燃える）
+  const r=b.r, a=Math.max(0,Math.min(1,(b.life||0.3)/0.7));
+  ctx.globalAlpha=a; ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,'#fff2a0'); g.addColorStop(.35,'#ffb033'); g.addColorStop(.75,'#ff4d24'); g.addColorStop(1,'rgba(255,50,20,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
+  ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; }
 
 // ================= OPTIONS / PLAYER DRAW =================
 function drawCatShip(x,y,r,skinGlow){ // 普通の戦闘機（右向き）
@@ -950,14 +958,28 @@ function drawOptions(){ for(const o of options){ ctx.save(); ctx.translate(o.x,o
   if(kittenMode){ ctx.save(); ctx.rotate(performance.now()*0.02); ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; ctx.strokeStyle='rgba(255,142,203,.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,21,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
   if(o.claw>0){ ctx.save(); ctx.strokeStyle='rgba(255,255,255,'+(o.claw/0.16)+')'; ctx.shadowColor='#fff'; ctx.shadowBlur=8; ctx.lineWidth=2; // 引っ掻き傷エフェクト
     for(let s=-1;s<=1;s++){ ctx.beginPath(); ctx.moveTo(9+s*5,-17); ctx.lineTo(20+s*5,17); ctx.stroke(); } ctx.restore(); }
-  drawCamellia(13, kittenMode); ctx.restore(); } }
-function drawCamellia(r, glow){ // 丸い小型ポッド（オプション）
-  ctx.shadowColor=glow?'#ffd27a':'#ffbe4a'; ctx.shadowBlur=glow?16:10;
-  const g=ctx.createRadialGradient(-r*0.32,-r*0.34,r*0.15,0,0,r); g.addColorStop(0,'#ffe6a6'); g.addColorStop(.5,'#ff9f3c'); g.addColorStop(1,'#d96a12');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
-  ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,220,150,.8)'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(0,0,r*0.98,0,TAU); ctx.stroke(); // 枠
-  ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-r*0.3,-r*0.32,r*0.22,0,TAU); ctx.fill(); // ハイライト
-  ctx.fillStyle='rgba(255,255,255,.35)'; ctx.beginPath(); ctx.arc(0,0,r*0.4,0,TAU); ctx.fill(); } // 中央のコア
+  drawDrone(13, kittenMode); ctx.restore(); } }
+function drawDrone(r, glow){ // ドローン（クアッドコプター：4つの回転ローター＋本体＋カメラ）
+  const t=performance.now()*0.03, arm=r*0.98, rr=r*0.5;
+  ctx.shadowColor=glow?'#8fe6ff':'#57c8ff'; ctx.shadowBlur=glow?15:9;
+  // アーム（×字）
+  ctx.strokeStyle='#39465a'; ctx.lineWidth=r*0.26; ctx.lineCap='round';
+  for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(sx*arm,sy*arm); ctx.stroke(); }
+  // ローター（回転するプロペラ＋ぼかしの円）
+  for(const [sx,sy] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const cx=sx*arm, cy=sy*arm;
+    ctx.fillStyle='rgba(140,220,255,.22)'; ctx.beginPath(); ctx.arc(cx,cy,rr,0,TAU); ctx.fill();
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(t*(sx*sy>0?1:-1)*7);
+    ctx.strokeStyle='rgba(205,242,255,.95)'; ctx.lineWidth=r*0.11; ctx.beginPath(); ctx.moveTo(-rr,0); ctx.lineTo(rr,0); ctx.moveTo(0,-rr*0.86); ctx.lineTo(0,rr*0.86); ctx.stroke(); ctx.restore();
+    ctx.fillStyle='#2b3542'; ctx.beginPath(); ctx.arc(cx,cy,r*0.14,0,TAU); ctx.fill(); }
+  // 本体
+  ctx.shadowBlur=glow?12:6; ctx.fillStyle='#4b5c73'; roundRect(-r*0.5,-r*0.42,r,r*0.84,r*0.28); ctx.fill();
+  ctx.shadowBlur=0; ctx.strokeStyle='#8fb4d8'; ctx.lineWidth=1.4; roundRect(-r*0.5,-r*0.42,r,r*0.84,r*0.28); ctx.stroke();
+  // カメラ（前＝右）
+  ctx.fillStyle=glow?'#ffe08a':'#8fe6ff'; ctx.beginPath(); ctx.arc(r*0.2,0,r*0.22,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(r*0.13,-r*0.07,r*0.08,0,TAU); ctx.fill();
+  // 点滅LED
+  ctx.fillStyle=(Math.floor(t*2)%2?'#ff5a5a':'#5aff8a'); ctx.beginPath(); ctx.arc(-r*0.32,0,r*0.1,0,TAU); ctx.fill();
+  ctx.lineCap='butt'; }
 function drawKitten(r, glow){ const gb=glow?15:9;
   // ears (outer)
   ctx.shadowColor='#ffd0ee'; ctx.shadowBlur=gb; ctx.fillStyle='#fff6fb';
@@ -990,7 +1012,7 @@ function spawnBoss(){ Audio2.sfx.warn();
   const gear=clamp(stage-1,0,3);
   const hp=Math.round((60+idx*48)*(1+curryLoop*0.35));
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
-    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, spCd:1.8};
+    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, cooked:false, spCd:1.8};
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
@@ -999,12 +1021,14 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(!e.peeled && e.hp/e.maxhp<0.5 && curryIdx()<3){ e.peeled=true; // 野菜ボスは半分で皮がむける
     Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],['#c9b26a','#efe1a6'],['#9c7838','#caa15e']][curryIdx()];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }
+  if(curryIdx()===5 && !e.cooked && e.hp/e.maxhp<0.5){ e.cooked=true; // お米ボスは半分で玄米→白ごはんに炊ける
+    Audio2.sfx.up(); for(let k=0;k<20;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(120,240),0.7); spawnText(e.x,e.y-e.r-6,'ごはんに なった！','#fff',15); }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
     else { e.fireCd=1.2; const n=easyMode?4:12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e',boss:true});} Audio2.sfx.big(); } } // イージーは12発→4発
-  // 材料ごとの必殺攻撃（玉ねぎ＝汁／じゃがいも＝ポテトフライ／牛＝闘牛突進）
-  const bi=curryIdx(); if(bi>=1 && bi<=3){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); }
+  // 材料ごとの必殺攻撃（玉ねぎ＝汁／じゃがいも＝ポテトフライ／牛＝闘牛突進／ルー＝火炎放射）
+  const bi=curryIdx(); if(bi>=1 && bi<=4){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); }
 }
 function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
   if(idx===1){ // 玉ねぎ：汁を飛ばす（食らうとスピードダウン、ライフは減らない）
@@ -1015,9 +1039,13 @@ function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
     const n=easyMode?4:6; for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.17, sp=rnd(290,360);
       eBullets.push({x:e.x-e.r*0.5,y:e.y+rnd(-16,16),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:11,color:'#eeb64a',boss:true,kind:'fry',ang:aa,spin:rnd(-6,6)}); }
     Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-4,'ポテトフライ！','#e7b84e',13); e.spCd=easyMode?2.7:2.0; }
-  else { // 牛：怒った闘牛が突進してくる
+  else if(idx===3){ // 牛：怒った闘牛が突進してくる
     const sp=470; eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5,r:26,color:'#3a2a24',boss:true,kind:'bull',ang:a});
     Audio2.sfx.big(); shake(7,0.2); flash('#c8102e',0.14); spawnText(e.x,e.y-e.r-6,'とつげき闘牛！','#ff5a5a',14); e.spCd=easyMode?3.6:2.8; }
+  else { // ルー：火炎放射（前方へ火の玉のジェット）
+    const n=easyMode?9:15; for(let k=0;k<n;k++){ const aa=a+rnd(-0.17,0.17), sp=rnd(300,440), off=rnd(0,e.r*0.7);
+      eBullets.push({x:e.x-e.r*0.35+Math.cos(aa)*off,y:e.y+Math.sin(aa)*off,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:rnd(9,15),color:'#ff7a2e',boss:true,kind:'flame',life:rnd(0.4,0.7)}); }
+    Audio2.sfx.big(); shake(5,0.2); flash('#ff7a2e',0.13); spawnText(e.x,e.y-e.r-6,'火炎放射！','#ff7a2e',14); e.spCd=easyMode?3.0:2.3; }
 }
 function bossFace(cx,cy,r,flash,lowHp,col){ // 顔（プレイヤー側＝少し左寄り）
   ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':(col||'#3a2a1a'));
@@ -1089,10 +1117,13 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-rw,0); ctx.lineTo(rw,0); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); if(ctx.roundRect){ ctx.roundRect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5,r*0.1);} else ctx.rect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5); ctx.fill();
     bossFace(0,r*0.08,r,flash,lowHp,'#f0d8b0');
-  } else { // お米（茶碗）
-    ctx.fillStyle=flash?'#fff':'#fbfbf4'; ctx.strokeStyle='#e2e2d2'; ctx.lineWidth=2; ctx.shadowColor='#eaeadd'; ctx.shadowBlur=14;
+  } else { // お米（茶碗）：玄米→半分ダメージで白ごはん
+    const cooked=e.cooked, rice=flash?'#fff':(cooked?'#fbfbf4':'#c7a56a'), grain=cooked?'#fff':'#dcc188';
+    ctx.fillStyle=rice; ctx.strokeStyle=cooked?'#e2e2d2':'#a8814a'; ctx.lineWidth=2; ctx.shadowColor=cooked?'#eaeadd':'#c7a56a'; ctx.shadowBlur=14;
     ctx.beginPath(); ctx.arc(0,-r*0.05,r*0.92,Math.PI,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.fillStyle='#fff'; for(let k=0;k<10;k++){ const a=Math.PI+(k+0.5)/10*Math.PI; ctx.save(); ctx.translate(Math.cos(a)*r*0.6,-r*0.05+Math.sin(a)*r*0.5); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,0,r*0.11,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle=grain; for(let k=0;k<10;k++){ const a=Math.PI+(k+0.5)/10*Math.PI; ctx.save(); ctx.translate(Math.cos(a)*r*0.6,-r*0.05+Math.sin(a)*r*0.5); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,0,r*0.11,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
+    if(cooked){ ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.lineCap='round'; // 炊きたての湯気
+      for(const sx of [-r*0.4,0,r*0.4]){ ctx.beginPath(); ctx.moveTo(sx,-r*0.5); ctx.quadraticCurveTo(sx+r*0.18,-r*0.85,sx,-r*1.15); ctx.stroke(); } ctx.lineCap='butt'; }
     ctx.fillStyle=flash?'#fff':'#4a7fbf'; ctx.strokeStyle='#2f5c94'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(-r*1.02,-r*0.02); ctx.quadraticCurveTo(0,r*0.2,r*1.02,-r*0.02); ctx.quadraticCurveTo(r*0.72,r*1.02,0,r*1.06); ctx.quadraticCurveTo(-r*0.72,r*1.02,-r*1.02,-r*0.02); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-r*0.8,r*0.4); ctx.quadraticCurveTo(0,r*0.62,r*0.8,r*0.4); ctx.stroke();
@@ -1172,7 +1203,8 @@ function drawHUD(){ ctx.save();
   // boss hp
   if(bossActive&&boss){ const w=W-120,h=9,x=60,y=52; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
     const ing=CURRY[curryIdx()]; ctx.fillStyle=ing.c; ctx.shadowColor=ing.c; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
-    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 11px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ '+ing.e+ing.n+'ボス ★',W/2,y-3); }
+    const bn=(curryIdx()===5)?(boss.cooked?'ごはん':'玄米'):ing.n; // お米ボスは玄米→ごはん
+    ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 11px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ '+ing.e+bn+'ボス ★',W/2,y-3); }
   if(stageBanner>0){ const a=Math.min(1, stageBanner>1.6?(2.2-stageBanner)/0.6:stageBanner/1.0); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
   if(bossIntro>0) drawBossIntro();
@@ -1251,8 +1283,9 @@ function drawBossIntro(){ // ボス登場の約1秒警告：点滅する大き�
   ctx.translate(W/2,cy); ctx.scale(ease,ease);
   // WARNING（大きく）
   ctx.fillStyle=blink?'#fff':'#ff5e8a'; ctx.shadowColor='#ff2e6e'; ctx.shadowBlur=18; ctx.font='900 62px "Trebuchet MS"'; ctx.fillText('⚠ WARNING ⚠',0,-28);
-  // 材料ボス名（大きく）
-  ctx.shadowColor=ing.c; ctx.shadowBlur=20; ctx.fillStyle='#fff'; ctx.font='900 40px "Trebuchet MS"'; ctx.fillText(ing.e+' '+ing.n+'ボス しゅつげん！',0,40);
+  // 材料ボス名（大きく）※お米は最初「玄米」で登場
+  const inm=(curryIdx()===5)?'玄米':ing.n;
+  ctx.shadowColor=ing.c; ctx.shadowBlur=20; ctx.fillStyle='#fff'; ctx.font='900 40px "Trebuchet MS"'; ctx.fillText(ing.e+' '+inm+'ボス しゅつげん！',0,40);
   ctx.shadowBlur=0; ctx.restore();
 }
 function drawCurryDone(){ // カレー完成！のクリア画面（カレー皿＋文字）

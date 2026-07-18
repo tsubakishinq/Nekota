@@ -866,6 +866,7 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     else if(b.kind==='bull') drawBull(b);
     else if(b.kind==='flame') drawFlame(b);
     else if(b.kind==='husk') drawHusk(b);
+    else if(b.kind==='skin') drawSkin(b);
     else { ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); }
     ctx.restore(); } ctx.shadowBlur=0; }
@@ -897,6 +898,12 @@ function drawBull(b){ // 怒った闘牛の頭（黒い突進、赤い目＋角�
   ctx.beginPath(); ctx.arc(r*0.2,-r*0.12,r*0.16,0,TAU); ctx.arc(r*0.5,-r*0.06,r*0.13,0,TAU); ctx.fill();
   ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.72,r*0.42,r*0.12,0,TAU); ctx.fill(); // 鼻息
   ctx.beginPath(); ctx.arc(-r*0.95,r*0.2,r*0.09,0,TAU); ctx.fill(); }
+function drawSkin(b){ // むけた玉ねぎの皮ミサイル（めくれてカールした薄い皮・当たるとダメージ）
+  ctx.rotate((b.ang||0)+performance.now()*0.004*(b.spin||1)); const r=b.r;
+  ctx.shadowColor='#f0e0a0'; ctx.shadowBlur=8; ctx.fillStyle='rgba(239,225,166,.94)'; ctx.strokeStyle='#c9b26a'; ctx.lineWidth=1.6; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(-r,r*0.28); ctx.quadraticCurveTo(-r*0.25,-r*0.95,r*1.15,-r*0.32); ctx.quadraticCurveTo(r*0.25,r*0.28,-r,r*0.28); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.strokeStyle='rgba(201,178,106,.7)'; ctx.lineWidth=1.1; // 皮の筋
+  ctx.beginPath(); ctx.moveTo(-r*0.55,r*0.12); ctx.quadraticCurveTo(0,-r*0.55,r*0.8,-r*0.22); ctx.stroke(); }
 function drawHusk(b){ // 飛び散る玄米の殻（茶色い舟型のかけら・当たるとダメージ）
   ctx.rotate(performance.now()*0.004*(b.spin||1)); const r=b.r;
   ctx.shadowColor='#b98a52'; ctx.shadowBlur=6; ctx.fillStyle='#c79a5a'; ctx.strokeStyle='#7a5730'; ctx.lineWidth=1.6; ctx.lineJoin='round';
@@ -1028,11 +1035,14 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(bossIntro>0){ bossIntro=Math.max(0,bossIntro-dt); return; } // 警告表示中はまだ登場しない（画面外で待機）
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
   const vi=curryIdx();
-  if(vi===1){ // 玉ねぎ：ダメージを受けるたびに4段階で皮がむけて小さくなる
+  if(vi===1){ // 玉ねぎ：ダメージを受けるたびに4段階で皮がむけて小さくなり、むけた皮がミサイルで飛んでくる
     const tgt=Math.min(4, Math.floor((1-e.hp/e.maxhp)/0.2)); // 80/60/40/20%で段階アップ
     while((e.peelLv||0)<tgt){ e.peelLv=(e.peelLv||0)+1; e.peeled=true; e.r*=0.86; // 一皮むけて一回り小さく
-      Audio2.sfx.hit(); shake(5,0.2); for(let k=0;k<18;k++) spawnParticles(e.x+rnd(-e.r*1.3,e.r*1.3),e.y+rnd(-e.r*1.3,e.r*1.3),k%2?'#c9b26a':'#efe1a6',1,rnd(140,300),0.6);
-      spawnText(e.x,e.y-e.r-6,'皮むけた！ '+e.peelLv+'/4','#fff',14); } }
+      Audio2.sfx.hit(); Audio2.sfx.warn(); shake(6,0.25); for(let k=0;k<18;k++) spawnParticles(e.x+rnd(-e.r*1.3,e.r*1.3),e.y+rnd(-e.r*1.3,e.r*1.3),k%2?'#c9b26a':'#efe1a6',1,rnd(140,300),0.6);
+      spawnText(e.x,e.y-e.r-6,'皮がむけた！','#fff',15);
+      const pa=Math.atan2(player.y-e.y,player.x-e.x), sk=easyMode?1:3; // むけた皮がミサイルとして飛んでくる（当たるとダメージ）
+      for(let k=0;k<sk;k++){ const aa=pa+(k-(sk-1)/2)*0.22, sp=rnd(250,330);
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:12,color:'#efe1a6',boss:true,kind:'skin',ang:aa,spin:rnd(0,1)<0.5?-1:1}); } } }
   else if(!e.peeled && vi<3 && e.hp/e.maxhp<0.5){ e.peeled=true; // にんじん・じゃがいもは半分で皮むけ
     Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],null,['#9c7838','#caa15e']][vi];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }

@@ -1019,25 +1019,37 @@ function curryIdx(){ return ((stage-1)%6+6)%6; }
 function spawnBoss(){ Audio2.sfx.warn();
   const idx=curryIdx(); // 出てくる順（材料）ほどHPが多い＋周回ごとに硬く
   const gear=clamp(stage-1,0,3);
-  const hp=Math.round((60+idx*48)*(1+curryLoop*0.35));
+  let hp=Math.round((60+idx*48)*(1+curryLoop*0.35)); if(easyMode) hp*=4; // イージーはボスHP4倍（じっくり戦える）
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
-    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, cooked:false, cooking:0, spCd:1.8};
+    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, peelLv:0, cooked:false, cooking:0, spCd:1.8};
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
   if(bossIntro>0){ bossIntro=Math.max(0,bossIntro-dt); return; } // 警告表示中はまだ登場しない（画面外で待機）
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
-  if(!e.peeled && e.hp/e.maxhp<0.5 && curryIdx()<3){ e.peeled=true; // 野菜ボスは半分で皮がむける
-    Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],['#c9b26a','#efe1a6'],['#9c7838','#caa15e']][curryIdx()];
+  const vi=curryIdx();
+  if(vi===1){ // 玉ねぎ：ダメージを受けるたびに4段階で皮がむけて小さくなる
+    const tgt=Math.min(4, Math.floor((1-e.hp/e.maxhp)/0.2)); // 80/60/40/20%で段階アップ
+    while((e.peelLv||0)<tgt){ e.peelLv=(e.peelLv||0)+1; e.peeled=true; e.r*=0.86; // 一皮むけて一回り小さく
+      Audio2.sfx.hit(); shake(5,0.2); for(let k=0;k<18;k++) spawnParticles(e.x+rnd(-e.r*1.3,e.r*1.3),e.y+rnd(-e.r*1.3,e.r*1.3),k%2?'#c9b26a':'#efe1a6',1,rnd(140,300),0.6);
+      spawnText(e.x,e.y-e.r-6,'皮むけた！ '+e.peelLv+'/4','#fff',14); } }
+  else if(!e.peeled && vi<3 && e.hp/e.maxhp<0.5){ e.peeled=true; // にんじん・じゃがいもは半分で皮むけ
+    Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],null,['#9c7838','#caa15e']][vi];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }
   if(curryIdx()===5 && !e.cooked){
-    if(!e.cooking && e.hp/e.maxhp<0.5){ e.cooking=2.0; // 玄米：半分ダメージ→2秒点滅＆殻が飛び散る→白米へ
-      Audio2.sfx.hit(); shake(9,0.35); flash('#f2ead0',0.2);
-      const n=easyMode?9:15; for(let k=0;k<n;k++){ const ha=k/n*TAU+rnd(-0.18,0.18), sp=rnd(210,360); // 殻が飛び散る（当たるとダメージ）
-        eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:9,color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
-      spawnText(e.x,e.y-e.r-6,'からが とんだ！','#d8b060',14); }
-    else if(e.cooking>0){ e.cooking-=dt; if(e.cooking<=0){ e.cooked=true; // 点滅おわり→白米に炊きあがり
-      Audio2.sfx.up(); for(let k=0;k<20;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(120,240),0.7); spawnText(e.x,e.y-e.r-6,'ごはんに なった！','#fff',15); } } }
+    if(!e.cooking && e.hp/e.maxhp<0.5){ e.cooking=4.0; e.huskCd=0; // 玄米：半分ダメージ→約4秒かけて派手に殻を飛ばして白米へ
+      Audio2.sfx.hit(); Audio2.sfx.big(); shake(18,0.7); flash('#f2ead0',0.45);
+      const n=easyMode?18:30; for(let k=0;k<n;k++){ const ha=k/n*TAU+rnd(-0.2,0.2), sp=rnd(260,520); // 殻の大爆散（当たるとダメージ）
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(9,15),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
+      for(let k=0;k<46;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#c79a5a':'#e8d4a8',1,rnd(160,420),0.85);
+      spawnText(e.x,e.y-e.r-6,'からが とんだ！','#d8b060',18); }
+    else if(e.cooking>0){ e.cooking-=dt;
+      e.huskCd=(e.huskCd||0)-dt; if(e.huskCd<=0){ e.huskCd=0.3; Audio2.sfx.hit(); shake(6,0.15); // 炊きあがるまで断続的に殻としぶきを噴き続ける
+        const m=easyMode?1:2; for(let k=0;k<m;k++){ const ha=rnd(0,TAU), sp=rnd(240,460);
+          eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(8,13),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
+        for(let k=0;k<14;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#c79a5a':'#f0e2c0',1,rnd(140,340),0.6); }
+      if(e.cooking<=0){ e.cooked=true; Audio2.sfx.up(); flash('#fff',0.4); shake(10,0.3); // 点滅おわり→白米に炊きあがり
+        for(let k=0;k<30;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(140,320),0.85); spawnText(e.x,e.y-e.r-6,'ごはんに なった！','#fff',17); } } }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発

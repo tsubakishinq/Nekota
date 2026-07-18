@@ -1117,13 +1117,18 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-rw,0); ctx.lineTo(rw,0); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); if(ctx.roundRect){ ctx.roundRect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5,r*0.1);} else ctx.rect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5); ctx.fill();
     bossFace(0,r*0.08,r,flash,lowHp,'#f0d8b0');
-  } else { // お米（茶碗）：玄米→半分ダメージで白ごはん
-    const cooked=e.cooked, rice=flash?'#fff':(cooked?'#fbfbf4':'#c7a56a'), grain=cooked?'#fff':'#dcc188';
-    ctx.fillStyle=rice; ctx.strokeStyle=cooked?'#e2e2d2':'#a8814a'; ctx.lineWidth=2; ctx.shadowColor=cooked?'#eaeadd':'#c7a56a'; ctx.shadowBlur=14;
+  } else if(!e.cooked){ // 玄米：茶碗なし、玄米の粒でできた丸い塊
+    ctx.fillStyle=flash?'#fff':'#b5844a'; ctx.strokeStyle='#8a6535'; ctx.lineWidth=2; ctx.shadowColor='#c79a5a'; ctx.shadowBlur=14;
+    ctx.beginPath(); ctx.arc(0,0,r*0.92,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    for(let k=0;k<24;k++){ const a=k*2.39996, rad=r*0.8*Math.sqrt((k+0.5)/24); ctx.save(); ctx.translate(Math.cos(a)*rad,Math.sin(a)*rad); ctx.rotate(a*1.7); // 玄米の粒の質感
+      ctx.fillStyle=flash?'#fff':(k%3?'#9c6f38':'#caa060'); ctx.beginPath(); ctx.ellipse(0,0,r*0.12,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
+    bossFace(0,r*0.04,r,flash,lowHp,'#5a3f1e');
+  } else { // ごはん：白い茶碗ごはん＋湯気
+    ctx.fillStyle=flash?'#fff':'#fbfbf4'; ctx.strokeStyle='#e2e2d2'; ctx.lineWidth=2; ctx.shadowColor='#eaeadd'; ctx.shadowBlur=14;
     ctx.beginPath(); ctx.arc(0,-r*0.05,r*0.92,Math.PI,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    ctx.fillStyle=grain; for(let k=0;k<10;k++){ const a=Math.PI+(k+0.5)/10*Math.PI; ctx.save(); ctx.translate(Math.cos(a)*r*0.6,-r*0.05+Math.sin(a)*r*0.5); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,0,r*0.11,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
-    if(cooked){ ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.lineCap='round'; // 炊きたての湯気
-      for(const sx of [-r*0.4,0,r*0.4]){ ctx.beginPath(); ctx.moveTo(sx,-r*0.5); ctx.quadraticCurveTo(sx+r*0.18,-r*0.85,sx,-r*1.15); ctx.stroke(); } ctx.lineCap='butt'; }
+    ctx.fillStyle='#fff'; for(let k=0;k<10;k++){ const a=Math.PI+(k+0.5)/10*Math.PI; ctx.save(); ctx.translate(Math.cos(a)*r*0.6,-r*0.05+Math.sin(a)*r*0.5); ctx.rotate(a); ctx.beginPath(); ctx.ellipse(0,0,r*0.11,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.lineCap='round'; // 炊きたての湯気
+    for(const sx of [-r*0.4,0,r*0.4]){ ctx.beginPath(); ctx.moveTo(sx,-r*0.5); ctx.quadraticCurveTo(sx+r*0.18,-r*0.85,sx,-r*1.15); ctx.stroke(); } ctx.lineCap='butt';
     ctx.fillStyle=flash?'#fff':'#4a7fbf'; ctx.strokeStyle='#2f5c94'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(-r*1.02,-r*0.02); ctx.quadraticCurveTo(0,r*0.2,r*1.02,-r*0.02); ctx.quadraticCurveTo(r*0.72,r*1.02,0,r*1.06); ctx.quadraticCurveTo(-r*0.72,r*1.02,-r*1.02,-r*0.02); ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-r*0.8,r*0.4); ctx.quadraticCurveTo(0,r*0.62,r*0.8,r*0.4); ctx.stroke();

@@ -797,7 +797,7 @@ function updateBullets(dt){
   }
 }
 function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBullets[i]; b.x+=b.vx*dt; b.y+=b.vy*dt; // 弾速はそのまま（イージーは弾の数を減らす）
-  if(b.life!==undefined){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } b.r*=1+dt*1.6; } // 火炎はだんだん大きくなって消える
+  if(b.life!==undefined){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } if(b.r<24) b.r*=1+dt*1.4; } // 火炎は少し大きくなりつつ端まで飛ぶ
   if(b.x<-30||b.x>W+30||b.y<-30||b.y>H+30){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){
     if(b.kind==='juice'){ eBullets.splice(i,1); const was=player.slowT; player.slowT=3.0; // 汁はライフを奪わずスピードダウン
@@ -865,6 +865,7 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     else if(b.kind==='fry') drawFry(b);
     else if(b.kind==='bull') drawBull(b);
     else if(b.kind==='flame') drawFlame(b);
+    else if(b.kind==='husk') drawHusk(b);
     else { ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); }
     ctx.restore(); } ctx.shadowBlur=0; }
@@ -896,6 +897,11 @@ function drawBull(b){ // 怒った闘牛の頭（黒い突進、赤い目＋角�
   ctx.beginPath(); ctx.arc(r*0.2,-r*0.12,r*0.16,0,TAU); ctx.arc(r*0.5,-r*0.06,r*0.13,0,TAU); ctx.fill();
   ctx.shadowBlur=0; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-r*0.72,r*0.42,r*0.12,0,TAU); ctx.fill(); // 鼻息
   ctx.beginPath(); ctx.arc(-r*0.95,r*0.2,r*0.09,0,TAU); ctx.fill(); }
+function drawHusk(b){ // 飛び散る玄米の殻（茶色い舟型のかけら・当たるとダメージ）
+  ctx.rotate(performance.now()*0.004*(b.spin||1)); const r=b.r;
+  ctx.shadowColor='#b98a52'; ctx.shadowBlur=6; ctx.fillStyle='#c79a5a'; ctx.strokeStyle='#7a5730'; ctx.lineWidth=1.6; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(-r,r*0.1); ctx.quadraticCurveTo(0,-r*0.85,r,r*0.1); ctx.quadraticCurveTo(0,r*0.5,-r,r*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.strokeStyle='rgba(122,87,48,.6)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-r*0.6,r*0.02); ctx.quadraticCurveTo(0,-r*0.4,r*0.6,r*0.02); ctx.stroke(); }
 function drawFlame(b){ // 火炎放射の火の玉（加算合成で燃える）
   const r=b.r, a=Math.max(0,Math.min(1,(b.life||0.3)/0.7));
   ctx.globalAlpha=a; ctx.globalCompositeOperation='lighter';
@@ -1015,7 +1021,7 @@ function spawnBoss(){ Audio2.sfx.warn();
   const gear=clamp(stage-1,0,3);
   const hp=Math.round((60+idx*48)*(1+curryLoop*0.35));
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
-    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, cooked:false, spCd:1.8};
+    gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, cooked:false, cooking:0, spCd:1.8};
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
@@ -1024,8 +1030,14 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(!e.peeled && e.hp/e.maxhp<0.5 && curryIdx()<3){ e.peeled=true; // 野菜ボスは半分で皮がむける
     Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],['#c9b26a','#efe1a6'],['#9c7838','#caa15e']][curryIdx()];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }
-  if(curryIdx()===5 && !e.cooked && e.hp/e.maxhp<0.5){ e.cooked=true; // お米ボスは半分で玄米→白ごはんに炊ける
-    Audio2.sfx.up(); for(let k=0;k<20;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(120,240),0.7); spawnText(e.x,e.y-e.r-6,'ごはんに なった！','#fff',15); }
+  if(curryIdx()===5 && !e.cooked){
+    if(!e.cooking && e.hp/e.maxhp<0.5){ e.cooking=2.0; // 玄米：半分ダメージ→2秒点滅＆殻が飛び散る→白米へ
+      Audio2.sfx.hit(); shake(9,0.35); flash('#f2ead0',0.2);
+      const n=easyMode?9:15; for(let k=0;k<n;k++){ const ha=k/n*TAU+rnd(-0.18,0.18), sp=rnd(210,360); // 殻が飛び散る（当たるとダメージ）
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:9,color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
+      spawnText(e.x,e.y-e.r-6,'からが とんだ！','#d8b060',14); }
+    else if(e.cooking>0){ e.cooking-=dt; if(e.cooking<=0){ e.cooked=true; // 点滅おわり→白米に炊きあがり
+      Audio2.sfx.up(); for(let k=0;k<20;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(120,240),0.7); spawnText(e.x,e.y-e.r-6,'ごはんに なった！','#fff',15); } } }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
@@ -1045,9 +1057,9 @@ function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
   else if(idx===3){ // 牛：怒った闘牛が突進してくる
     const sp=470; eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5,r:26,color:'#3a2a24',boss:true,kind:'bull',ang:a});
     Audio2.sfx.big(); shake(7,0.2); flash('#c8102e',0.14); spawnText(e.x,e.y-e.r-6,'とつげき闘牛！','#ff5a5a',14); e.spCd=easyMode?3.6:2.8; }
-  else { // ルー：火炎放射（前方へ火の玉のジェット）
-    const n=easyMode?9:15; for(let k=0;k<n;k++){ const aa=a+rnd(-0.17,0.17), sp=rnd(300,440), off=rnd(0,e.r*0.7);
-      eBullets.push({x:e.x-e.r*0.35+Math.cos(aa)*off,y:e.y+Math.sin(aa)*off,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:rnd(9,15),color:'#ff7a2e',boss:true,kind:'flame',life:rnd(0.4,0.7)}); }
+  else { // ルー：火炎放射（前方へ火の玉のジェット・画面の端まで届く）
+    const n=easyMode?8:12; for(let k=0;k<n;k++){ const aa=a+rnd(-0.16,0.16), sp=rnd(380,520), off=rnd(0,e.r*0.7);
+      eBullets.push({x:e.x-e.r*0.35+Math.cos(aa)*off,y:e.y+Math.sin(aa)*off,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:rnd(9,14),color:'#ff7a2e',boss:true,kind:'flame',life:rnd(2.0,2.6)}); }
     Audio2.sfx.big(); shake(5,0.2); flash('#ff7a2e',0.13); spawnText(e.x,e.y-e.r-6,'火炎放射！','#ff7a2e',14); e.spCd=easyMode?3.0:2.3; }
 }
 function bossFace(cx,cy,r,flash,lowHp,col){ // 顔（プレイヤー側＝少し左寄り）
@@ -1120,12 +1132,25 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-rw,0); ctx.lineTo(rw,0); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); if(ctx.roundRect){ ctx.roundRect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5,r*0.1);} else ctx.rect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5); ctx.fill();
     bossFace(0,r*0.08,r,flash,lowHp,'#f0d8b0');
-  } else if(!e.cooked){ // 玄米：茶碗なし、玄米の粒でできた丸い塊
-    ctx.fillStyle=flash?'#fff':'#b5844a'; ctx.strokeStyle='#8a6535'; ctx.lineWidth=2; ctx.shadowColor='#c79a5a'; ctx.shadowBlur=14;
-    ctx.beginPath(); ctx.arc(0,0,r*0.92,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
-    for(let k=0;k<24;k++){ const a=k*2.39996, rad=r*0.8*Math.sqrt((k+0.5)/24); ctx.save(); ctx.translate(Math.cos(a)*rad,Math.sin(a)*rad); ctx.rotate(a*1.7); // 玄米の粒の質感
-      ctx.fillStyle=flash?'#fff':(k%3?'#9c6f38':'#caa060'); ctx.beginPath(); ctx.ellipse(0,0,r*0.12,r*0.055,0,0,TAU); ctx.fill(); ctx.restore(); }
-    bossFace(0,r*0.04,r,flash,lowHp,'#5a3f1e');
+  } else if(!e.cooked){ // 玄米：一粒の玄米（卵型・茶色い輪郭＋ヘタのくぼみ＋溝）※炊飯中は点滅
+    const blink = e.cooking>0 && Math.floor(e.cooking*12)%2===0, hi=flash||blink;
+    ctx.shadowColor='#c79a5a'; ctx.shadowBlur=15;
+    ctx.fillStyle=hi?'#fff':'#d9b183'; ctx.strokeStyle='#6e4a26'; ctx.lineWidth=r*0.09; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(0,-r*1.02); // 上が少しとがり下ぶくれの玄米の粒
+    ctx.bezierCurveTo(r*0.9,-r*0.92, r*1.02,-r*0.08, r*0.72,r*0.62);
+    ctx.bezierCurveTo(r*0.44,r*1.1, -r*0.44,r*1.1, -r*0.72,r*0.62);
+    ctx.bezierCurveTo(-r*1.02,-r*0.08, -r*0.9,-r*0.92, 0,-r*1.02);
+    ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+    // ヘタ（右肩の折れたくぼみ）
+    ctx.strokeStyle='#6e4a26'; ctx.lineWidth=r*0.07; ctx.lineCap='round'; ctx.beginPath();
+    ctx.moveTo(r*0.02,-r*1.0); ctx.quadraticCurveTo(r*0.3,-r*0.92,r*0.36,-r*0.66); ctx.stroke();
+    // 溝（下半分の縦の筋）
+    ctx.strokeStyle=hi?'rgba(120,90,50,.35)':'rgba(150,105,55,.5)'; ctx.lineWidth=r*0.045;
+    for(const o of [-0.34,-0.12,0.12]){ ctx.beginPath(); ctx.moveTo(o*r-r*0.02,-r*0.05); ctx.quadraticCurveTo(o*r*1.15,r*0.5,o*r*0.75,r*0.92); ctx.stroke(); }
+    ctx.lineCap='butt';
+    // ハイライト
+    ctx.fillStyle='rgba(255,255,255,.4)'; ctx.beginPath(); ctx.ellipse(-r*0.32,-r*0.22,r*0.15,r*0.32,-0.3,0,TAU); ctx.fill();
+    bossFace(0,-r*0.12,r*0.92,hi,lowHp,'#5a3f1e');
   } else { // ごはん：白い茶碗ごはん＋湯気
     ctx.fillStyle=flash?'#fff':'#fbfbf4'; ctx.strokeStyle='#e2e2d2'; ctx.lineWidth=2; ctx.shadowColor='#eaeadd'; ctx.shadowBlur=14;
     ctx.beginPath(); ctx.arc(0,-r*0.05,r*0.92,Math.PI,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;

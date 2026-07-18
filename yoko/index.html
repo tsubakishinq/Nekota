@@ -104,7 +104,7 @@
       <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🍙2</small></div>
       <div class="powcell" data-i="2"><span class="lv"></span><b>ダブル</b><small>🍙3</small></div>
       <div class="powcell" data-i="3"><span class="lv"></span><b>レーザー</b><small>🍙4</small></div>
-      <div class="powcell" data-i="4"><span class="lv"></span><b>オプション</b><small>🍙5</small></div>
+      <div class="powcell" data-i="4"><span class="lv"></span><b>ドローン</b><small>🍙5</small></div>
       <div class="powcell" data-i="5"><span class="lv"></span><b>シールド</b><small>🍙6</small></div>
     </div>
     <div id="powBtn"><span>🍙</span><small id="powStock">×0</small></div>
@@ -268,7 +268,7 @@ function playerSpeed(){ let s=BASE_SPEED*(1+player.speedLvl*0.33); if(player.slo
 
 // power-up bar (Gradius)
 const POWERS=['SPEED','MISSILE','DOUBLE','LASER','OPTION','SHIELD'];
-const POWJP=['スピード','ミサイル','ダブル','レーザー','オプション','シールド'];
+const POWJP=['スピード','ミサイル','ダブル','レーザー','ドローン','シールド'];
 const POWCOST=[1,2,3,4,5,6]; // 🐾ストックの必要数（足りないと選べない）
 let powerStock=0; // 集めた🐾の数（タップで任意の項目を発動）
 let lives=3;      // 残機（やられても🐾ストックは維持して復活、最大3）

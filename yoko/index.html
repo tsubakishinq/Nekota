@@ -1027,6 +1027,7 @@ let boss=null, bossActive=false, bossIntro=0; // bossIntro>0 の間は登場演�
 // 6体のボス＝カレーの材料。6体目（お米）を倒すとカレー完成
 const CURRY=[{n:'にんじん',e:'🥕',c:'#f0821f'},{n:'玉ねぎ',e:'🧅',c:'#e8d48a'},{n:'じゃがいも',e:'🥔',c:'#caa15e'},{n:'牛',e:'🐄',c:'#e9e4dc'},{n:'ルー',e:'🟫',c:'#7a4a24'},{n:'お米',e:'🍚',c:'#f4f4ec'}];
 let curryGot=0, curryFx=0, prepFx=null, defeatFreeze=0, curryLoop=0; // curryLoop=周回数（増えるほど敵が固くなる）
+let riceFx=0; const RTOT=2.4; // 玄米→白米の炊き上がり演出（ホワイトアウト＋字幕）
 function curryIdx(){ return ((stage-1)%6+6)%6; }
 function spawnBoss(){ Audio2.sfx.warn();
   const idx=curryIdx(); // 出てくる順（材料）ほどHPが多い＋周回ごとに硬く
@@ -1052,19 +1053,16 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
     Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],null,['#9c7838','#caa15e']][vi];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }
   if(curryIdx()===5 && !e.cooked){
-    if(!e.cooking && e.hp/e.maxhp<0.5){ e.cooking=4.0; e.huskCd=0; // 玄米：半分ダメージ→約4秒かけて派手に殻を飛ばして白米へ
-      Audio2.sfx.hit(); Audio2.sfx.big(); shake(18,0.7); flash('#f2ead0',0.45);
-      const n=easyMode?18:30; for(let k=0;k<n;k++){ const ha=k/n*TAU+rnd(-0.2,0.2), sp=rnd(260,520); // 殻の大爆散（当たるとダメージ）
-        eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(9,15),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
-      for(let k=0;k<46;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#c79a5a':'#e8d4a8',1,rnd(160,420),0.85);
-      spawnText(e.x,e.y-e.r-6,'からが とんだ！','#d8b060',18); }
-    else if(e.cooking>0){ e.cooking-=dt;
-      e.huskCd=(e.huskCd||0)-dt; if(e.huskCd<=0){ e.huskCd=0.3; Audio2.sfx.hit(); shake(6,0.15); // 炊きあがるまで断続的に殻としぶきを噴き続ける
-        const m=easyMode?1:2; for(let k=0;k<m;k++){ const ha=rnd(0,TAU), sp=rnd(240,460);
-          eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(8,13),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
-        for(let k=0;k<14;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#c79a5a':'#f0e2c0',1,rnd(140,340),0.6); }
-      if(e.cooking<=0){ e.cooked=true; Audio2.sfx.up(); flash('#fff',0.4); shake(10,0.3); // 点滅おわり→白米に炊きあがり
-        for(let k=0;k<30;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(140,320),0.85); spawnText(e.x,e.y-e.r-6,'ごはんに なった！','#fff',17); } } }
+    if(!e.cooking && e.hp/e.maxhp<0.5){ e.cooking=2.0; Audio2.sfx.warn(); shake(6,0.3); } // 玄米撃破→攻撃をやめて約2秒ふるえる
+    if(e.cooking>0){ e.cooking-=dt; // ふるえ中（描画側でジッター＆点滅）：小さなしぶきがモゾモゾ
+      if(Math.random()<0.5) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),Math.random()<0.5?'#c79a5a':'#e8d4a8',1,rnd(60,180),0.4);
+      if(e.cooking<=0){ e.cooked=true; riceFx=RTOT; // ふるえ終わり→大きな殻が飛び散る＋ホワイトアウト＋白米が炊き上がる
+        Audio2.sfx.big(); Audio2.sfx.up(); shake(28,0.9); flash('#fff',0.75);
+        const n=easyMode?12:20; for(let k=0;k<n;k++){ const ha=k/n*TAU+rnd(-0.22,0.22), sp=rnd(340,620); // 大きな殻
+          eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(16,24),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
+        for(let k=0;k<56;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(200,480),0.95); }
+      return; } } // ふるえている間は動かない・撃たない
+  if(riceFx>0.9) return; // 炊き上がりのホワイトアウト中は動かない・撃たない
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
@@ -1159,8 +1157,9 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-rw,0); ctx.lineTo(rw,0); ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.14)'; ctx.beginPath(); if(ctx.roundRect){ ctx.roundRect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5,r*0.1);} else ctx.rect(-rw*0.9,-rh*0.86,rw*0.55,rh*0.5); ctx.fill();
     bossFace(0,r*0.08,r,flash,lowHp,'#f0d8b0');
-  } else if(!e.cooked){ // 玄米：一粒の玄米（卵型・茶色い輪郭＋ヘタのくぼみ＋溝）※炊飯中は点滅
-    const blink = e.cooking>0 && Math.floor(e.cooking*12)%2===0, hi=flash||blink;
+  } else if(!e.cooked){ // 玄米：一粒の玄米（卵型・茶色い輪郭＋ヘタのくぼみ＋溝）※炊飯中は点滅＆ふるえる
+    if(e.cooking>0) ctx.translate(rnd(-4,4),rnd(-4,4)); // ふるえ
+    const blink = e.cooking>0 && Math.floor(e.cooking*14)%2===0, hi=flash||blink;
     ctx.shadowColor='#c79a5a'; ctx.shadowBlur=15;
     ctx.fillStyle=hi?'#fff':'#d9b183'; ctx.strokeStyle='#6e4a26'; ctx.lineWidth=r*0.09; ctx.lineJoin='round';
     ctx.beginPath(); ctx.moveTo(0,-r*1.02); // 上が少しとがり下ぶくれの玄米の粒
@@ -1269,6 +1268,7 @@ function drawHUD(){ ctx.save();
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
   if(bossIntro>0) drawBossIntro();
   if(prepFx) drawPrepFx();
+  if(riceFx>0) drawRiceReveal();
   if(curryFx>0) drawCurryDone();
   ctx.restore();
 }
@@ -1347,6 +1347,16 @@ function drawBossIntro(){ // ボス登場の約1秒警告：点滅する大き�
   const inm=(curryIdx()===5)?'玄米':ing.n;
   ctx.shadowColor=ing.c; ctx.shadowBlur=20; ctx.fillStyle='#fff'; ctx.font='900 40px "Trebuchet MS"'; ctx.fillText(ing.e+' '+inm+'ボス しゅつげん！',0,40);
   ctx.shadowBlur=0; ctx.restore();
+}
+function drawRiceReveal(){ // 玄米→白米：ホワイトアウト→「白米が炊き上がった！」の字幕とともにご飯が現れる
+  const el=RTOT-riceFx; let wa=0;
+  if(el<0.3) wa=el/0.3; else if(el<0.8) wa=1; else if(el<1.5) wa=1-(el-0.8)/0.7; // 真っ白→フェードでご飯が出てくる
+  if(wa>0){ ctx.save(); ctx.globalAlpha=Math.min(1,wa); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  if(el>0.7){ const ta=Math.min(1,(el-0.7)/0.3)*Math.min(1,riceFx/0.45);
+    ctx.save(); ctx.globalAlpha=ta; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#ff8a3c'; ctx.shadowColor='#ffd85e'; ctx.shadowBlur=22; ctx.font='900 46px "Trebuchet MS"';
+    ctx.fillText('白米が炊き上がった！',W/2,H*0.24);
+    ctx.shadowBlur=0; ctx.font='34px serif'; ctx.fillText('🍚',W/2,H*0.24+46); ctx.restore(); }
 }
 function drawCurryDone(){ // カレー完成！のクリア画面（カレー皿＋文字）
   ctx.save(); const a=Math.min(1,(4.0-curryFx)/0.4)*Math.min(1,curryFx/0.5);
@@ -1478,7 +1488,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; pawFx.length=0; catBomb=null;
-  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
+  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
 function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='none';
@@ -1504,6 +1514,7 @@ soundBtn.addEventListener('click',()=>{ Audio2.init();Audio2.resume(); muted=!mu
 function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; requestAnimationFrame(loop);
   if(prepFx){ prepFx.t+=dt; if(prepFx.t>=prepFx.max) prepFx=null; } // 切られた野菜／お肉パックのアップ
   if(defeatFreeze>0) defeatFreeze=Math.max(0,defeatFreeze-dt);     // ボス撃破後のスクロール停止
+  if(riceFx>0 && state==='play') riceFx=Math.max(0,riceFx-dt);     // 白米炊き上がり演出のタイマー
   const frozen = state==='play' && defeatFreeze>0;
   updateStars(frozen?0:dt); updateParticles(dt); updateTexts(dt);  // 演出中は背景スクロールも止める
   if(state==='play' && !frozen){

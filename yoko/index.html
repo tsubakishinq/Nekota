@@ -262,7 +262,7 @@ const player={ x:170, y:H/2, r:15, alive:true, invuln:0, thrust:0,
   speedLvl:0, // 0..5
   slowT:0, // 玉ねぎ汁を浴びると一定時間スピードダウン
   missileLvl:0, missileBurst:false, shield:0, redInvuln:0, dead:false }; // missileLvl 0-3, laserMode 0-4
-function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0; player.slowT=0;
+function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0; player.slowT=0; player.bank=0; player._py=undefined;
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; }
 function playerSpeed(){ let s=BASE_SPEED*(1+player.speedLvl*0.33); if(player.slowT>0) s*=0.4; return s; } // 3段階で最大約2倍（汁で0.4倍）
 
@@ -285,6 +285,8 @@ function updatePlayer(dt){
   player.x+=dx/len*sp*dt; player.y+=dy/len*sp*dt;
   player.thrust=(dx||dy)?1:0.4;
   player.x=clamp(player.x,player.r+4, W*0.62); player.y=clamp(player.y,player.r+8,H-player.r-8);
+  { const py=player._py===undefined?player.y:player._py; const vy=(player.y-py)/Math.max(dt,1e-3); player._py=player.y; // 上下の速度からバンク量
+    const tb=clamp(vy/280,-1,1); player.bank=(player.bank||0)+(tb-(player.bank||0))*Math.min(1,dt*9); }
   if(player.invuln>0) player.invuln-=dt;
   if(player.redInvuln>0) player.redInvuln-=dt;
   if(player.slowT>0){ player.slowT-=dt; if(Math.random()<0.4) spawnParticles(player.x-player.r,player.y,'#eae59a',1,60,0.3); } // 汁でスロー中はしずくが滴る
@@ -588,7 +590,7 @@ function updateCarrier(dt){ if(!carrier) return; carrier.t+=dt;
   if(carrier.t>1.5) carrier=null; // 余韻を残して消える
 }
 function revive(){ if(state!=='play') return; player.x=carrier?carrier.x:170; player.y=carrier?carrier.y:H/2; player.alive=true;
-  player.invuln=1; player.redInvuln=0; player.slowT=0; // 1秒間 点滅無敵で復活
+  player.invuln=1; player.redInvuln=0; player.slowT=0; player.bank=0; player._py=undefined; // 1秒間 点滅無敵で復活
   // 初期状態で復活：パワーアップを全部リセット
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.beamHist=null;
   options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); refreshPowHint();
@@ -899,8 +901,10 @@ function drawFlame(b){ // 火炎放射の火の玉（加算合成で燃える）
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; }
 
 // ================= OPTIONS / PLAYER DRAW =================
-function drawCatShip(x,y,r,skinGlow){ // クリーム色の戦闘機（可変戦闘機風・右向き）
-  ctx.save(); ctx.translate(x,y); ctx.lineJoin='round'; ctx.lineCap='round';
+function drawCatShip(x,y,r,bank){ // クリーム色の戦闘機（可変戦闘機風・右向き）
+  ctx.save(); ctx.translate(x,y);
+  if(bank){ ctx.rotate(bank*0.26); ctx.scale(1, 1-Math.min(0.58,Math.abs(bank)*0.62)); } // 上下移動でバンク（ロール）
+  ctx.lineJoin='round'; ctx.lineCap='round';
   const cream='#e7d9b4', creamD='#cdbb8c', dk='#2c2a26', red='#e23b3b';
   // ジェット噴射（双発）
   const tl=8+player.thrust*16+Math.random()*6; ctx.globalCompositeOperation='lighter';
@@ -948,7 +952,7 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
         ctx.lineWidth=2.5; ctx.strokeStyle='rgba(210,255,255,.95)'; const a=t*(n%2?-1:1)+n; ctx.beginPath(); ctx.arc(0,0,R,a,a+0.7); ctx.stroke(); }
       ctx.restore(); ctx.shadowBlur=0; }
   }
-  ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r); ctx.globalAlpha=1;
+  ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r*1.5, player.bank||0); ctx.globalAlpha=1; // 当たり判定は小さめのまま見た目を大きく
   if(player.laserMode===4){ const p=Math.min(1,(player.chargeT||0)/0.5); // 猫：目の前でチャージ中の顔
     const fx=player.x+player.r+CHARGE_OFF, fy=player.y; ctx.save(); ctx.translate(fx,fy);
     const sc=0.55+0.6*p; ctx.scale(sc,sc); ctx.globalAlpha=0.55+0.45*p; drawKitten(13, true); ctx.restore(); ctx.globalAlpha=1;

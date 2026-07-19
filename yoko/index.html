@@ -333,8 +333,8 @@ function shootLaser(x,y,ang,dmgScale){ ang=ang||0; const sp=1150,dx=Math.cos(ang
 function shootWingBeam(x,y){ // 最強：翼端から出る青い高速・長距離レーザー（細く長い）
   bullets.push({x,y,vx:1700,vy:0,r:4,dmg:LBASE*laserMul(),color:'#3aa6ff',kind:'laser',pierce:true,len:130,thickV:2.6,hitThick:8,dx:1,dy:0,ang:0}); }
 function droneDmg(){ return (player.laserMode?LBASE*laserMul():1)*0.2; } // ドローンは本機の1/5
-function shootDroneLaser(x,y,ang){ ang=ang||0; const sp=1050,dx=Math.cos(ang),dy=Math.sin(ang); // ドローン専用：本機と区別できる細い青いレーザー
-  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:3,dmg:droneDmg(),color:'#3fb8ff',kind:'laser',pierce:true,len:30,thickV:2.3,hitThick:5,dx,dy,ang}); }
+function shootDroneLaser(x,y,ang){ ang=ang||0; const sp=1050,dx=Math.cos(ang),dy=Math.sin(ang); // ドローン専用：本機と区別できるピンクの細いレーザー（貫通しない）
+  bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:3,dmg:droneDmg(),color:'#ff5ec9',kind:'laser',pierce:false,len:30,thickV:2.3,hitThick:5,dx,dy,ang}); }
 // 3段階目の猫レーザー：1発ずつが跳ねる猫のシルエット。ゆっくり飛ぶので猫だとわかる
 function shootCat(x,y,ang){ ang=ang||0; const sp=480,dx=Math.cos(ang),dy=Math.sin(ang);
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*1.8,color:'#fff',kind:'laser',pierce:true,len:34,thickV:5,hitThick:16,dx,dy,ang,cat:true}); }

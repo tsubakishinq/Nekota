@@ -330,8 +330,8 @@ function shootBullet(x,y,vx,vy,dmgScale){ bullets.push({x,y,vx,vy,r:6,dmg:1*(dmg
 function shootLaser(x,y,ang,dmgScale){ ang=ang||0; const sp=1150,dx=Math.cos(ang),dy=Math.sin(ang); const m=player.laserMode||1;
   const vg = m===1?2 : m===2?3 : 0; // 1箸(gun)/2フォーク/3ナイフ、それ以上はレーザーのまま
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul()*(dmgScale||1),color:LCOL[m],kind:'laser',pierce:true,len:56,thickV:5,hitThick:11,dx,dy,ang,veg:vg}); }
-function shootWingBeam(x,y){ const sp=1550; // 最強：翼端から出る青い高速・長距離レーザー（赤より長い）
-  bullets.push({x,y,vx:sp,vy:0,r:5,dmg:LBASE*laserMul(),color:'#3aa6ff',kind:'laser',pierce:true,len:88,thickV:5.5,hitThick:12,dx:1,dy:0,ang:0}); }
+function shootWingBeam(x,y){ // 最強：翼端から出る青い高速・長距離レーザー（細く長い）
+  bullets.push({x,y,vx:1700,vy:0,r:4,dmg:LBASE*laserMul(),color:'#3aa6ff',kind:'laser',pierce:true,len:130,thickV:2.6,hitThick:8,dx:1,dy:0,ang:0}); }
 function droneDmg(){ return (player.laserMode?LBASE*laserMul():1)*0.2; } // ドローンは本機の1/5
 function shootDroneLaser(x,y,ang){ ang=ang||0; const sp=1050,dx=Math.cos(ang),dy=Math.sin(ang); // ドローン専用：本機と区別できる細い青いレーザー
   bullets.push({x,y,vx:dx*sp,vy:dy*sp,r:3,dmg:droneDmg(),color:'#3fb8ff',kind:'laser',pierce:true,len:30,thickV:2.3,hitThick:5,dx,dy,ang}); }

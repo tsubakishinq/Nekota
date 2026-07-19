@@ -304,7 +304,7 @@ const DIAG=-0.5; // diagonal-up angle for DOUBLE
 const LBASE=0.11; // レーザー基礎威力（従来の約5割）
 const LMUL=[0,1,1.2,1.44,1.728,2.0736], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0','#ff9a3c']; // 段階:1基本/2黄/3赤/4猫/5虎（強化ごと1.2倍）
 // レーザー威力倍率：強化1回ごとに1.2倍（段階アップも虎到達後のlaserBoostも共通）
-function laserMul(){ return Math.pow(1.2, Math.max(0,(player.laserMode||1)-1) + (player.laserBoost||0)); }
+function laserMul(){ let m=Math.pow(1.2, Math.max(0,(player.laserMode||1)-1) + (player.laserBoost||0)); if(!easyMode) m*=1.25; return m; } // 普通モードはレーザーを少し強化（1.25倍）
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
   if(player.laserMode===4){ player.fireCd=0.12; /* 猫は目の前の顔がチャージ→高出力ビーム（updatePlayerで処理）*/ }

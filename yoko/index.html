@@ -651,8 +651,9 @@ function spawnEnemy(type, y, opt){ opt=opt||{}; const x=W+40;
     case 'gold': Object.assign(e,{hp:3,r:15,vx:-190,vy:0,score:200,color:'#ffd85e',amp:rnd(40,90),baseY:e.y,drop:true}); break; // 倒すとカプセル
     case 'katsuo': Object.assign(e,{hp:14+stage*3+curryLoop*10,r:28,vx:-64,vy:0,score:900,color:'#5b7fa8',amp:rnd(50,90),baseY:clamp(e.y,90,H-90),katsuo:true}); break; // 硬い！倒すと刺身（周回で更に硬く）
   }
-  if(type!=='katsuo'){ // カツオは常に硬いので軟化補正の対象外
-    // Early enemies are much softer: stage 1 basics die in one hit, then HP ramps back up.
+  const swarm=(type==='fan'||type==='straight'||type==='wave'||type==='gold'); // 沢山出てくる雑魚
+  if(swarm){ e.hp=1; } // 沢山出てくる雑魚は普通モードでも1発で撃破
+  else if(type!=='katsuo'){ // 撃ってくる敵（gun/turret）は硬さを維持。カツオは常に硬い
     const soft=Math.max(0, 3-stage); // stage1:-2, stage2:-1, stage3:0
     const hard=Math.max(0, stage-3);  // ボス撃破ごとに硬く: stage4:+1, stage5:+2...
     e.hp=Math.max(1, e.hp-soft+hard);
@@ -707,8 +708,8 @@ function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1);
   Audio2.sfx.explode(); spawnParticles(e.x,e.y,e.color,16,220,0.7); spawnParticles(e.x,e.y,'#fff',5,120,0.4); shake(2,.1);
   addScore(e.score);
   if(e.katsuo){ spawnSashimi(e.x,e.y); shake(6,.2); showToast('🍣 さしみ！ とって1機','#ff9ecf'); return; }
-  const dmult=stage>=2?0.34:1; // 2面以降はアイテム約1/3
-  if(Math.random() < (e.drop?1:0.4)*dmult) spawnPowerup(e.x,e.y); }
+  if(e.drop){ spawnPowerup(e.x,e.y); } // 3体組の最後→おにぎり確定
+  else if(!e.noItem){ const dmult=stage>=2?0.34:1; if(Math.random() < 0.4*dmult) spawnPowerup(e.x,e.y); } }
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:26,seed:Math.random()*TAU}); } // 肉球マークを大きく
@@ -1226,15 +1227,13 @@ function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+
   const cap=Math.round(clamp(2+d*0.9, 2, 14));   // max enemies allowed on screen at once
   if(stageRemaining>0){ spawnTimer-=dt; if(spawnTimer<=0){
     if(enemies.length>=cap){ spawnTimer=0.3; return; }   // hold back until the screen thins out
-    const gap=clamp(1.6-d*0.13, 0.45, 1.7)*rnd(0.8,1.2); // weak → slow trickle, strong → fast
-    const type=pick(stagePool);
-    const fchance=clamp(0.06+d*0.045, 0.06, 0.55);       // formations get more common as you power up
-    if((type==='fan'||type==='straight'||type==='gold') && Math.random()<fchance){
-      const fsize=Math.round(clamp(3+d*0.35, 3, 6)); const fy=rnd(80,H-80);
-      for(let k=0;k<fsize;k++) setTimeout(()=>{ if(state==='play') spawnEnemy(type, clamp(fy+(k-(fsize-1)/2)*34,50,H-50)); }, k*150);
-      stageRemaining-=fsize;
-    } else { spawnEnemy(type); stageRemaining--; }
-    spawnTimer=gap;
+    // 3体1組で連続出現。最後の1体を倒すとおにぎりが出る
+    const count=Math.min(3, stageRemaining), type=pick(stagePool), fy=rnd(80,H-80);
+    for(let k=0;k<count;k++){ const last=(k===count-1);
+      setTimeout(()=>{ if(state==='play' && !bossActive){ const en=spawnEnemy(type, clamp(fy+(k-(count-1)/2)*40,50,H-50));
+        if(last){ en.drop=true; } else { en.drop=false; en.noItem=true; } } }, k*170); } // 3体目だけおにぎり確定（他は落とさない）
+    stageRemaining-=count;
+    spawnTimer=clamp(1.9-d*0.12, 0.8, 2.0)*rnd(0.9,1.1); // 1組ごとの間隔
   } }
   else if(!bossPending){ bossPending=true; spawnTimer=1.8; }
   else { spawnTimer-=dt; if(spawnTimer<=0 && enemies.length<3){ bossActive=true; spawnBoss(); } }

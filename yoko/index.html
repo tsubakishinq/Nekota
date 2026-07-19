@@ -541,28 +541,40 @@ function drawRunningCat(s){ // 跳ねる白猫のシルエット（参照画像�
   ctx.lineCap='butt'; ctx.lineJoin='miter'; ctx.shadowBlur=0; }
 // ===== カレーのコックが走ってくる（上→真ん中→下） =====
 let runners=[];
-function spawnCurryRunner(y,delay){ runners.push({x:W+40,y,vx:-360,delay:delay||0,legT:0}); }
+function spawnCurryRunner(y,delay){ runners.push({x:W+90,y,vx:-320,delay:delay||0,legT:0,s:58}); } // 大きめ（今の約4倍）
 function updateRunners(dt){ for(let i=runners.length-1;i>=0;i--){ const r=runners[i];
   if(r.delay>0){ r.delay-=dt; continue; } r.legT+=dt; r.x+=r.vx*dt;
-  if(player.alive&&player.invuln<=0){ const rr=20+player.r*0.7; if(dist2(r.x,r.y,player.x,player.y)<rr*rr){ damagePlayer(); } }
-  if(r.x<-50) runners.splice(i,1); } }
-function drawRunners(){ for(const r of runners){ if(r.delay>0) continue; ctx.save(); ctx.translate(r.x,r.y); drawCurryCook(r.legT); ctx.restore(); } }
-function drawCurryCook(t){ // カレー鍋を持って走るコック（左向き＝進行方向）
-  const s=15, sw=Math.sin(t*16); ctx.lineJoin='round'; ctx.lineCap='round';
-  ctx.shadowColor='#000'; ctx.shadowBlur=6;
+  if(player.alive&&player.invuln<=0){ const rr=r.s*0.85+player.r*0.7; if(dist2(r.x,r.y-r.s*0.3,player.x,player.y)<rr*rr){ damagePlayer(); } }
+  if(r.x<-r.s*2) runners.splice(i,1); } }
+function drawRunners(){ for(const r of runners){ if(r.delay>0) continue; ctx.save(); ctx.translate(r.x,r.y); drawCurryCook(r.legT,r.s); ctx.restore(); } }
+function drawCurryCook(t,s){ // カレー鍋を持って走るカレー屋さん（左向き＝進行方向）
+  const sw=Math.sin(t*13); ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.shadowColor='#000'; ctx.shadowBlur=s*0.18;
   // 脚（走る）
-  ctx.strokeStyle='#3a2f4a'; ctx.lineWidth=s*0.24; ctx.beginPath();
-  ctx.moveTo(0,s*0.35); ctx.lineTo(-s*0.5*sw-s*0.1, s*1.0); ctx.moveTo(0,s*0.35); ctx.lineTo(s*0.5*sw-s*0.1, s*1.0); ctx.stroke();
-  // 胴（コック服・白）
-  ctx.fillStyle='#f2f2ee'; ctx.strokeStyle='#c9c9c2'; ctx.lineWidth=1.4; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-s*0.42,-s*0.35,s*0.84,s*0.8,s*0.2); else ctx.rect(-s*0.42,-s*0.35,s*0.84,s*0.8); ctx.fill(); ctx.stroke();
-  // 腕（前にカレー鍋を持つ）＋鍋
-  ctx.strokeStyle='#e8c39a'; ctx.lineWidth=s*0.16; ctx.beginPath(); ctx.moveTo(-s*0.2,-s*0.1); ctx.lineTo(-s*0.7,s*0.05); ctx.stroke();
-  ctx.fillStyle='#5a4636'; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-s*1.05,-s*0.05,s*0.5,s*0.34,s*0.06); else ctx.rect(-s*1.05,-s*0.05,s*0.5,s*0.34); ctx.fill();
-  ctx.fillStyle='#c8781f'; ctx.beginPath(); ctx.ellipse(-s*0.8,-s*0.04,s*0.24,s*0.07,0,0,TAU); ctx.fill(); // カレー
-  // 頭（肌色）＋コック帽
-  ctx.shadowBlur=0; ctx.fillStyle='#f0c9a0'; ctx.beginPath(); ctx.arc(0,-s*0.55,s*0.28,0,TAU); ctx.fill();
-  ctx.fillStyle='#fff'; ctx.strokeStyle='#d8d8d2'; ctx.lineWidth=1; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-s*0.3,-s*1.02,s*0.6,s*0.36,s*0.12); else ctx.rect(-s*0.3,-s*1.02,s*0.6,s*0.36); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,-s*0.98,s*0.32,s*0.16,0,0,TAU); ctx.fill();
+  ctx.strokeStyle='#4a3a2a'; ctx.lineWidth=s*0.2; ctx.beginPath();
+  ctx.moveTo(0,s*0.5); ctx.lineTo(-s*0.45*sw-s*0.1,s*1.05); ctx.moveTo(0,s*0.5); ctx.lineTo(s*0.45*sw-s*0.1,s*1.05); ctx.stroke();
+  ctx.fillStyle='#8a6a3a'; for(const lx of [-s*0.45*sw-s*0.1, s*0.45*sw-s*0.1]){ ctx.beginPath(); ctx.ellipse(lx-s*0.06,s*1.08,s*0.13,s*0.07,0,0,TAU); ctx.fill(); } // 靴
+  // クルタ（チュニック服・オレンジ）
+  ctx.fillStyle='#e88a2e'; ctx.strokeStyle='#c46f1c'; ctx.lineWidth=s*0.05; ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(-s*0.44,-s*0.35,s*0.88,s*0.98,s*0.2); else ctx.rect(-s*0.44,-s*0.35,s*0.88,s*0.98); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle='#ffe3b0'; ctx.lineWidth=s*0.04; ctx.beginPath(); ctx.moveTo(0,-s*0.33); ctx.lineTo(0,s*0.55); ctx.stroke(); // 前立て
+  // 腕＋カレー鍋（前方）
+  ctx.strokeStyle='#c98a5a'; ctx.lineWidth=s*0.15; ctx.beginPath(); ctx.moveTo(-s*0.2,-s*0.02); ctx.lineTo(-s*0.78,s*0.12); ctx.stroke();
+  ctx.shadowBlur=s*0.1; ctx.fillStyle='#4a4038'; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-s*1.3,0,s*0.6,s*0.42,s*0.07); else ctx.rect(-s*1.3,0,s*0.6,s*0.42); ctx.fill();
+  ctx.fillStyle='#c8781f'; ctx.beginPath(); ctx.ellipse(-s*1.0,0,s*0.28,s*0.08,0,0,TAU); ctx.fill(); // カレー
+  ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=s*0.03; ctx.beginPath(); ctx.moveTo(-s*1.05,-s*0.08); ctx.quadraticCurveTo(-s*1.16,-s*0.3,-s*1.0,-s*0.44); ctx.stroke(); // 湯気
+  ctx.shadowBlur=0;
+  // 頭（顔）
+  ctx.fillStyle='#c98d5e'; ctx.beginPath(); ctx.arc(0,-s*0.6,s*0.3,0,TAU); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-s*0.11,-s*0.63,s*0.07,0,TAU); ctx.arc(s*0.11,-s*0.63,s*0.07,0,TAU); ctx.fill();
+  ctx.fillStyle='#2a1a10'; ctx.beginPath(); ctx.arc(-s*0.11,-s*0.63,s*0.035,0,TAU); ctx.arc(s*0.11,-s*0.63,s*0.035,0,TAU); ctx.fill(); // 目
+  ctx.strokeStyle='#2a1a10'; ctx.lineWidth=s*0.055; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-s*0.18,-s*0.45); ctx.quadraticCurveTo(0,-s*0.38,s*0.18,-s*0.45); ctx.stroke(); // 口ヒゲ
+  ctx.fillStyle='rgba(230,120,90,.3)'; ctx.beginPath(); ctx.arc(-s*0.2,-s*0.52,s*0.06,0,TAU); ctx.arc(s*0.2,-s*0.52,s*0.06,0,TAU); ctx.fill(); // ほお
+  // ターバン
+  ctx.fillStyle='#e0483a'; ctx.strokeStyle='#b8362a'; ctx.lineWidth=s*0.04; ctx.beginPath(); ctx.ellipse(0,-s*0.8,s*0.36,s*0.28,0,Math.PI,TAU); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0,-s*0.9,s*0.3,s*0.2,0,0,TAU); ctx.fillStyle='#ef6a3a'; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=s*0.03; ctx.beginPath(); ctx.moveTo(-s*0.32,-s*0.8); ctx.quadraticCurveTo(0,-s*0.94,s*0.32,-s*0.8); ctx.moveTo(-s*0.28,-s*0.72); ctx.quadraticCurveTo(0,-s*0.84,s*0.28,-s*0.72); ctx.stroke(); // 巻きの筋
+  ctx.fillStyle='#ffd24a'; ctx.strokeStyle='#e0a800'; ctx.lineWidth=s*0.02; ctx.beginPath(); ctx.arc(0,-s*1.02,s*0.06,0,TAU); ctx.fill(); ctx.stroke(); // 飾り
   ctx.lineCap='butt'; ctx.lineJoin='miter'; }
 function dropMissile(x,y,vy0){ missiles.push({x,y,vx:150,vy:vy0||0,r:13,spd:360,life:3.2,launch:0.32,trail:[]}); Audio2.sfx.hit(); } // 発射直後は上下に散る（launch中はホーミングしない）
 const blasts=[]; // 魚型バースト爆発（0.5秒 当たり判定）
@@ -604,7 +616,7 @@ function updateOptions(dt){
 }
 function toggleKittens(){ if(options.length===0){ showToast('ドローンがないよ','#ffd0ee'); return; }
   kittenMode=!kittenMode; nekoBtn.classList.toggle('on', kittenMode);
-  if(kittenMode){ Audio2.sfx.meow(); showToast('🛸 ドローン乱舞！','#ffbe4a'); for(const o of options){ const a=Math.random()*TAU; o.vx=Math.cos(a)*260; o.vy=Math.sin(a)*260; } }
+  if(kittenMode){ Audio2.sfx.meow(); showToast('🛸 ドローン散会！敵を撃つ','#ffbe4a'); options.forEach((o,i)=>{ const a=i/options.length*TAU; o.vx=Math.cos(a)*320; o.vy=Math.sin(a)*320; o.fcd=rnd(0,0.1); }); } // 均等に散会
   else { showToast('ドローン OFF','#9fb4de'); } }
 
 function damagePlayer(){
@@ -713,7 +725,8 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.knocked) ctx.rot
   if(e.maxhp>=4 && e.hp<e.maxhp){ ctx.shadowBlur=0; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(-e.r,-e.r-8,e.r*2,4); ctx.fillStyle='#5effa0'; ctx.fillRect(-e.r,-e.r-8,e.r*2*(e.hp/e.maxhp),4); }
   ctx.restore();
 }
-function hitEnemy(e,dmg,x,y){ if(easyMode) dmg*=3; // イージー：自機の威力3倍
+function hitEnemy(e,dmg,x,y){ if(e.invincible){ if(Math.random()<0.4) spawnParticles(x,y,'#ff3b3b',2,120,0.25); return false; } // 無敵中は無効
+  if(easyMode) dmg*=3; // イージー：自機の威力3倍
   if(e.t==='boss'&&e.dmgReduce){ dmg*=(1-e.dmgReduce); e.shieldFlash=1; spawnParticles(x,y,'#cfe0ff',2,120,0.2); } // 装備でダメージ軽減
   e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
 function killEnemy(e){ const i=enemies.indexOf(e); if(i>=0) enemies.splice(i,1); if(e.t==='boss'){ defeatBoss(e); return; }
@@ -1102,6 +1115,17 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
         for(let k=0;k<56;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(200,480),0.95); }
       return; } } // ふるえている間は動かない・撃たない
   if(riceFx>0.9) return; // 炊き上がりのホワイトアウト中は動かない・撃たない
+  if(curryIdx()===3 && curryLoop>=1){ // 2週目〜の牛：半分で怒って真っ赤→時折 縦横無尽に駆け回る（無敵）
+    if(!e.enraged && e.hp/e.maxhp<0.5){ e.enraged=true; e.rageCd=rnd(1.6,2.6); Audio2.sfx.warn(); shake(12,0.5); flash('#c8102e',0.35); spawnText(e.x,e.y-e.r-8,'ブチギレ！','#ff2e2e',20); }
+    if(e.enraged){
+      if(e.rampage>0){ e.rampage-=dt; e.invincible=true; // 駆け回り中は無敵
+        if(e.rtx===undefined || (Math.abs(e.x-e.rtx)<40 && Math.abs(e.y-e.rty)<40)){ e.rtx=rnd(W*0.32,W-70); e.rty=rnd(90,H-90); }
+        e.x+=(e.rtx-e.x)*Math.min(1,dt*7); e.y+=(e.rty-e.y)*Math.min(1,dt*7);
+        if(Math.random()<0.6) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),'#ff3b3b',1,220,0.4);
+        if(e.rampage<=0){ e.invincible=false; } return; } // 駆け回り中はほかの動き・攻撃なし
+      else { e.rageCd-=dt; if(e.rageCd<=0){ e.rampage=rnd(1.8,2.6); e.rageCd=rnd(3.5,5.5); e.rtx=rnd(W*0.32,W-70); e.rty=rnd(90,H-90); Audio2.sfx.big(); shake(6,0.2); spawnText(e.x,e.y-e.r-8,'縦横無尽！','#ff2e2e',15); return; } }
+    }
+  }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
@@ -1175,8 +1199,10 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.bezierCurveTo(-r*0.9,-r*0.95,r*0.2,-r*1.02,r*0.7,-r*0.6); ctx.bezierCurveTo(r*1.15,-r*0.25,r*1.08,r*0.7,r*0.4,r*0.92); ctx.bezierCurveTo(-r*0.4,r*1.14,-r*1.1,r*0.6,-r,-r*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
     if(!peeled){ ctx.fillStyle='rgba(120,86,40,.5)'; for(const p of [[-0.5,-0.4],[0.45,-0.55],[0.6,0.4],[-0.2,0.55]]){ ctx.beginPath(); ctx.arc(p[0]*r,p[1]*r,r*0.06,0,TAU); ctx.fill(); } }
     bossFace(0,0,r,flash,lowHp,'#5a3f1e');
-  } else if(idx===3){ // 近江牛（イラスト準拠：グレー＋茶色い輪郭＋「近江」の札）
-    const gy=flash?'#fff':'#b4b1ac', OL=flash?'#c9a06a':'#9c6b3a', tan='#d9a76a';
+  } else if(idx===3){ // 近江牛（グレー／怒ると真っ赤）
+    const rage=e.enraged, blip=e.invincible&&Math.floor(performance.now()*0.02)%2===0;
+    const gy=flash||blip?'#fff':(rage?'#e02b2b':'#b4b1ac'), OL=flash?'#c9a06a':(rage?'#8a1414':'#9c6b3a'), tan=rage?'#ff7a5a':'#d9a76a';
+    if(rage){ ctx.shadowColor='#ff2e2e'; ctx.shadowBlur=18; } // 怒りのオーラ
     ctx.lineJoin='round'; ctx.lineCap='round'; ctx.strokeStyle=OL; ctx.lineWidth=r*0.085;
     ctx.shadowColor='#00000030'; ctx.shadowBlur=8;
     // 体（右うしろの丸い胴）

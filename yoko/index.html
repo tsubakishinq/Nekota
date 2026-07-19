@@ -726,6 +726,7 @@ function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.knocked) ctx.rot
   ctx.restore();
 }
 function hitEnemy(e,dmg,x,y){ if(e.invincible){ if(Math.random()<0.4) spawnParticles(x,y,'#ff3b3b',2,120,0.25); return false; } // 無敵中は無効
+  if(e.guards>0){ e.hitFlash=1; if((e.guardHitCd||0)<=0){ e.guards--; e.guardHitCd=0.11; spawnParticles(x,y,'#caa15e',6,180,0.4); spawnParticles(x,y,'#e6cf8f',3,120,0.3); Audio2.sfx.hit(); if(e.guards<=0) spawnText(e.x,e.y-e.r-6,'ガードやぶれた！','#caa15e',14); } return false; } // ジャガイモガードが肩代わり
   if(easyMode) dmg*=3; // イージー：自機の威力3倍
   if(e.t==='boss'&&e.dmgReduce){ dmg*=(1-e.dmgReduce); e.shieldFlash=1; spawnParticles(x,y,'#cfe0ff',2,120,0.2); } // 装備でダメージ軽減
   e.hp-=dmg; e.hitFlash=1; spawnParticles(x,y,e.color,3,120,0.3); if(e.hp<=0){ killEnemy(e); return true; } Audio2.sfx.hit(); return false; }
@@ -901,6 +902,7 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     else if(b.kind==='flame') drawFlame(b);
     else if(b.kind==='husk') drawHusk(b);
     else if(b.kind==='skin') drawSkin(b);
+    else if(b.kind==='steam') drawSteam(b);
     else if(b.kind==='carrotmsl') drawCarrotMsl(b);
     else if(b.kind==='onionring') drawOnionRing(b);
     else if(b.kind==='rollpotato') drawRollPotato(b);
@@ -966,6 +968,12 @@ function drawHusk(b){ // 飛び散る玄米の殻（茶色い舟型のかけら�
   ctx.shadowColor='#b98a52'; ctx.shadowBlur=6; ctx.fillStyle='#c79a5a'; ctx.strokeStyle='#7a5730'; ctx.lineWidth=1.6; ctx.lineJoin='round';
   ctx.beginPath(); ctx.moveTo(-r,r*0.1); ctx.quadraticCurveTo(0,-r*0.85,r,r*0.1); ctx.quadraticCurveTo(0,r*0.5,-r,r*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.shadowBlur=0; ctx.strokeStyle='rgba(122,87,48,.6)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(-r*0.6,r*0.02); ctx.quadraticCurveTo(0,-r*0.4,r*0.6,r*0.02); ctx.stroke(); }
+function drawSteam(b){ // 蒸気（白いふんわりした湯気・加算合成でうっすら光る）
+  const r=b.r, a=Math.max(0,Math.min(1,(b.life||0.3)/0.9));
+  ctx.globalAlpha=a*0.75; ctx.globalCompositeOperation='lighter';
+  const g=ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,'rgba(255,255,255,.9)'); g.addColorStop(.5,'rgba(224,236,246,.5)'); g.addColorStop(1,'rgba(210,224,238,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
+  ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; }
 function drawFlame(b){ // 火炎放射の火の玉（加算合成で燃える）
   const r=b.r, a=Math.max(0,Math.min(1,(b.life||0.3)/0.7));
   ctx.globalAlpha=a; ctx.globalCompositeOperation='lighter';
@@ -1126,12 +1134,15 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
       else { e.rageCd-=dt; if(e.rageCd<=0){ e.rampage=rnd(1.8,2.6); e.rageCd=rnd(3.5,5.5); e.rtx=rnd(W*0.32,W-70); e.rty=rnd(90,H-90); Audio2.sfx.big(); shake(6,0.2); spawnText(e.x,e.y-e.r-8,'縦横無尽！','#ff2e2e',15); return; } }
     }
   }
+  if(curryIdx()===2 && curryLoop>=1){ // 2週目〜のジャガイモ：半分でジャガイモの衛星ガード
+    if(!e.guardSet && e.hp/e.maxhp<0.5){ e.guardSet=true; e.guards=easyMode?4:6; e.guardA=0; e.guardHitCd=0; Audio2.sfx.warn(); shake(6,0.3); spawnText(e.x,e.y-e.r-8,'ジャガイモガード！','#caa15e',15); }
+    if(e.guards>0){ e.guardA=(e.guardA||0)+dt*2.4; if((e.guardHitCd||0)>0) e.guardHitCd-=dt; } }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
   e.fireCd-=dt; const frac=e.hp/e.maxhp;
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
     else { e.fireCd=1.2; const n=easyMode?4:12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e',boss:true});} Audio2.sfx.big(); } } // イージーは12発→4発
   // 材料ごとの必殺攻撃（玉ねぎ＝汁／じゃがいも＝ポテトフライ／牛＝闘牛突進／ルー＝火炎放射）
-  const bi=curryIdx(); if(bi<=4 && (bi>=1 || curryLoop>=1)){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); } // にんじんは2週目〜
+  const bi=curryIdx(); if((bi<=4 && (bi>=1 || curryLoop>=1)) || (bi===5 && e.cooked)){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); } // にんじんは2週目〜、白米は炊けたら蒸気
 }
 function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
   if(idx===0){ // にんじん（2週目〜）：ニンジンミサイルを時折2本
@@ -1157,6 +1168,11 @@ function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
   else if(idx===3){ // 牛：怒った闘牛が突進してくる
     const sp=470; eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5,r:26,color:'#3a2a24',boss:true,kind:'bull',ang:a});
     Audio2.sfx.big(); shake(7,0.2); flash('#c8102e',0.14); spawnText(e.x,e.y-e.r-6,'とつげき闘牛！','#ff5a5a',14); e.spCd=easyMode?3.6:2.8; }
+  else if(idx===5){ // 白米：斜め上→真横→斜め下 の順に、画面端まで届く蒸気
+    const dirs=[Math.PI+0.5, Math.PI, Math.PI-0.5]; const di=(e.stCnt||0)%3; e.stCnt=(e.stCnt||0)+1; const base=dirs[di];
+    const n=easyMode?9:15; for(let k=0;k<n;k++){ const aa=base+rnd(-0.05,0.05), sp=rnd(440,560), off=k*12;
+      eBullets.push({x:e.x-e.r*0.3+Math.cos(base)*off,y:e.y+Math.sin(base)*off,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:rnd(10,15),color:'#eef3f8',boss:true,kind:'steam',life:rnd(2.0,2.6)}); }
+    Audio2.sfx.big(); spawnText(e.x,e.y-e.r-6,'じょうき！','#dfeaf2',13); e.spCd=easyMode?1.9:1.4; }
   else { e.ruCnt=(e.ruCnt||0)+1; // ルー：火炎放射（1週目）／2週目〜はカレーコック連続ラン（上→真ん中→下）も
     if(curryLoop>=1 && e.ruCnt%2===1){ spawnCurryRunner(H*0.24,0); spawnCurryRunner(H*0.5,0.4); spawnCurryRunner(H*0.78,0.8); // 上・真ん中・下の順
       Audio2.sfx.warn(); shake(5,0.2); spawnText(e.x,e.y-e.r-6,'カレーコック突進！','#ffb04a',13); e.spCd=easyMode?3.6:2.9; }
@@ -1199,6 +1215,10 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
     ctx.beginPath(); ctx.moveTo(-r,-r*0.15); ctx.bezierCurveTo(-r*0.9,-r*0.95,r*0.2,-r*1.02,r*0.7,-r*0.6); ctx.bezierCurveTo(r*1.15,-r*0.25,r*1.08,r*0.7,r*0.4,r*0.92); ctx.bezierCurveTo(-r*0.4,r*1.14,-r*1.1,r*0.6,-r,-r*0.15); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
     if(!peeled){ ctx.fillStyle='rgba(120,86,40,.5)'; for(const p of [[-0.5,-0.4],[0.45,-0.55],[0.6,0.4],[-0.2,0.55]]){ ctx.beginPath(); ctx.arc(p[0]*r,p[1]*r,r*0.06,0,TAU); ctx.fill(); } }
     bossFace(0,0,r,flash,lowHp,'#5a3f1e');
+    if(e.guards>0){ ctx.shadowBlur=0; for(let k=0;k<e.guards;k++){ const aa=(e.guardA||0)+k/e.guards*TAU, gx=Math.cos(aa)*r*1.7, gy=Math.sin(aa)*r*1.7; // 衛星ガードのジャガイモ
+      ctx.save(); ctx.translate(gx,gy); ctx.rotate(aa); ctx.fillStyle='#caa15e'; ctx.strokeStyle='#9c7838'; ctx.lineWidth=2; ctx.shadowColor='#d8b878'; ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.ellipse(0,0,r*0.3,r*0.24,0,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(120,86,40,.5)'; ctx.beginPath(); ctx.arc(-r*0.08,-r*0.05,r*0.035,0,TAU); ctx.arc(r*0.07,r*0.06,r*0.035,0,TAU); ctx.fill(); ctx.restore(); } }
   } else if(idx===3){ // 近江牛（グレー／怒ると真っ赤）
     const rage=e.enraged, blip=e.invincible&&Math.floor(performance.now()*0.02)%2===0;
     const gy=flash||blip?'#fff':(rage?'#e02b2b':'#b4b1ac'), OL=flash?'#c9a06a':(rage?'#8a1414':'#9c6b3a'), tan=rage?'#ff7a5a':'#d9a76a';

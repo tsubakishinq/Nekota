@@ -530,7 +530,7 @@ function drawRunningCat(s){ // 跳ねる白猫のシルエット（参照画像�
   ctx.moveTo(1.57*s,-0.46*s); ctx.lineTo(1.78*s,-1.0*s); ctx.lineTo(1.96*s,-0.28*s); ctx.closePath();
   ctx.fill();
   ctx.lineCap='butt'; ctx.lineJoin='miter'; ctx.shadowBlur=0; }
-function dropMissile(x,y,vy0){ missiles.push({x,y,vx:150,vy:vy0||0,r:13,spd:360,life:3.2,launch:0.32}); Audio2.sfx.hit(); } // 発射直後は上下に散る（launch中はホーミングしない）
+function dropMissile(x,y,vy0){ missiles.push({x,y,vx:150,vy:vy0||0,r:13,spd:360,life:3.2,launch:0.32,trail:[]}); Audio2.sfx.hit(); } // 発射直後は上下に散る（launch中はホーミングしない）
 const blasts=[]; // 魚型バースト爆発（0.5秒 当たり判定）
 function spawnFishBlast(x,y){ blasts.push({x,y,life:0.5,r:52,dmgT:0}); Audio2.sfx.explode(); spawnParticles(x,y,'#ff8a3c',18,240,0.6); shake(6,.2); }
 function updateBlasts(dt){ for(let i=blasts.length-1;i>=0;i--){ const b=blasts[i]; b.life-=dt; b.dmgT-=dt;
@@ -770,7 +770,7 @@ function updateBullets(dt){
         let da=want-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
         const turn=Math.max(-7*dt,Math.min(7*dt,da)); const na=cur+turn; m.vx=Math.cos(na)*m.spd; m.vy=Math.sin(na)*m.spd; } }
     m.x+=m.vx*dt; m.y+=m.vy*dt; m.ang=Math.atan2(m.vy,m.vx);
-    if(Math.random()<0.7) spawnParticles(m.x-Math.cos(m.ang)*6,m.y-Math.sin(m.ang)*6,'#ff8a3c',1,50,0.2);
+    (m.trail||(m.trail=[])).push(m.x,m.y); if(m.trail.length>30) m.trail.splice(0,2); // ボム同様のけむりの尾
     if(m.x>W+30||m.x<-30||m.y<-30||m.y>H+30||m.life<=0){ missiles.splice(i,1); continue; }
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; const rr=m.r+e.r; if(dist2(m.x,m.y,e.x,e.y)<rr*rr){ spawnParticles(m.x,m.y,'#ff8a3c',12,180,0.5); hitEnemy(e,2,m.x,m.y); if(player.missileBurst) spawnFishBlast(m.x,m.y); missiles.splice(i,1); break; } }
   }
@@ -837,7 +837,12 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     ctx.shadowColor=b.color; ctx.shadowBlur=8; ctx.beginPath();
     if(b.kind==='ring'){ ctx.globalAlpha=Math.max(0.2,1-b.r/b.maxR*0.7); ctx.strokeStyle=b.color; ctx.lineWidth=3.5; ctx.ellipse(b.x,b.y,b.r*b.hRatio,b.r*b.vRatio,0,0,TAU); ctx.stroke(); ctx.globalAlpha=1; }
     else { ctx.fillStyle=b.color; if(b.kind==='laser') ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); else ctx.ellipse(b.x,b.y,b.r*1.4,b.r*0.7,0,0,TAU); ctx.fill(); } }
-  for(const m of missiles){ ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.ang||0); drawFishBone(m.r); ctx.restore(); }
+  ctx.globalCompositeOperation='lighter'; ctx.lineCap='round'; // ミサイルはボム同様の光るけむりの尾＋弾頭
+  for(const m of missiles){ const tr=m.trail, n=tr?tr.length/2:0;
+    for(let j=1;j<n;j++){ const a=j/n; ctx.strokeStyle='rgba(255,255,255,'+(a*0.5).toFixed(3)+')'; ctx.lineWidth=a*3.4+0.4;
+      ctx.beginPath(); ctx.moveTo(tr[(j-1)*2],tr[(j-1)*2+1]); ctx.lineTo(tr[j*2],tr[j*2+1]); ctx.stroke(); }
+    ctx.shadowColor='#bfe6ff'; ctx.shadowBlur=10; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(m.x,m.y,2.8,0,TAU); ctx.fill();
+    ctx.shadowBlur=0; ctx.fillStyle='rgba(255,210,140,.95)'; ctx.beginPath(); ctx.arc(m.x,m.y,1.4,0,TAU); ctx.fill(); }
   ctx.shadowBlur=0; ctx.globalCompositeOperation='source-over';
   for(const b of eBullets){ ctx.save(); ctx.translate(b.x,b.y);
     if(b.kind==='juice') drawJuice(b);

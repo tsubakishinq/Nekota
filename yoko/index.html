@@ -263,7 +263,7 @@ const player={ x:170, y:H/2, r:15, alive:true, invuln:0, thrust:0,
   slowT:0, // 玉ねぎ汁を浴びると一定時間スピードダウン
   missileLvl:0, missileBurst:false, shield:0, redInvuln:0, dead:false }; // missileLvl 0-3, laserMode 0-4
 function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0; player.diagCd=0; player.slowT=0; player.bank=0; player._py=undefined;
-  player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; }
+  player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; player.charging=false; player.chargeT=0; }
 function playerSpeed(){ let s=BASE_SPEED*(1+player.speedLvl*0.33); if(player.slowT>0) s*=0.4; return s; } // 3段階で最大約2倍（汁で0.4倍）
 
 // power-up bar (Gradius)
@@ -291,9 +291,11 @@ function updatePlayer(dt){
   if(player.redInvuln>0) player.redInvuln-=dt;
   if(player.slowT>0){ player.slowT-=dt; if(Math.random()<0.4) spawnParticles(player.x-player.r,player.y,'#eae59a',1,60,0.3); } // 汁でスロー中はしずくが滴る
   // auto fire
-  player.fireCd-=dt;
   if(player.diagCd>0) player.diagCd-=dt; // ダブルレーザーの斜め弾は1秒間隔で緩やかに
-  if(player.fireCd<=0){ fire(); }
+  if(player.charging && !chargeReady()) player.charging=false; // 最強でなくなったら溜め解除
+  if(player.charging){ player.chargeT=(player.chargeT||0)+dt; // 溜め中は自動ショット停止
+    if(Math.random()<0.6){ const col=CHARGE_COL[chargeTier(player.chargeT)]; spawnParticles(player.x+player.r*0.6,player.y+rnd(-8,8),col,1,90,0.3); } } // 溜めの火花
+  else { player.fireCd-=dt; if(player.fireCd<=0){ fire(); } }
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -305,6 +307,19 @@ const LBASE=0.11; // レーザー基礎威力（従来の約5割）
 const LMUL=[0,1,1.2,1.44,1.728,2.0736], LCOL=['','#57f6ff','#ffd85e','#ff4d5e','#ff9ee0','#ff9a3c']; // 段階:1基本/2黄/3赤/4猫/5虎（強化ごと1.2倍）
 // レーザー威力倍率：強化1回ごとに1.2倍（段階アップも虎到達後のlaserBoostも共通）
 function laserMul(){ let m=Math.pow(1.2, Math.max(0,(player.laserMode||1)-1) + (player.laserBoost||0)); if(!easyMode) m*=1.25; return m; } // 普通モードはレーザーを少し強化（1.25倍）
+// ===== チャージレーザー：最強(青2連=laserMode4)のとき、十字キーをダブルタップ長押しで溜め → 白→赤→青 → 離すとホーミング =====
+const CHARGE_COL=['','#ffffff','#ff4d5e','#3aa6ff'], CHARGE_RGB=['','255,255,255','255,77,94','58,166,255'];
+function chargeReady(){ return player.alive && player.laserMode===4; }
+function chargeTier(t){ return t>=1.1?3 : t>=0.5?2 : 1; } // 1=白 2=赤 3=青
+function startCharge(){ if(!chargeReady()||player.charging) return; player.charging=true; player.chargeT=0; Audio2.sfx.power(); }
+function endCharge(){ if(!player.charging) return; const tier=chargeTier(player.chargeT); player.charging=false; player.chargeT=0; fireChargeHomers(tier); }
+function fireChargeHomers(tier){ const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
+  const n=[0,1,3,5][tier], dmul=[0,1.6,2.5,3.8][tier], col=CHARGE_COL[tier], rgb=CHARGE_RGB[tier];
+  const cand=enemies.filter(e=>e.x>fx-60).sort((a,b)=>dist2(fx,fy,a.x,a.y)-dist2(fx,fy,b.x,b.y));
+  for(let i=0;i<n;i++){ const ang=(i-(n-1)/2)*0.22, dx=Math.cos(ang), dy=Math.sin(ang), sp=1200; const tg=cand.length?cand[i%cand.length]:null;
+    bullets.push({x:fx,y:fy,vx:dx*sp,vy:dy*sp,r:5,dmg:LBASE*laserMul()*dmul,color:col,crgb:rgb,kind:'laser',pierce:true,len:tier*14+34,thickV:tier*2+4,hitThick:tier*5+11,dx,dy,ang,home:true,cathome:true,charge:true,spd:sp,life:2.8,launch:0.08,target:tg}); }
+  Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,col,16,320,0.55); shake(tier*2+2,0.16); flash(col,0.16);
+  spawnText(player.x,player.y-28, tier===3?'チャージMAX！':tier===2?'チャージ！':'チャージ', col, 14); }
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
   if(player.laserMode===4){ player.fireCd=0.11; // 最強：通常は前方2発（高速）だけ。ダブル以上を持っていると斜め上下も加わる
@@ -656,7 +671,7 @@ function revive(){ if(state!=='play') return; player.x=carrier?carrier.x:170; pl
   player.invuln=1; player.redInvuln=0; player.slowT=0; player.bank=0; player._py=undefined; // 1秒間 点滅無敵で復活
   // 初期状態で復活：パワーアップを全部リセット
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.beamHist=null;
-  options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); refreshPowHint();
+  options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); player.charging=false; player.chargeT=0; refreshPowHint();
   spawnParticles(player.x,player.y,'#fff',24,260,0.6); spawnParticles(player.x,player.y,'#57f6ff',18,200,0.6); Audio2.sfx.power(); showToast('のこり '+lives+'機','#57f6ff');
 }
 function drawCarrier(){ if(!carrier) return; ctx.save(); ctx.translate(carrier.x,carrier.y+Math.sin(carrier.t*8)*1.5);
@@ -936,6 +951,9 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット＋光る尾
       drawBeamTail(b, 80, 9, '255,255,255', '#cfe0ff');
       ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); drawRunningCat(15); ctx.restore(); continue; }
+    if(b.charge){ // チャージホーミング：段階の色（白／赤／青）の光る尾＋明るい芯
+      drawBeamTail(b, 36, 7, b.crgb||'255,255,255', b.color);
+      ctx.shadowColor=b.color; ctx.shadowBlur=12; ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); ctx.fill(); continue; }
     if(b.home){ // ホーミングレーザー＝光る尾＋明るい芯（白猫は白、虎はオレンジ）
       const cat=b.cathome;
       drawBeamTail(b, cat?34:30, cat?7:6.5, cat?'210,235,255':'255,181,74', cat?'#cfe0ff':'#ffcf7a');
@@ -1089,6 +1107,13 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
       ctx.restore(); ctx.shadowBlur=0; }
   }
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r*1.5, player.bank||0); ctx.globalAlpha=1; // 当たり判定は小さめのまま見た目を大きく
+  if(player.charging){ const tier=chargeTier(player.chargeT||0), col=CHARGE_COL[tier], on=Math.floor(performance.now()*0.016)%2===0; // 溜め中は機体が白→赤→青に点滅
+    ctx.save(); ctx.translate(player.x,player.y); ctx.globalCompositeOperation='lighter'; ctx.shadowColor=col; ctx.shadowBlur=26;
+    ctx.globalAlpha=on?0.6:0.22; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,player.r*1.3,0,TAU); ctx.fill();
+    ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; ctx.shadowBlur=0; // 溜めゲージ（リング）
+    const prog=Math.min(1,(player.chargeT||0)/1.1); ctx.lineWidth=3; ctx.strokeStyle='rgba(0,0,0,.4)'; ctx.beginPath(); ctx.arc(0,0,player.r*1.7,0,TAU); ctx.stroke();
+    ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=8; ctx.beginPath(); ctx.arc(0,0,player.r*1.7,-Math.PI/2,-Math.PI/2+TAU*prog); ctx.stroke();
+    ctx.restore(); ctx.shadowBlur=0; }
 }
 function drawOptions(){ for(const o of options){ ctx.save(); ctx.translate(o.x,o.y);
   if(kittenMode){ ctx.save(); ctx.rotate(performance.now()*0.02); ctx.shadowColor='#ff8ecb'; ctx.shadowBlur=16; ctx.strokeStyle='rgba(255,142,203,.9)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,21,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
@@ -1570,16 +1595,17 @@ cv.addEventListener('touchend',e=>{ for(const t of e.changedTouches){ if(t.ident
 let dragActive=false;
 
 // dpad
-const dpadEl=document.getElementById('dpad'), dnub=document.getElementById('dnub'); let dpadTouchId=null;
+const dpadEl=document.getElementById('dpad'), dnub=document.getElementById('dnub'); let dpadTouchId=null, dpadLastTap=0;
+function dpadTap(){ const now=performance.now(); if(state==='play' && chargeReady() && now-dpadLastTap<330) startCharge(); dpadLastTap=now; } // 十字キーをダブルタップ→溜め開始（最強レーザー時）
 function dpadSet(cx,cy){ const r=dpadEl.getBoundingClientRect(); const vx=cx-(r.left+r.width/2), vy=cy-(r.top+r.height/2); const mag=Math.hypot(vx,vy);
   if(mag<6){ dpad.dx=0; dpad.dy=0; dnub.style.transform='translate(0,0)'; } else { dpad.dx=vx/mag; dpad.dy=vy/mag; const nm=Math.min(mag,r.width*0.32); dnub.style.transform=`translate(${dpad.dx*nm}px,${dpad.dy*nm}px)`; } dpad.active=true; }
 function dpadEnd(){ dpad.active=false; dpad.dx=0; dpad.dy=0; dpadTouchId=null; dnub.style.transform='translate(0,0)'; }
-dpadEl.addEventListener('touchstart',e=>{ Audio2.init();Audio2.resume(); const t=e.changedTouches[0]; dpadTouchId=t.identifier; dpadSet(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
+dpadEl.addEventListener('touchstart',e=>{ Audio2.init();Audio2.resume(); dpadTap(); const t=e.changedTouches[0]; dpadTouchId=t.identifier; dpadSet(t.clientX,t.clientY); e.preventDefault(); },{passive:false});
 dpadEl.addEventListener('touchmove',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId) dpadSet(t.clientX,t.clientY); } e.preventDefault(); },{passive:false});
-dpadEl.addEventListener('touchend',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId) dpadEnd(); } e.preventDefault(); },{passive:false});
-dpadEl.addEventListener('mousedown',e=>{ dpadTouchId='m'; dpadSet(e.clientX,e.clientY); e.preventDefault(); });
+dpadEl.addEventListener('touchend',e=>{ for(const t of e.changedTouches){ if(t.identifier===dpadTouchId){ endCharge(); dpadEnd(); } } e.preventDefault(); },{passive:false});
+dpadEl.addEventListener('mousedown',e=>{ dpadTap(); dpadTouchId='m'; dpadSet(e.clientX,e.clientY); e.preventDefault(); });
 window.addEventListener('mousemove',e=>{ if(dpadTouchId==='m'&&(e.buttons&1)) dpadSet(e.clientX,e.clientY); });
-window.addEventListener('mouseup',()=>{ if(dpadTouchId==='m') dpadEnd(); });
+window.addEventListener('mouseup',()=>{ if(dpadTouchId==='m'){ endCharge(); dpadEnd(); } });
 
 const powBtn=document.getElementById('powBtn'), powStock=document.getElementById('powStock');
 const powCells=[...document.querySelectorAll('.powcell')];

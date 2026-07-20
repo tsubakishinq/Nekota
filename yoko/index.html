@@ -647,6 +647,7 @@ function toggleKittens(){ if(options.length===0){ showToast('ドローンがな�
   else { showToast('ドローン OFF','#9fb4de'); } }
 
 function damagePlayer(){
+  if(demo) return; // デモ中は無敵
   if(!player.alive||player.invuln>0||player.redInvuln>0) return;
   if(player.shield>0){ player.shield--; player.invuln=0.6; Audio2.sfx.power(); // each barrier ring soaks 2 hits
     spawnParticles(player.x,player.y,'#57f6ff',14,200,0.4); shake(5,.15); flash('#57f6ff',.22); refreshPowHint();
@@ -846,7 +847,46 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
     if(player.shield>=6){ player.redInvuln=3; player.invuln=0; spawnText(player.x,player.y-24,'★ INVINCIBLE ★','#ff4d6d',16); flash('#ff4d6d',.3); }
     else { player.shield=Math.min(6,(Math.ceil(player.shield/2)+1)*2); spawnText(player.x,player.y-24,'SHIELD x'+Math.ceil(player.shield/2),'#57f6ff',15); } }
   Audio2.sfx.up(); powerStock-=POWCOST[i]; refreshPowHint();
+  maybeStartDemo(); // レーザーMAX＆ドローン所持がそろったら1回だけデモ
 }
+
+// ================= DEMO（れんしゅう画面）=================
+// レーザーMAX＋ドローンがそろったら、一旦敵を消して操作デモを流す
+let demo=null, demoDone=false;
+function maybeStartDemo(){ if(demoDone||demo||state!=='play'||!player.alive) return;
+  if(bossActive||bossPending||bossIntro>0||prepFx||riceFx>0||curryFx>0||defeatFreeze>0) return;
+  if(player.laserMode===4 && options.length>0) startDemo(); }
+function demoDummy(y){ enemies.push({t:'straight',x:rnd(W*0.66,W*0.82),y,hp:6,maxhp:6,r:16,vx:0,vy:0,color:'#ff8a5e',score:0,noItem:true,seed:0,hitFlash:0,fireCd:999,demo:true}); }
+function startDemo(){ demoDone=true; demo={t:0,fired:false,p2:false,spawned1:false};
+  enemies.length=0; eBullets.length=0; bullets.length=0; missiles.length=0; bombMissiles.length=0; // 敵と弾を一旦かたづける
+  player.invuln=0; player.charging=false; player.chargeT=0; kittenMode=false; nekoBtn.classList.remove('on');
+  player.tx=undefined; player.ty=undefined; dragActive=false;
+  Audio2.sfx.up(); flash('#57f6ff',0.3); shake(6,0.3); showToast('★ れんしゅうタイム ★','#57f6ff'); }
+function updateDemo(dt){ const d=demo; d.t+=dt; const t=d.t;
+  player.x+=(W*0.26-player.x)*Math.min(1,dt*4); player.y+=(H*0.5-player.y)*Math.min(1,dt*4); player.thrust=0.6; player.invuln=0;
+  // ① チャージレーザーのデモ（0.7〜4.4秒）
+  if(t>=0.7 && !d.spawned1){ d.spawned1=true; demoDummy(H*0.36); demoDummy(H*0.64); }
+  if(t>=0.9 && t<4.2 && !d.fired){ player.charging=true; player.chargeT=(player.chargeT||0)+dt;
+    if(player.chargeT>=3.2){ d.fired=true; endCharge(); } } // 溜まったら青(MAX)で発射
+  // ② ドローン散開のデモ（4.8〜8.9秒）
+  if(t>=4.8 && !d.p2){ d.p2=true; enemies.length=0; while(options.length<3) addOption();
+    demoDummy(H*0.3); demoDummy(H*0.52); demoDummy(H*0.72);
+    kittenMode=true; nekoBtn.classList.add('on'); Audio2.sfx.meow();
+    options.forEach((o,i)=>{ const a=i/options.length*TAU; o.vx=Math.cos(a)*320; o.vy=Math.sin(a)*320; o.fcd=rnd(0,0.1); }); }
+  if(d.p2 && t<8.2 && enemies.length===0){ demoDummy(rnd(H*0.28,H*0.72)); } // 的が無くなったら補充
+  if(t>=9.5) endDemo(); }
+function endDemo(){ demo=null; enemies.length=0; kittenMode=false; nekoBtn.classList.remove('on');
+  player.invuln=1.6; player.charging=false; player.chargeT=0; Audio2.sfx.up(); flash('#5effa0',0.25); showToast('スタート！','#5effa0'); }
+function drawDemo(){ const t=demo.t; ctx.save(); ctx.fillStyle='rgba(3,6,18,0.30)'; ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='900 18px "Trebuchet MS"'; ctx.fillStyle='#57f6ff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=10; ctx.fillText('★ れんしゅうタイム DEMO ★', W/2, H*0.13); ctx.shadowBlur=0;
+  let cap = t<0.9 ? 'てきが いなくなった！ れんしゅうしよう'
+    : t<4.6 ? '① 十字キーをダブルタップで レーザーを溜めて発射！'
+    : t<8.9 ? '② ドローンボタンで ドローンが散開して攻撃！'
+    : 'じゅんびOK！ いくぞ！';
+  ctx.font='900 22px "Trebuchet MS","Hiragino Kaku Gothic ProN",sans-serif'; const w=ctx.measureText(cap).width+44, by=H*0.8;
+  ctx.fillStyle='rgba(9,12,34,.85)'; ctx.strokeStyle='rgba(255,216,94,.85)'; ctx.lineWidth=2; roundRect(W/2-w/2,by-25,w,50,16); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#ffe08a'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=8; ctx.fillText(cap, W/2, by); ctx.shadowBlur=0; ctx.restore(); }
 
 // ================= BULLETS / COLLISIONS =================
 function updateBullets(dt){
@@ -1436,9 +1476,9 @@ function drawHUD(){ ctx.save();
 }
 const maxHintEl=document.getElementById('maxHint'), powHintEl=document.getElementById('powHint');
 function updateMaxHint(){
-  powHintEl.style.opacity = (state==='play') ? '1' : '0'; // パワーアップの使い方（下）は常時表示
+  powHintEl.style.opacity = (state==='play' && !demo) ? '1' : '0'; // パワーアップの使い方（下）は常時表示（デモ中は隠す）
   // 画面の上（プレイ画面の少し上）に、各パワーアップ／ボタンの説明を順番に常時くるくる表示
-  if(!(state==='play' && player.alive)){ if(maxHintEl.style.opacity!=='0') maxHintEl.style.opacity='0'; return; }
+  if(demo || !(state==='play' && player.alive)){ if(maxHintEl.style.opacity!=='0') maxHintEl.style.opacity='0'; return; }
   const list=topHintList(), el=performance.now()/1000;              // 連続した時計で巡回
   const idx=Math.floor(el/HINT_EACH)%list.length, ph=(el%HINT_EACH)/HINT_EACH;
   const a=ph<0.12?ph/0.12:(ph>0.88?(1-ph)/0.12:1);                  // 各説明のフェードイン／アウト
@@ -1665,7 +1705,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; runners.length=0; pawFx.length=0; bombMissiles.length=0;
-  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
+  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; demo=null; demoDone=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
 function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='none';
@@ -1695,9 +1735,13 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   const frozen = state==='play' && defeatFreeze>0;
   updateStars(frozen?0:dt); updateParticles(dt); updateTexts(dt);  // 演出中は背景スクロールも止める
   if(state==='play' && !frozen){
+    if(demo){ // デモ中は操作を受けつけず、スクリプトで動かす
+      updateDemo(dt); updateEnemies(dt); updateOptions(dt); updateBullets(dt); updateBlasts(dt);
+    } else {
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,(player.slowT>0?210:520)*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
     updatePlayer(dt); updateDirector(dt); updateAmbient(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updateRunners(dt); updatePawFx(dt); updateBomb(dt);
+    }
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
   if(flashA>0) flashA=Math.max(0,flashA-dt*2);
@@ -1710,6 +1754,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawRunners(); drawPlayer(); drawPawFx(); drawBomb(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();
+  if(demo) drawDemo();
   updateMaxHint(); // ゲーム画面の外の大きなヒント（HTML要素）
   if(flashA>0){ ctx.fillStyle=flashColor; ctx.globalAlpha=flashA*0.5; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
   // vignette

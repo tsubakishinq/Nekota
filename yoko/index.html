@@ -60,6 +60,10 @@
   /* tappable power-up bar (above the control row so it never overlaps the D-pad/buttons) */
   #powBar{pointer-events:none; position:absolute; left:50%; bottom:178px; transform:translateX(-50%);
     display:grid; grid-template-columns:repeat(3,108px); grid-auto-rows:44px; gap:8px;}
+  /* パワーアップボタンの使い方（常時表示） */
+  #powHint{pointer-events:none; position:absolute; left:50%; bottom:280px; transform:translateX(-50%); z-index:11; opacity:0;
+    font-size:clamp(11px,3vw,15px); font-weight:900; color:#ffe7a0; letter-spacing:.5px; white-space:nowrap; text-align:center;
+    background:rgba(9,12,34,.66); border:1px solid rgba(255,216,94,.5); border-radius:13px; padding:5px 14px; text-shadow:0 0 8px rgba(0,0,0,.7);}
   .powcell{position:relative; pointer-events:auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
     border-radius:9px; background:rgba(9,12,34,.72); border:1.5px solid rgba(120,150,210,.5); color:#c3d4f2;
     font-weight:900; line-height:1.05; text-align:center; opacity:.5; transition:opacity .15s;}
@@ -104,6 +108,7 @@
   <div id="touch">
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
     <div id="nekoBtn">🛸<small>ドローン</small></div>
+    <div id="powHint">🍙をあつめて 下のボタンをタップ！パワーアップ</div>
     <div id="powBar">
       <div class="powcell" data-i="0"><span class="lv"></span><b>スピード</b><small>🍙1</small></div>
       <div class="powcell" data-i="1"><span class="lv"></span><b>ミサイル</b><small>🍙2</small></div>
@@ -1457,14 +1462,17 @@ function drawHUD(){ ctx.save();
   if(curryFx>0) drawCurryDone();
   ctx.restore();
 }
-const maxHintEl=document.getElementById('maxHint'); let maxHintIdxShown=-1;
-function updateMaxHint(){ // レーザーMAX：ゲーム画面の外（上）に大きな文字でヒントを順ぐりに表示
+const maxHintEl=document.getElementById('maxHint'), powHintEl=document.getElementById('powHint'); let maxHintIdxShown=-1;
+function updateMaxHint(){
+  powHintEl.style.opacity = (state==='play') ? '1' : '0'; // パワーアップの使い方は常時表示
+  // レーザーMAX：ゲーム画面の外（プレイ画面の少し上）に大きな文字でヒントを順ぐりに表示
   const show = maxHintTimer>0 && player.laserMode===4 && player.alive && state==='play';
   if(!show){ if(maxHintEl.style.opacity!=='0') maxHintEl.style.opacity='0'; maxHintIdxShown=-1; return; }
   const el=(MAXHINTS.length*HINT_EACH*2+0.4)-maxHintTimer; // 経過時間
   const idx=Math.floor(el/HINT_EACH)%MAXHINTS.length, ph=(el%HINT_EACH)/HINT_EACH;
   const a=(ph<0.14?ph/0.14:(ph>0.86?(1-ph)/0.14:1))*Math.min(1,maxHintTimer/0.4); // フェード
   if(idx!==maxHintIdxShown){ maxHintEl.textContent=MAXHINTS[idx]; maxHintIdxShown=idx; }
+  maxHintEl.style.top=Math.max(6,(offY/DPR)-maxHintEl.offsetHeight-8)+'px'; // 縦画面：プレイ画面の少し上（黒帯）に置く
   maxHintEl.style.opacity=String(Math.max(0,a));
 }
 function drawPrepFx(){ // 撃破→スクロール停止して「切られた野菜／お肉パック」のアップ

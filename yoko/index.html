@@ -599,19 +599,31 @@ function drawBlasts(){ for(const b of blasts){ const k=1-b.life/0.5; const R=b.r
 const OPT_GAP=44; // 子猫どうし／本機との間隔（重ならない）
 function addOption(){ const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0, wa:Math.random()*TAU, wanderT:0, fcd:0}); return true; } // 無限に増える
 function updateOptions(dt){
-  if(kittenMode){ for(const o of options){ // あちこち飛び回って引っ掻く
-    if(o.claw>0) o.claw-=dt;
-    o.wanderT-=dt; if(o.wanderT<=0){ o.wanderT=rnd(0.22,0.55); o.wa=Math.random()*TAU; } // ランダムに方向転換
-    let tgt=null,bd=1e9; for(const e of enemies){ const d=dist2(o.x,o.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
-    let ax=Math.cos(o.wa), ay=Math.sin(o.wa);
-    if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); ax=ax*0.7+Math.cos(a); ay=ay*0.7+Math.sin(a); } // 敵に少し引き寄せつつバラバラに
-    const m=Math.hypot(ax,ay)||1, sp=460; o.vx=ax/m*sp; o.vy=ay/m*sp;
-    o.x+=o.vx*dt; o.y+=o.vy*dt;
-    if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
-    if(o.y<14){o.y=14;o.wa=-o.wa;} if(o.y>H-14){o.y=H-14;o.wa=-o.wa;}
-    if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
-    o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootDroneLaser(o.x,o.y,a); o.fcd=rnd(0.12,0.2); } // 細い青いレーザーのみで攻撃（本機の1/5）。ドローン自体には攻撃判定なし
-  } return; }
+  if(kittenMode){
+    const orbitBoss=(bossActive && boss && !bossIntro && enemies.indexOf(boss)>=0) ? boss : null; // ボス戦中はボスの周りを回る
+    for(let i=0;i<options.length;i++){ const o=options[i];
+      if(o.claw>0) o.claw-=dt;
+      if(orbitBoss){ // ボスの周りをぐるぐる回りながら撃つ（何をしてるか見える）
+        if(o.orbA===undefined) o.orbA=i/Math.max(1,options.length)*TAU;
+        o.orbA+=dt*2.4; // 回転スピード
+        const rad=orbitBoss.r+48+(i%3)*18; // ボスを囲む半径（少しばらけて三重の輪に）
+        const tx=orbitBoss.x+Math.cos(o.orbA)*rad, ty=orbitBoss.y+Math.sin(o.orbA)*rad;
+        o.x+=(tx-o.x)*Math.min(1,dt*11); o.y+=(ty-o.y)*Math.min(1,dt*11); // なめらかに軌道へ
+        if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
+        o.fcd-=dt; if(o.fcd<=0){ const a=Math.atan2(orbitBoss.y-o.y,orbitBoss.x-o.x); shootDroneLaser(o.x,o.y,a); o.fcd=rnd(0.1,0.18); } // 内側のボスへ撃つ
+        continue; }
+      // ボス以外：あちこち飛び回って一番近い敵を撃つ
+      o.wanderT-=dt; if(o.wanderT<=0){ o.wanderT=rnd(0.22,0.55); o.wa=Math.random()*TAU; } // ランダムに方向転換
+      let tgt=null,bd=1e9; for(const e of enemies){ const d=dist2(o.x,o.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
+      let ax=Math.cos(o.wa), ay=Math.sin(o.wa);
+      if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); ax=ax*0.7+Math.cos(a); ay=ay*0.7+Math.sin(a); } // 敵に少し引き寄せつつバラバラに
+      const m=Math.hypot(ax,ay)||1, sp=460; o.vx=ax/m*sp; o.vy=ay/m*sp;
+      o.x+=o.vx*dt; o.y+=o.vy*dt;
+      if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
+      if(o.y<14){o.y=14;o.wa=-o.wa;} if(o.y>H-14){o.y=H-14;o.wa=-o.wa;}
+      if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
+      o.fcd-=dt; if(o.fcd<=0 && tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); shootDroneLaser(o.x,o.y,a); o.fcd=rnd(0.12,0.2); } // 細い青いレーザーのみで攻撃（本機の1/5）
+    } return; }
   // 隊列モード：本機の後ろに一定間隔でチェーン追従（止まっても重ならず、動けば連なる）
   let lx=player.x, ly=player.y;
   for(const o of options){ const dx=o.x-lx, dy=o.y-ly; const d=Math.hypot(dx,dy)||0.001;

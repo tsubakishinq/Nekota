@@ -88,6 +88,10 @@
   #soundBtn{right:auto; left:12px;}
   .toast{position:absolute; left:50%; top:12%; transform:translateX(-50%); z-index:14; font-weight:900; letter-spacing:2px;
     font-size:clamp(15px,4vw,22px); pointer-events:none; opacity:0; text-shadow:0 0 12px currentColor;}
+  /* レーザーMAXの操作ヒント：ゲーム画面の上（外側）に大きな文字で */
+  .maxhint{position:absolute; left:0; right:0; top:0; z-index:16; text-align:center; pointer-events:none; opacity:0;
+    font-weight:900; letter-spacing:1px; font-size:clamp(22px,5.6vw,44px); padding:8px 10px; color:#ffe08a;
+    text-shadow:0 0 16px #ff8a3c, 0 2px 0 #7a3a10; background:linear-gradient(180deg,rgba(5,7,18,.95),rgba(5,7,18,0));}
 </style>
 
 <div id="wrap">
@@ -95,6 +99,7 @@
   <div class="pauseBtn" id="pauseBtn" style="display:none">❚❚</div>
   <div class="pauseBtn" id="soundBtn">🔊</div>
   <div class="toast" id="toast"></div>
+  <div class="maxhint" id="maxHint"></div>
 
   <div id="touch">
     <div id="dpad"><span class="arm u">▲</span><span class="arm d">▼</span><span class="arm l">◀</span><span class="arm r">▶</span><div id="dnub"></div></div>
@@ -620,23 +625,13 @@ const OPT_GAP=44; // 子猫どうし／本機との間隔（重ならない）
 function addOption(){ const i=options.length; options.push({x:player.x-OPT_GAP*(i+1),y:player.y, vx:0, vy:0, claw:0, wa:Math.random()*TAU, wanderT:0, fcd:0}); return true; } // 無限に増える
 function updateOptions(dt){
   if(kittenMode){
-    const orbitBoss=(bossActive && boss && !bossIntro && enemies.indexOf(boss)>=0) ? boss : null; // ボス戦中はボスの周りを回る
     for(let i=0;i<options.length;i++){ const o=options[i];
       if(o.claw>0) o.claw-=dt;
-      if(orbitBoss){ // ボスの周りをぐるぐる回りながら撃つ（何をしてるか見える）
-        if(o.orbA===undefined) o.orbA=i/Math.max(1,options.length)*TAU;
-        o.orbA+=dt*2.4; // 回転スピード
-        const rad=orbitBoss.r+48+(i%3)*18; // ボスを囲む半径（少しばらけて三重の輪に）
-        const tx=orbitBoss.x+Math.cos(o.orbA)*rad, ty=orbitBoss.y+Math.sin(o.orbA)*rad;
-        o.x+=(tx-o.x)*Math.min(1,dt*11); o.y+=(ty-o.y)*Math.min(1,dt*11); // なめらかに軌道へ
-        if(Math.random()<0.3) spawnParticles(o.x,o.y,'#ffd0ee',1,80,0.25);
-        o.fcd-=dt; if(o.fcd<=0){ const a=Math.atan2(orbitBoss.y-o.y,orbitBoss.x-o.x); shootDroneLaser(o.x,o.y,a); o.fcd=rnd(0.1,0.18); } // 内側のボスへ撃つ
-        continue; }
-      // ボス以外：あちこち飛び回って一番近い敵を撃つ
+      // あちこち飛び回って一番近い敵（ボスもふくむ）を撃つ
       o.wanderT-=dt; if(o.wanderT<=0){ o.wanderT=rnd(0.22,0.55); o.wa=Math.random()*TAU; } // ランダムに方向転換
       let tgt=null,bd=1e9; for(const e of enemies){ const d=dist2(o.x,o.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} }
       let ax=Math.cos(o.wa), ay=Math.sin(o.wa);
-      if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); ax=ax*0.7+Math.cos(a); ay=ay*0.7+Math.sin(a); } // 敵に少し引き寄せつつバラバラに
+      if(tgt){ const a=Math.atan2(tgt.y-o.y,tgt.x-o.x); ax=ax*1.15+Math.cos(a)*0.6; ay=ay*1.15+Math.sin(a)*0.6; } // 敵にべったりせず、いろんな方向へ飛び回る
       const m=Math.hypot(ax,ay)||1, sp=460; o.vx=ax/m*sp; o.vy=ay/m*sp;
       o.x+=o.vx*dt; o.y+=o.vy*dt;
       if(o.x<14){o.x=14;o.wa=Math.PI-o.wa;} if(o.x>W-14){o.x=W-14;o.wa=Math.PI-o.wa;}
@@ -1456,25 +1451,21 @@ function drawHUD(){ ctx.save();
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 11px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ '+ing.e+bn+'ボス ★',W/2,y-3); }
   if(stageBanner>0){ const a=Math.min(1, stageBanner>1.6?(2.2-stageBanner)/0.6:stageBanner/1.0); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
-  if(maxHintTimer>0 && player.laserMode===4 && player.alive && state==='play') drawMaxHints();
   if(bossIntro>0) drawBossIntro();
   if(prepFx) drawPrepFx();
   if(riceFx>0) drawRiceReveal();
   if(curryFx>0) drawCurryDone();
   ctx.restore();
 }
-function drawMaxHints(){ // レーザーMAX：操作ヒントを画面の上に順ぐりに表示
-  const el=(MAXHINTS.length*HINT_EACH*2+0.4)-maxHintTimer;            // 経過時間
+const maxHintEl=document.getElementById('maxHint'); let maxHintIdxShown=-1;
+function updateMaxHint(){ // レーザーMAX：ゲーム画面の外（上）に大きな文字でヒントを順ぐりに表示
+  const show = maxHintTimer>0 && player.laserMode===4 && player.alive && state==='play';
+  if(!show){ if(maxHintEl.style.opacity!=='0') maxHintEl.style.opacity='0'; maxHintIdxShown=-1; return; }
+  const el=(MAXHINTS.length*HINT_EACH*2+0.4)-maxHintTimer; // 経過時間
   const idx=Math.floor(el/HINT_EACH)%MAXHINTS.length, ph=(el%HINT_EACH)/HINT_EACH;
   const a=(ph<0.14?ph/0.14:(ph>0.86?(1-ph)/0.14:1))*Math.min(1,maxHintTimer/0.4); // フェード
-  const msg=MAXHINTS[idx], y=bossActive?96:74;                        // ボスHPバーと被らない位置
-  ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.font='900 16px "Trebuchet MS","Hiragino Kaku Gothic ProN",sans-serif'; const w=ctx.measureText(msg).width+38;
-  ctx.fillStyle='rgba(10,14,34,.78)'; ctx.strokeStyle='rgba(255,216,94,.75)'; ctx.lineWidth=1.5; roundRect(W/2-w/2,y-16,w,32,16); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#ffe08a'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=8; ctx.fillText(msg,W/2,y+1); ctx.shadowBlur=0;
-  // 小さなドット・インジケータ（今どのヒントか）
-  for(let k=0;k<MAXHINTS.length;k++){ ctx.globalAlpha=Math.max(0,a)*(k===idx?1:0.35); ctx.fillStyle=k===idx?'#ffd85e':'#9fb4de'; ctx.beginPath(); ctx.arc(W/2-(MAXHINTS.length-1)*5+k*10, y+20, 2.6, 0, TAU); ctx.fill(); }
-  ctx.restore();
+  if(idx!==maxHintIdxShown){ maxHintEl.textContent=MAXHINTS[idx]; maxHintIdxShown=idx; }
+  maxHintEl.style.opacity=String(Math.max(0,a));
 }
 function drawPrepFx(){ // 撃破→スクロール停止して「切られた野菜／お肉パック」のアップ
   const p=prepFx, life=p.t/p.max;
@@ -1740,6 +1731,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawRunners(); drawPlayer(); drawPawFx(); drawBomb(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();
+  updateMaxHint(); // ゲーム画面の外の大きなヒント（HTML要素）
   if(flashA>0){ ctx.fillStyle=flashColor; ctx.globalAlpha=flashA*0.5; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
   // vignette
   const g=ctx.createRadialGradient(W/2,H/2,H*0.35,W/2,H/2,W*0.6); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.5)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);

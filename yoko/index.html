@@ -1735,6 +1735,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   const frozen = state==='play' && defeatFreeze>0;
   updateStars(frozen?0:dt); updateParticles(dt); updateTexts(dt);  // 演出中は背景スクロールも止める
   if(state==='play' && !frozen){
+    if(!demo) maybeStartDemo(); // 条件がそろい、ボスや演出が無ければ毎フレーム開始判定（取りこぼし防止）
     if(demo){ // デモ中は操作を受けつけず、スクリプトで動かす
       updateDemo(dt); updateEnemies(dt); updateOptions(dt); updateBullets(dt); updateBlasts(dt);
     } else {

@@ -411,17 +411,18 @@ function drawPawFx(){ for(const p of pawFx){ const k=1-p.life/0.35, a=Math.max(0
   for(const [bx,by,br] of [[-s*0.47,-s*0.14,s*0.17],[-s*0.17,-s*0.42,s*0.18],[s*0.17,-s*0.42,s*0.18],[s*0.47,-s*0.14,s*0.17]]){ ctx.beginPath(); ctx.ellipse(bx,by,br,br*1.15,0,0,TAU); ctx.fill(); } // 指
   ctx.restore(); } ctx.globalAlpha=1; }
 // ===== ネコパンチ・ボム（🐾長押し）：毛糸玉が転がってきて猫がパンチ→玉と敵を吹き飛ばす =====
-let bombMissiles=[];
+let bombMissiles=[], bombFx=[]; // bombFx＝命中位置に残す円形の爆発演出
 function knockEnemy(e,dmg){ if(e.t==='boss'){ hitEnemy(e,dmg,e.x,e.y); return; } // ボスはダメージのみ
   if(e.knocked) return; e.knocked=true; e.vx=rnd(820,1240); e.vy=rnd(-360,360); e.spin=0; // 通常敵は倒さず吹き飛ばす
   spawnParticles(e.x,e.y,e.color||'#ffd0a0',7,220,0.4); addScore(30); }
 // ===== ボム：自機からミサイルが乱舞→軌道（けむりの尾）を描いて敵を攻撃（マクロス風） =====
 function launchKittenBomb(){ Audio2.sfx.big(); Audio2.sfx.power(); showToast('🚀 ミサイル乱舞！','#ffd85e'); flash('#bfe6ff',0.18); shake(6,0.3);
   for(const e of enemies) if(e.t==='boss') e.bombBudget=e.maxhp*0.25; // ボスへのボム被害は合計で最大1/4に制限
-  const tg=enemies.slice(), N=clamp(tg.length*2+16, 22, 46); // 敵の数に応じて大量発射
-  for(let i=0;i<N;i++){ const a0=rnd(-2.4,2.4); // いろんな方向へ飛び出してから曲がって敵へ
+  const tg=enemies.slice(), N=clamp(tg.length*3+20, 28, 60); // 敵の数に応じて大量一斉発射（板野サーカス風）
+  for(let i=0;i<N;i++){ const a0=rnd(-2.7,2.7); // いろんな方向へ飛び出してから大きく曲がって敵へ
     bombMissiles.push({ x:player.x+player.r*0.3, y:player.y+rnd(-10,10), vx:Math.cos(a0), vy:Math.sin(a0),
-      spd:rnd(460,600), target: tg.length? tg[i%tg.length] : null, delay:i*0.02+rnd(0,0.12), t:0, trail:[], turn:rnd(12,18) }); } }
+      spd:rnd(480,640), target: tg.length? tg[i%tg.length] : null, delay:i*0.015+rnd(0,0.1), t:0, trail:[], turn:rnd(11,17) }); } }
+function bombRing(x,y,r){ bombFx.push({x,y,t:0,life:0.7,rMax:(r||16)+rnd(30,50)}); } // 敵の周りに残す円形爆発
 function updateBomb(dt){ for(let i=bombMissiles.length-1;i>=0;i--){ const m=bombMissiles[i];
   if(m.delay>0){ m.delay-=dt; continue; }
   m.t+=dt; m.trail.push(m.x,m.y); if(m.trail.length>36) m.trail.splice(0,2); // 尾（軌道）を記録
@@ -433,11 +434,12 @@ function updateBomb(dt){ for(let i=bombMissiles.length-1;i>=0;i--){ const m=bomb
   const mt=m.turn*dt; if(da>mt)da=mt; else if(da<-mt)da=-mt;
   const na=ang+da; m.vx=Math.cos(na)*m.spd; m.vy=Math.sin(na)*m.spd;
   m.x+=m.vx*dt; m.y+=m.vy*dt;
-  if(tgt){ const rr=(tgt.r||16)+22; if(dist2(m.x,m.y,tgt.x,tgt.y)<rr*rr){ // 命中→爆発
-    spawnParticles(m.x,m.y,'#ffd85e',10,240,0.5); spawnParticles(m.x,m.y,'#fff',6,170,0.4); Audio2.sfx.explode(); shake(3,0.12);
+  if(tgt){ const rr=(tgt.r||16)+22; if(dist2(m.x,m.y,tgt.x,tgt.y)<rr*rr){ // 命中→円形の爆発を残す
+    bombRing(tgt.x,tgt.y,tgt.r); spawnParticles(m.x,m.y,'#ffd85e',10,240,0.5); spawnParticles(m.x,m.y,'#fff',6,170,0.4); Audio2.sfx.explode(); shake(3,0.12);
     if(tgt.t==='boss'){ const bud=tgt.bombBudget||0; if(bud>0){ const dmg=Math.min(bud, tgt.maxhp*0.05); tgt.bombBudget=bud-dmg; hitEnemy(tgt,dmg,tgt.x,tgt.y);} } else killEnemy(tgt); // ボスは1/4まで
     bombMissiles.splice(i,1); continue; } }
-  if(m.t>3.2 || m.x<-80||m.x>W+80||m.y<-80||m.y>H+80) bombMissiles.splice(i,1); } }
+  if(m.t>3.2 || m.x<-80||m.x>W+80||m.y<-80||m.y>H+80) bombMissiles.splice(i,1); }
+  for(let i=bombFx.length-1;i>=0;i--){ const f=bombFx[i]; f.t+=dt; if(f.t>=f.life) bombFx.splice(i,1); } } // 円形爆発のフェード
 function drawMissileHead(ang){ // 小さなミサイル本体（機首＝進行方向）
   ctx.save(); ctx.rotate(ang); ctx.lineJoin='round';
   ctx.fillStyle='rgba(255,190,90,.95)'; ctx.beginPath(); ctx.moveTo(-5,-1.6); ctx.lineTo(-11,0); ctx.lineTo(-5,1.6); ctx.closePath(); ctx.fill(); // 噴射炎
@@ -445,8 +447,14 @@ function drawMissileHead(ang){ // 小さなミサイル本体（機首＝進行�
   ctx.fillStyle='#eef1f6'; ctx.strokeStyle='#9aa6b6'; ctx.lineWidth=0.8; ctx.beginPath(); ctx.moveTo(2,-2.2); ctx.lineTo(-5,-2.2); ctx.lineTo(-5,2.2); ctx.lineTo(2,2.2); ctx.closePath(); ctx.fill(); ctx.stroke(); // 胴
   ctx.fillStyle='#e2483a'; ctx.beginPath(); ctx.moveTo(8,0); ctx.lineTo(2,-2.2); ctx.lineTo(2,2.2); ctx.closePath(); ctx.fill(); // 弾頭（赤）
   ctx.restore(); }
-function drawBomb(){ if(!bombMissiles.length)return; ctx.save(); ctx.lineCap='round';
-  ctx.globalCompositeOperation='lighter'; // 弾道（光るけむりの尾）
+function drawBomb(){ if(!bombMissiles.length && !bombFx.length)return; ctx.save(); ctx.lineCap='round';
+  ctx.globalCompositeOperation='lighter';
+  // 敵の周りに残る円形の爆発演出（衝撃波リング＋中心フラッシュ）
+  for(const f of bombFx){ const p=f.t/f.life, ease=1-Math.pow(1-p,2), R=f.rMax*ease, a=Math.max(0,1-p);
+    ctx.strokeStyle='rgba(255,208,120,'+(a*0.85).toFixed(3)+')'; ctx.lineWidth=4*(1-p)+1; ctx.beginPath(); ctx.arc(f.x,f.y,R,0,TAU); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,'+(a*0.55).toFixed(3)+')'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(f.x,f.y,R*0.66,0,TAU); ctx.stroke();
+    if(p<0.45){ const fa=(0.45-p)/0.45, g=ctx.createRadialGradient(f.x,f.y,0,f.x,f.y,f.rMax*0.6); g.addColorStop(0,'rgba(255,242,196,'+(fa*0.9).toFixed(3)+')'); g.addColorStop(1,'rgba(255,140,60,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(f.x,f.y,f.rMax*0.6,0,TAU); ctx.fill(); } }
+  // 弾道（光るけむりの尾）
   for(const m of bombMissiles){ if(m.delay>0)continue; const tr=m.trail, n=tr.length/2;
     for(let j=1;j<n;j++){ const a=j/n; ctx.strokeStyle='rgba(255,255,255,'+(a*0.5).toFixed(3)+')'; ctx.lineWidth=a*3.4+0.4;
       ctx.beginPath(); ctx.moveTo(tr[(j-1)*2],tr[(j-1)*2+1]); ctx.lineTo(tr[j*2],tr[j*2+1]); ctx.stroke(); } }
@@ -1710,7 +1718,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
   g.restore(); }
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; runners.length=0; pawFx.length=0; bombMissiles.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; runners.length=0; pawFx.length=0; bombMissiles.length=0; bombFx.length=0;
   boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; demo=null; laserDemoDone=false; droneDemoDone=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }

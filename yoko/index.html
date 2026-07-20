@@ -762,9 +762,11 @@ function sprayOnionJuice(x,y){ Audio2.sfx.explode(); spawnParticles(x,y,'#efe1a6
   spawnText(x,y-22,'たまねぎ汁！','#eae59a',12); }
 function spawnStrayCarrot(){ const y=rnd(70,H-70); const a=Math.atan2(player.y-y,player.x-(W+30))+rnd(-0.12,0.12), sp=rnd(280,360);
   eBullets.push({x:W+30,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:12,color:'#f0821f',boss:true,kind:'carrotmsl',ang:a}); Audio2.sfx.hit(); }
-function spawnStrayFry(){ const n=easyMode?1:2, y0=rnd(70,H-70);
-  for(let k=0;k<n;k++){ const y=clamp(y0+(k-(n-1)/2)*44,50,H-50), a=Math.atan2(player.y-y,player.x-(W+30))+rnd(-0.16,0.16), sp=rnd(240,320);
-    eBullets.push({x:W+30,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:11,color:'#eeb64a',boss:true,kind:'fry',ang:a,spin:rnd(-6,6)}); } Audio2.sfx.hit(); }
+function spawnStrayFry(){ const y=rnd(90,H-90), a=Math.atan2(H/2-y,W/2-(W+30)), sp=rnd(230,290); // まん中めがけて飛ぶ大きめのポテト（倒せない）
+  eBullets.push({x:W+30,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:16,color:'#caa15e',boss:true,kind:'frybomb',spin:rnd(-6,6)}); Audio2.sfx.hit(); }
+function burstFries(x,y){ Audio2.sfx.explode(); spawnParticles(x,y,'#eeb64a',16,240,0.6); shake(5,.2); spawnText(x,y-24,'ポテトフライ！','#e7b84e',13);
+  for(let k=0;k<12;k++){ const aa=k/12*TAU, sp=rnd(240,300); // まん中で360度に12本のポテトがはじける
+    eBullets.push({x,y,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:11,color:'#eeb64a',boss:true,kind:'fry',ang:aa,spin:rnd(-6,6)}); } }
 function spawnMiniOnion(){ const y=rnd(80,H-80), r=24, hp=easyMode?1:2; // 本体の約1/3サイズの玉ねぎ
   enemies.push({x:W+40,y,t:'mionion',hitFlash:0,seed:Math.random()*TAU,fireCd:99,noItem:true,hp,maxhp:hp,r,vx:-135,vy:0,score:180,color:'#efe1a6',amp:rnd(40,90),baseY:y}); }
 let ambCarrotCd=0, ambOnionCd=0, ambFryCd=0;
@@ -772,7 +774,7 @@ function updateAmbient(dt){ if(curryLoop<1) return;                       // 2�
   if(bossActive||bossIntro>0||riceFx>0||curryFx>0) return;                 // ボス戦・演出中は出さない
   if(stage>=2){ ambCarrotCd-=dt; if(ambCarrotCd<=0){ ambCarrotCd=rnd(2.4,3.8)*(easyMode?1.6:1); spawnStrayCarrot(); } } // ニンジンボス撃破後
   if(stage>=3){ ambOnionCd-=dt; if(ambOnionCd<=0){ ambOnionCd=rnd(3.6,5.4)*(easyMode?1.5:1); spawnMiniOnion(); } }   // 玉ねぎボス撃破後
-  if(stage>=4){ ambFryCd-=dt; if(ambFryCd<=0){ ambFryCd=rnd(2.4,3.6)*(easyMode?1.6:1); spawnStrayFry(); } } }        // じゃがいもボス撃破後
+  if(stage>=4){ ambFryCd-=dt; if(ambFryCd<=0){ ambFryCd=rnd(3.6,5.0)*(easyMode?1.5:1); spawnStrayFry(); } } }        // じゃがいもボス撃破後（まん中で12本にはじける）
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:26,seed:Math.random()*TAU}); } // 肉球マークを大きく
@@ -865,7 +867,8 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
     if(!b.returning && (b.t>=b.outT || b.x<b.r+8 || b.x>W-b.r-8 || b.y<b.r+8 || b.y>H-b.r-8)) b.returning=true; // 端に届いたら折り返す
     if(b.returning){ const dx=b.owner.x-b.x, dy=b.owner.y-b.y, d=Math.hypot(dx,dy)||1; b.vx=dx/d*b.rsp; b.vy=dy/d*b.rsp; if(d<30){ eBullets.splice(i,1); continue; } } }
   b.x+=b.vx*dt; b.y+=b.vy*dt; // 弾速はそのまま（イージーは弾の数を減らす）
-  if(b.kind==='rollpotato') b.rollA=(b.rollA||0)+b.vx*dt*0.04; // 転がり回転
+  if(b.kind==='rollpotato'||b.kind==='frybomb') b.rollA=(b.rollA||0)+b.vx*dt*0.04; // 転がり回転
+  if(b.kind==='frybomb' && dist2(b.x,b.y,W/2,H/2)<26*26){ burstFries(b.x,b.y); eBullets.splice(i,1); continue; } // まん中に来たら12本にはじける
   if(b.life!==undefined){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } if(b.r<24) b.r*=1+dt*1.4; } // 火炎は少し大きくなりつつ端まで飛ぶ
   const mg=b.kind==='onionring'?80:30; if(b.x<-mg||b.x>W+mg||b.y<-mg||b.y>H+mg){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){
@@ -943,7 +946,7 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     else if(b.kind==='steam') drawSteam(b);
     else if(b.kind==='carrotmsl') drawCarrotMsl(b);
     else if(b.kind==='onionring') drawOnionRing(b);
-    else if(b.kind==='rollpotato') drawRollPotato(b);
+    else if(b.kind==='rollpotato'||b.kind==='frybomb') drawRollPotato(b);
     else { ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); }
     ctx.restore(); } ctx.shadowBlur=0; }
@@ -1212,8 +1215,8 @@ function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
       eBullets.push({x:e.x-e.r*0.3+Math.cos(base)*off,y:e.y+Math.sin(base)*off,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:rnd(10,15),color:'#eef3f8',boss:true,kind:'steam',life:rnd(2.0,2.6)}); }
     Audio2.sfx.big(); spawnText(e.x,e.y-e.r-6,'じょうき！','#dfeaf2',13); e.spCd=easyMode?1.9:1.4; }
   else { e.ruCnt=(e.ruCnt||0)+1; // ルー：火炎放射（1週目）／2週目〜はカレーコック連続ラン（上→真ん中→下）も
-    if(curryLoop>=1 && e.ruCnt%2===1){ spawnCurryRunner(H*0.24,0); spawnCurryRunner(H*0.5,0.4); spawnCurryRunner(H*0.78,0.8); // 上・真ん中・下の順
-      Audio2.sfx.warn(); shake(5,0.2); spawnText(e.x,e.y-e.r-6,'カレーコック突進！','#ffb04a',13); e.spCd=easyMode?3.6:2.9; }
+    if(curryLoop>=1 && e.ruCnt%2===1){ spawnCurryRunner(H*0.24,0); spawnCurryRunner(H*0.5,1.0); spawnCurryRunner(H*0.78,2.0); // 上→真ん中→下の順（間をあけて1体ずつ）
+      Audio2.sfx.warn(); shake(5,0.2); spawnText(e.x,e.y-e.r-6,'カレーコック突進！','#ffb04a',13); e.spCd=easyMode?4.6:3.8; }
     else { const n=easyMode?8:12; for(let k=0;k<n;k++){ const aa=a+rnd(-0.16,0.16), sp=rnd(380,520), off=rnd(0,e.r*0.7);
         eBullets.push({x:e.x-e.r*0.35+Math.cos(aa)*off,y:e.y+Math.sin(aa)*off,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:rnd(9,14),color:'#ff7a2e',boss:true,kind:'flame',life:rnd(2.0,2.6)}); }
       Audio2.sfx.big(); shake(5,0.2); flash('#ff7a2e',0.13); spawnText(e.x,e.y-e.r-6,'火炎放射！','#ff7a2e',14); e.spCd=easyMode?3.0:2.3; } }

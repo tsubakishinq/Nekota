@@ -1051,36 +1051,44 @@ function drawFlame(b){ // 火炎放射の火の玉（加算合成で燃える）
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; }
 
 // ================= OPTIONS / PLAYER DRAW =================
-function drawCatShip(x,y,r,bank){ // クリーム色の戦闘機（可変戦闘機風・右向き）
+function drawCatShip(x,y,r,bank){ // VF-19風の可変戦闘機（クリーム＋黒＋赤・右向き）
   ctx.save(); ctx.translate(x,y);
   if(bank){ ctx.rotate(bank*0.26); ctx.scale(1, 1-Math.min(0.58,Math.abs(bank)*0.62)); } // 上下移動でバンク（ロール）
   ctx.lineJoin='round'; ctx.lineCap='round';
-  const cream='#e7d9b4', creamD='#cdbb8c', dk='#2c2a26', red='#e23b3b';
+  const cream='#e9dcbe', creamD='#c9b88a', dk='#26241f', blk='#1b1a16', red='#e0392f';
   // ジェット噴射（双発）
   const tl=8+player.thrust*16+Math.random()*6; ctx.globalCompositeOperation='lighter';
-  for(const oy of [-r*0.28, r*0.28]){ const fg=ctx.createLinearGradient(-r*0.85,oy,-r*0.85-tl,oy); fg.addColorStop(0,'#ffe08a'); fg.addColorStop(.5,'#ff8a3c'); fg.addColorStop(1,'rgba(255,80,50,0)');
-    ctx.fillStyle=fg; ctx.beginPath(); ctx.moveTo(-r*0.8,oy-3.5); ctx.lineTo(-r*0.8,oy+3.5); ctx.lineTo(-r*0.85-tl,oy); ctx.closePath(); ctx.fill(); }
+  for(const oy of [-r*0.32, r*0.32]){ const fg=ctx.createLinearGradient(-r*0.95,oy,-r*0.95-tl,oy); fg.addColorStop(0,'#ffe08a'); fg.addColorStop(.5,'#ff8a3c'); fg.addColorStop(1,'rgba(255,80,50,0)');
+    ctx.fillStyle=fg; ctx.beginPath(); ctx.moveTo(-r*0.9,oy-4); ctx.lineTo(-r*0.9,oy+4); ctx.lineTo(-r*0.95-tl,oy); ctx.closePath(); ctx.fill(); }
   ctx.globalCompositeOperation='source-over';
-  // 主翼（前縁がシャープな後退翼・クリーム＋黒フチ）
-  ctx.fillStyle=cream; ctx.strokeStyle=dk; ctx.lineWidth=1.2;
-  ctx.beginPath(); ctx.moveTo(r*0.2,-r*0.16); ctx.lineTo(-r*0.95,-r*1.05); ctx.lineTo(-r*0.5,-r*0.12); ctx.closePath();
-  ctx.moveTo(r*0.2,r*0.16); ctx.lineTo(-r*0.95,r*1.05); ctx.lineTo(-r*0.5,r*0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle=dk; ctx.lineWidth=1.2;
+  // 前進翼（フォワードスイープ：翼端が前寄り＝VF-19の特徴）
+  for(const s of [-1,1]){ ctx.fillStyle=cream; ctx.beginPath();
+    ctx.moveTo(r*0.30, s*r*0.22); ctx.lineTo(r*0.66, s*r*1.12); ctx.lineTo(r*0.34, s*r*1.18); ctx.lineTo(-r*0.64, s*r*0.26); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=red; ctx.beginPath(); ctx.moveTo(r*0.66,s*r*1.12); ctx.lineTo(r*0.5,s*r*1.14); ctx.lineTo(r*0.46,s*r*1.02); ctx.closePath(); ctx.fill(); } // 翼端の赤
   // 双尾翼（後方・外に開く・先端赤）
-  for(const s of [-1,1]){ ctx.fillStyle=cream; ctx.beginPath(); ctx.moveTo(-r*0.5,s*r*0.12); ctx.lineTo(-r*1.14,s*r*0.66); ctx.lineTo(-r*0.74,s*r*0.06); ctx.closePath(); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=red; ctx.beginPath(); ctx.moveTo(-r*1.14,s*r*0.66); ctx.lineTo(-r*1.0,s*r*0.7); ctx.lineTo(-r*0.98,s*r*0.46); ctx.closePath(); ctx.fill(); }
+  for(const s of [-1,1]){ ctx.fillStyle=cream; ctx.beginPath();
+    ctx.moveTo(-r*0.5,s*r*0.14); ctx.lineTo(-r*1.18,s*r*0.64); ctx.lineTo(-r*1.02,s*r*0.72); ctx.lineTo(-r*0.72,s*r*0.08); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=red; ctx.beginPath(); ctx.moveTo(-r*1.18,s*r*0.64); ctx.lineTo(-r*1.02,s*r*0.72); ctx.lineTo(-r*1.0,s*r*0.58); ctx.closePath(); ctx.fill(); }
+  // 黒いエンジンナセル（後半の双胴）
+  ctx.fillStyle=blk; for(const s of [-1,1]){ ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(-r*1.0,s*r*0.14,r*0.9,r*0.3,r*0.09); else ctx.rect(-r*1.0,s*r*0.14,r*0.9,r*0.3); ctx.fill(); }
   // 胴体（クリーム・長い尖った機首）
   ctx.shadowColor='#d8cba0'; ctx.shadowBlur=8;
-  const g=ctx.createLinearGradient(0,-r*0.5,0,r*0.5); g.addColorStop(0,'#f4ead0'); g.addColorStop(.5,cream); g.addColorStop(1,creamD);
+  const g=ctx.createLinearGradient(0,-r*0.42,0,r*0.42); g.addColorStop(0,'#f6ecd2'); g.addColorStop(.5,cream); g.addColorStop(1,creamD);
   ctx.fillStyle=g; ctx.strokeStyle=dk; ctx.lineWidth=1.3;
-  ctx.beginPath(); ctx.moveTo(r*1.55,0); ctx.quadraticCurveTo(r*0.55,-r*0.4,-r*0.5,-r*0.42); ctx.quadraticCurveTo(-r*1.02,-r*0.3,-r*1.06,0); ctx.quadraticCurveTo(-r*1.02,r*0.3,-r*0.5,r*0.42); ctx.quadraticCurveTo(r*0.55,r*0.4,r*1.55,0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*1.74,0);
+  ctx.quadraticCurveTo(r*0.7,-r*0.3,-r*0.2,-r*0.34); ctx.quadraticCurveTo(-r*0.98,-r*0.24,-r*1.08,-r*0.1);
+  ctx.lineTo(-r*1.08,r*0.1); ctx.quadraticCurveTo(-r*0.98,r*0.24,-r*0.2,r*0.34); ctx.quadraticCurveTo(r*0.7,r*0.3,r*1.74,0); ctx.closePath(); ctx.fill(); ctx.stroke();
   ctx.shadowBlur=0;
-  // 黒いパネルライン（機首）
-  ctx.strokeStyle=dk; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(r*1.25,-r*0.05); ctx.lineTo(r*0.15,-r*0.2); ctx.moveTo(r*1.25,r*0.05); ctx.lineTo(r*0.15,r*0.2); ctx.stroke();
-  // 赤い三角マーク（コックピット横）
-  ctx.fillStyle=red; ctx.beginPath(); ctx.moveTo(r*0.2,-r*0.05); ctx.lineTo(r*0.46,-r*0.24); ctx.lineTo(r*0.46,r*0.12); ctx.closePath(); ctx.fill();
+  // 機首の黒いアンチグレア（とがった黒鼻）
+  ctx.fillStyle=blk; ctx.beginPath(); ctx.moveTo(r*1.74,0); ctx.quadraticCurveTo(r*1.0,-r*0.11,r*0.52,-r*0.09); ctx.lineTo(r*0.52,r*0.09); ctx.quadraticCurveTo(r*1.0,r*0.11,r*1.74,0); ctx.closePath(); ctx.fill();
+  // 機首パネルライン
+  ctx.strokeStyle='rgba(60,55,45,.6)'; ctx.lineWidth=0.9; ctx.beginPath(); ctx.moveTo(r*1.15,-r*0.02); ctx.lineTo(r*0.2,-r*0.16); ctx.moveTo(r*1.15,r*0.02); ctx.lineTo(r*0.2,r*0.16); ctx.stroke();
+  // 赤い三角マーク（コックピット前・両側）
+  ctx.fillStyle=red; for(const s of [-1,1]){ ctx.beginPath(); ctx.moveTo(r*0.3,s*r*0.05); ctx.lineTo(r*0.52,s*r*0.24); ctx.lineTo(r*0.52,s*r*0.03); ctx.closePath(); ctx.fill(); }
   // コックピット（スモークキャノピー）
-  ctx.fillStyle='#28324c'; ctx.strokeStyle=dk; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(r*0.74,-r*0.05,r*0.34,r*0.2,0,0,TAU); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='rgba(150,190,255,.5)'; ctx.beginPath(); ctx.ellipse(r*0.82,-r*0.11,r*0.14,r*0.07,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#22314e'; ctx.strokeStyle=dk; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(r*0.86,0,r*0.34,r*0.18,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(150,190,255,.55)'; ctx.beginPath(); ctx.ellipse(r*0.96,-r*0.05,r*0.14,r*0.07,0,0,TAU); ctx.fill();
   ctx.restore();
 }
 function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Math.floor(player.invuln*16)%2===0;

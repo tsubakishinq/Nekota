@@ -291,6 +291,7 @@ function updatePlayer(dt){
   if(player.redInvuln>0) player.redInvuln-=dt;
   if(player.slowT>0){ player.slowT-=dt; if(Math.random()<0.4) spawnParticles(player.x-player.r,player.y,'#eae59a',1,60,0.3); } // 汁でスロー中はしずくが滴る
   // auto fire
+  if(maxHintTimer>0) maxHintTimer-=dt; // レーザーMAXヒントの表示タイマー
   if(player.diagCd>0) player.diagCd-=dt; // ダブルレーザーの斜め弾は1秒間隔で緩やかに
   if(player.charging && !chargeReady()) player.charging=false; // 最強でなくなったら溜め解除
   if(player.charging){ player.chargeT=(player.chargeT||0)+dt; // 溜め中は自動ショット停止
@@ -320,6 +321,10 @@ function fireChargeHomers(tier){ const fx=player.x+player.r+CHARGE_OFF, fy=playe
     bullets.push({x:fx,y:fy,vx:dx*sp,vy:dy*sp,r:3,dmg:LBASE*laserMul()*dmul,color:col,crgb:rgb,kind:'laser',pierce:true,len:tier*16+48,thickV:1.5,hitThick:tier+5,dx,dy,ang,home:true,cathome:true,charge:true,spd:sp,life:2.8,launch:0.08,target:tg}); } // 糸のように細いホーミングレーザー
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,col,16,320,0.55); shake(tier*2+2,0.16); flash(col,0.16);
   spawnText(player.x,player.y-28, tier===3?'チャージMAX！':tier===2?'チャージ！':'チャージ', col, 14); }
+// ===== レーザーMAX到達時：画面の上に操作ヒントを順番に表示 =====
+const MAXHINTS=['👆 十字キーをダブルタップでレーザーを溜めろ！','🍙 ボタン長押しで総攻撃！','🛸 ドローンボタンで遠隔攻撃！']; const HINT_EACH=2.8;
+let maxHintTimer=0;
+function startMaxHints(){ maxHintTimer=MAXHINTS.length*HINT_EACH*2+0.4; } // 2周ぶん見せる
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
   if(player.laserMode===4){ player.fireCd=0.11; // 最強：通常は前方2発（高速）だけ。ダブル以上を持っていると斜め上下も加わる
@@ -671,7 +676,7 @@ function revive(){ if(state!=='play') return; player.x=carrier?carrier.x:170; pl
   player.invuln=1; player.redInvuln=0; player.slowT=0; player.bank=0; player._py=undefined; // 1秒間 点滅無敵で復活
   // 初期状態で復活：パワーアップを全部リセット
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.beamHist=null;
-  options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); player.charging=false; player.chargeT=0; refreshPowHint();
+  options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); player.charging=false; player.chargeT=0; maxHintTimer=0; refreshPowHint();
   spawnParticles(player.x,player.y,'#fff',24,260,0.6); spawnParticles(player.x,player.y,'#57f6ff',18,200,0.6); Audio2.sfx.power(); showToast('のこり '+lives+'機','#57f6ff');
 }
 function drawCarrier(){ if(!carrier) return; ctx.save(); ctx.translate(carrier.x,carrier.y+Math.sin(carrier.t*8)*1.5);
@@ -842,7 +847,7 @@ function usePower(i){ // 🐾ストックをコスト分消費して発動（足
     else if(player.speedLvl<5){ player.speedLvl++; spawnText(player.x,player.y-24,'⚡ SPEED '+player.speedLvl,'#57f6ff',15); } // ミサイル最大後はスピードUP
     else { addScore(500); } }
   else if(slot==='DOUBLE'){ player.doubleLv=player.doubleLv>=2?1:player.doubleLv+1; spawnText(player.x,player.y-24,player.doubleLv>=2?'TRIPLE':'DOUBLE','#ffd85e',15); }
-  else if(slot==='LASER'){ if(player.laserMode<4){ player.laserMode++; } else { player.laserBoost=Math.min(6,(player.laserBoost||0)+1); } // 青2連レーザー(翼端)が最大。以降は撃つほど1.2倍
+  else if(slot==='LASER'){ if(player.laserMode<4){ player.laserMode++; if(player.laserMode===4) startMaxHints(); } else { player.laserBoost=Math.min(6,(player.laserBoost||0)+1); } // 青2連レーザー(翼端)が最大。以降は撃つほど1.2倍。MAX到達でヒント表示
     const nm=['','LASER','黄 x1.2','赤 x1.44','🔵 青2連'];
     const msg=(player.laserMode>=4 && (player.laserBoost||0)>0) ? '🔵 x'+laserMul().toFixed(1) : nm[player.laserMode];
     spawnText(player.x,player.y-24,msg,player.laserMode>=4?'#3aa6ff':(LCOL[player.laserMode]||'#57f6ff'),15); }
@@ -1451,10 +1456,24 @@ function drawHUD(){ ctx.save();
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 11px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ '+ing.e+bn+'ボス ★',W/2,y-3); }
   if(stageBanner>0){ const a=Math.min(1, stageBanner>1.6?(2.2-stageBanner)/0.6:stageBanner/1.0); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
+  if(maxHintTimer>0 && player.laserMode===4 && player.alive && state==='play') drawMaxHints();
   if(bossIntro>0) drawBossIntro();
   if(prepFx) drawPrepFx();
   if(riceFx>0) drawRiceReveal();
   if(curryFx>0) drawCurryDone();
+  ctx.restore();
+}
+function drawMaxHints(){ // レーザーMAX：操作ヒントを画面の上に順ぐりに表示
+  const el=(MAXHINTS.length*HINT_EACH*2+0.4)-maxHintTimer;            // 経過時間
+  const idx=Math.floor(el/HINT_EACH)%MAXHINTS.length, ph=(el%HINT_EACH)/HINT_EACH;
+  const a=(ph<0.14?ph/0.14:(ph>0.86?(1-ph)/0.14:1))*Math.min(1,maxHintTimer/0.4); // フェード
+  const msg=MAXHINTS[idx], y=bossActive?96:74;                        // ボスHPバーと被らない位置
+  ctx.save(); ctx.globalAlpha=Math.max(0,a); ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='900 16px "Trebuchet MS","Hiragino Kaku Gothic ProN",sans-serif'; const w=ctx.measureText(msg).width+38;
+  ctx.fillStyle='rgba(10,14,34,.78)'; ctx.strokeStyle='rgba(255,216,94,.75)'; ctx.lineWidth=1.5; roundRect(W/2-w/2,y-16,w,32,16); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#ffe08a'; ctx.shadowColor='#ff8a3c'; ctx.shadowBlur=8; ctx.fillText(msg,W/2,y+1); ctx.shadowBlur=0;
+  // 小さなドット・インジケータ（今どのヒントか）
+  for(let k=0;k<MAXHINTS.length;k++){ ctx.globalAlpha=Math.max(0,a)*(k===idx?1:0.35); ctx.fillStyle=k===idx?'#ffd85e':'#9fb4de'; ctx.beginPath(); ctx.arc(W/2-(MAXHINTS.length-1)*5+k*10, y+20, 2.6, 0, TAU); ctx.fill(); }
   ctx.restore();
 }
 function drawPrepFx(){ // 撃破→スクロール停止して「切られた野菜／お肉パック」のアップ
@@ -1676,7 +1695,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
   bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; runners.length=0; pawFx.length=0; bombMissiles.length=0;
-  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
+  boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; maxHintTimer=0; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
 function gameOver(){ state='over'; Audio2.stopMusic(); pauseBtn.style.display='none';

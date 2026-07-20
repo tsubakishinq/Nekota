@@ -870,12 +870,12 @@ function updateDemo(dt){ const d=demo; d.t+=dt; const t=d.t;
     if(t>=0.7 && !d.spawned){ d.spawned=true; demoDummy(H*0.36); demoDummy(H*0.64); }
     if(t>=0.9 && t<5.2 && !d.fired){ player.charging=true; player.chargeT=(player.chargeT||0)+dt;
       if(player.chargeT>=3.2){ d.fired=true; endCharge(); } } // 溜まったら青(MAX)で発射
-  } else { // ドローン散開のデモ
-    if(t>=0.7 && !d.spawned){ d.spawned=true; while(options.length<3) addOption();
-      demoDummy(H*0.3); demoDummy(H*0.52); demoDummy(H*0.72);
+  } else { // ドローンのデモ（今持っている1機だけで実演・増やさない）
+    if(t>=0.7 && !d.spawned){ d.spawned=true;
+      demoDummy(H*0.34); demoDummy(H*0.62);
       kittenMode=true; nekoBtn.classList.add('on'); Audio2.sfx.meow();
-      options.forEach((o,i)=>{ const a=i/options.length*TAU; o.vx=Math.cos(a)*320; o.vy=Math.sin(a)*320; o.fcd=rnd(0,0.1); }); }
-    if(d.spawned && t<5.6 && enemies.length===0){ demoDummy(rnd(H*0.28,H*0.72)); } // 的が無くなったら補充
+      options.forEach((o,i)=>{ const a=i/Math.max(1,options.length)*TAU; o.vx=Math.cos(a)*320; o.vy=Math.sin(a)*320; o.fcd=rnd(0,0.1); }); }
+    if(d.spawned && t<5.6 && enemies.length===0){ demoDummy(rnd(H*0.3,H*0.7)); } // 的が無くなったら補充
   }
   if(t>=6.4) endDemo(); }
 function endDemo(){ demo=null; enemies.length=0; kittenMode=false; nekoBtn.classList.remove('on');

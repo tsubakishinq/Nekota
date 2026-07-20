@@ -1135,7 +1135,8 @@ function curryIdx(){ return ((stage-1)%6+6)%6; }
 function spawnBoss(){ Audio2.sfx.warn();
   const idx=curryIdx(); // 出てくる順（材料）ほどHPが多い＋周回ごとに硬く
   const gear=clamp(stage-1,0,3);
-  let hp=Math.round((60+idx*48)*Math.pow(1.5,curryLoop)); if(easyMode) hp*=4; // 2週目=1.5倍・3週目=さらに1.5倍。イージーはさらに4倍
+  const bossLoopMul = curryLoop<=0 ? 1 : 3*curryLoop; // ボスのHP：2週目=3倍・3週目=6倍・4週目=9倍…
+  let hp=Math.round((60+idx*48)*bossLoopMul); if(easyMode) hp*=4; // イージーはさらに4倍
   boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
     gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, peelLv:0, cooked:false, cooking:0, spCd:1.8};
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出

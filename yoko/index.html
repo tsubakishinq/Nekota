@@ -811,7 +811,8 @@ function updateAmbient(dt){ if(curryLoop<1) return;                       // 2�
   if(stage>=2){ ambCarrotCd-=dt; if(ambCarrotCd<=0){ ambCarrotCd=rnd(2.4,3.8)*(easyMode?1.6:1); spawnStrayCarrot(); } } // ニンジンボス撃破後
   if(stage>=3){ ambOnionCd-=dt; if(ambOnionCd<=0){ ambOnionCd=rnd(3.6,5.4)*(easyMode?1.5:1); spawnMiniOnion(); } }   // 玉ねぎボス撃破後
   if(stage>=4){ ambFryCd-=dt; if(ambFryCd<=0){ ambFryCd=rnd(3.6,5.0)*(easyMode?1.5:1); spawnStrayFry(); } }          // じゃがいもボス撃破後（まん中で12本にはじける）
-  if(stage>=6){ ambIndianCd-=dt; if(ambIndianCd<=0){ ambIndianCd=rnd(3.4,4.8)*(easyMode?1.5:1); spawnStrayRunner(); } } } // ルー(ルゥ)ボス撃破後：インド人が走ってくる
+  if(stage>=6){ ambIndianCd-=dt; if(ambIndianCd<=0){ ambIndianCd=rnd(3.4,4.8)*(easyMode?1.5:1); spawnStrayRunner(); } } // ルー(ルゥ)ボス撃破後：インド人が走ってくる
+  if(beeAmbient){ beeAmbCd-=dt; if(beeAmbCd<=0){ beeAmbCd=rnd(2.6,4.0)*(easyMode?1.5:1); spawnAmbientBee(); } } } // 女王蜂撃破後：働きバチの攻撃
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:26,seed:Math.random()*TAU}); } // 肉球マークを大きく
@@ -920,6 +921,7 @@ function updateBullets(dt){
       if(b.x-b.r*b.hRatio>W+30){ bullets.splice(i,1); continue; } }
     else if(b.home){ if(b.x<-40||b.x>W+40||b.y<-40||b.y>H+40){ bullets.splice(i,1); continue; } } // ホーミングは画面外で消す
     else if(b.x>W+30||b.x<-30||b.y<-30||b.y>H+30){ bullets.splice(i,1); continue; }
+    if(boss&&boss.kind==='bee' && beeHit(b.x,b.y,b.dmg||1)){ bullets.splice(i,1); continue; } // 働き蜂が弾をガード／攻撃蜂に命中
     let hit=false;
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; let overlap;
       if(b.kind==='laser'){ const rr=e.r+b.hitThick; overlap = segDist2(e.x,e.y, b.x-b.len*b.dx,b.y-b.len*b.dy, b.x+b.len*b.dx,b.y+b.len*b.dy) < rr*rr; }
@@ -945,10 +947,13 @@ function updateEBullets(dt){ for(let i=eBullets.length-1;i>=0;i--){ const b=eBul
   if(b.kind==='onionring'){ if(enemies.indexOf(b.owner)<0){ eBullets.splice(i,1); continue; } b.t=(b.t||0)+dt; // ヨーヨー：画面端まで飛ぶ→ボスへ戻る
     if(!b.returning && (b.t>=b.outT || b.x<b.r+8 || b.x>W-b.r-8 || b.y<b.r+8 || b.y>H-b.r-8)) b.returning=true; // 端に届いたら折り返す
     if(b.returning){ const dx=b.owner.x-b.x, dy=b.owner.y-b.y, d=Math.hypot(dx,dy)||1; b.vx=dx/d*b.rsp; b.vy=dy/d*b.rsp; if(d<30){ eBullets.splice(i,1); continue; } } }
+  if(b.kind==='beesting'){ const cur=Math.atan2(b.vy,b.vx), want=Math.atan2(player.y-b.y,player.x-b.x); let da=want-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU; const tr=(b.turn||1.5)*dt; if(da>tr)da=tr; else if(da<-tr)da=-tr; const na=cur+da, sp=b.spd||180; b.vx=Math.cos(na)*sp; b.vy=Math.sin(na)*sp; } // 精度の悪いホーミング
+  if(b.kind==='eggflame'){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } if(player.alive&&player.invuln<=0){ const rr=b.r*0.72+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr) damagePlayer(); } continue; } // その場0.5秒の爆炎（消えない）
   b.x+=b.vx*dt; b.y+=b.vy*dt; // 弾速はそのまま（イージーは弾の数を減らす）
   if(b.kind==='rollpotato'||b.kind==='frybomb') b.rollA=(b.rollA||0)+b.vx*dt*0.04; // 転がり回転
   if(b.kind==='frybomb' && dist2(b.x,b.y,W/2,H/2)<26*26){ burstFries(b.x,b.y); eBullets.splice(i,1); continue; } // まん中に来たら12本にはじける
-  if(b.life!==undefined){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } if(b.r<24) b.r*=1+dt*1.4; } // 火炎は少し大きくなりつつ端まで飛ぶ
+  if(b.kind==='eggbomb' && dist2(b.x,b.y,b.tx,b.ty)<20*20){ eggExplode(b.tx,b.ty); eBullets.splice(i,1); continue; } // たまご着弾→爆炎
+  if(b.life!==undefined){ b.life-=dt; if(b.life<=0){ eBullets.splice(i,1); continue; } if(b.r<24 && (b.kind==='flame'||b.kind==='steam')) b.r*=1+dt*1.4; } // 火炎は少し大きくなりつつ端まで飛ぶ
   const mg=b.kind==='onionring'?80:30; if(b.x<-mg||b.x>W+mg||b.y<-mg||b.y>H+mg){ eBullets.splice(i,1); continue; }
   if(player.alive&&player.invuln<=0){ const rr=b.r+player.r*0.7; if(dist2(b.x,b.y,player.x,player.y)<rr*rr){
     if(b.kind==='juice'){ eBullets.splice(i,1); const was=player.slowT; player.slowT=3.0; // 汁はライフを奪わずスピードダウン
@@ -1030,6 +1035,9 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     else if(b.kind==='carrotmsl') drawCarrotMsl(b);
     else if(b.kind==='onionring') drawOnionRing(b);
     else if(b.kind==='rollpotato'||b.kind==='frybomb') drawRollPotato(b);
+    else if(b.kind==='eggbomb') drawEgg(b);
+    else if(b.kind==='eggflame') drawEggFlame(b);
+    else if(b.kind==='beesting') drawBeeSting(b);
     else { ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill();
       ctx.fillStyle='rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(-b.r*0.3,-b.r*0.3,b.r*0.4,0,TAU); ctx.fill(); }
     ctx.restore(); } ctx.shadowBlur=0; }
@@ -1104,6 +1112,21 @@ function drawFlame(b){ // 火炎放射の火の玉（加算合成で燃える）
   const g=ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,'#fff2a0'); g.addColorStop(.35,'#ffb033'); g.addColorStop(.75,'#ff4d24'); g.addColorStop(1,'rgba(255,50,20,0)');
   ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r,0,TAU); ctx.fill();
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; }
+function drawEgg(b){ const r=b.r; ctx.rotate((b.rollA=(b.rollA||0)+(b.spin||4)*0.02)); // たまご爆弾（回りながら飛ぶ）
+  ctx.shadowColor='#f0e0b0'; ctx.shadowBlur=8; ctx.fillStyle='#fbf6e6'; ctx.strokeStyle='#d8c89a'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.ellipse(0,0,r*0.82,r,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur=0; ctx.fillStyle='rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-r*0.28,-r*0.35,r*0.22,r*0.34,-0.3,0,TAU); ctx.fill();
+  ctx.fillStyle='rgba(210,120,60,.5)'; for(const p of [[-0.2,0.2],[0.25,-0.1],[0.1,0.5]]){ ctx.beginPath(); ctx.arc(p[0]*r,p[1]*r,r*0.09,0,TAU); ctx.fill(); } }
+function drawEggFlame(b){ const p=Math.max(0,Math.min(1,(b.life||0)/0.5)), rise=(1-p); // 0.5秒 立ち上る爆炎
+  ctx.globalCompositeOperation='lighter'; const R=b.r*(0.5+rise*0.6); ctx.globalAlpha=p;
+  const g=ctx.createRadialGradient(0,rise*b.r*0.3,0,0,-rise*b.r*0.4,R); g.addColorStop(0,'#fff6c0'); g.addColorStop(.4,'#ffab33'); g.addColorStop(.8,'#ff4d24'); g.addColorStop(1,'rgba(255,50,20,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.ellipse(0,-rise*b.r*0.35,R*0.8,R*1.1,0,0,TAU); ctx.fill();
+  ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1; }
+function drawBeeSting(b){ const r=b.r; ctx.rotate(Math.atan2(b.vy,b.vx)); // 働き蜂の毒針弾
+  ctx.shadowColor='#ffcf3a'; ctx.shadowBlur=8; ctx.fillStyle='#ffe07a'; ctx.strokeStyle='#7a5a10'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.ellipse(0,0,r,r*0.8,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#3a2a10'; ctx.beginPath(); ctx.moveTo(r*0.7,0); ctx.lineTo(r*1.5,0); ctx.lineTo(r*0.7,r*0.3); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-r*0.2,0,r*0.16,r*0.7,0,0,TAU); ctx.fill(); }
 
 // ================= OPTIONS / PLAYER DRAW =================
 // 自機＝YF-19 EXCEED VALKYRIE（いただいたイラストをそのまま使用・右向き）
@@ -1203,18 +1226,23 @@ let curryGot=0, curryFx=0, prepFx=null, defeatFreeze=0, curryLoop=0; // curryLoo
 let riceFx=0; const RTOT=2.4; // 玄米→白米の炊き上がり演出（ホワイトアウト＋字幕）
 function curryIdx(){ return ((stage-1)%6+6)%6; }
 function spawnBoss(){ Audio2.sfx.warn();
-  const idx=curryIdx(); // 出てくる順（材料）ほどHPが多い＋周回ごとに硬く
+  let kind=curryIdx(); // 通常はステージ順の材料
+  if(curryLoop>=2) kind=pick([0,1,2,3,4,5,'chicken','bee']); // 3週目〜はボスがランダムで変わる（追加ボス含む）
+  const idxHp = (typeof kind==='number') ? kind : (kind==='chicken'?2:4); // HPの目安
   const gear=clamp(stage-1,0,3);
   const bossLoopMul = curryLoop<=0 ? 1 : 3*curryLoop; // ボスのHP：2週目=3倍・3週目=6倍・4週目=9倍…
-  let hp=Math.round((60+idx*48)*bossLoopMul); if(easyMode) hp*=4; // イージーはさらに4倍
-  boss={t:'boss',x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
+  let hp=Math.round((60+idxHp*48)*bossLoopMul); if(easyMode) hp*=4; // イージーはさらに4倍
+  boss={t:'boss',kind,x:W+160,y:H/2,tx:W-170,r:70,hp,maxhp:hp,phase:0,phaseTimer:0,fireCd:1.4,hitFlash:0,angle:0,entered:false,sweepDir:1,
     gear, dmgReduce:gear*0.1, shieldFlash:0, peeled:false, peelLv:0, cooked:false, cooking:0, spCd:1.8};
+  if(kind==='bee') initBees(boss);
   bossIntro=1.0; flash('#ff2e6e',0.35); shake(7,0.35); // 出てくる1秒前だけ警告演出
   enemies.push(boss); }
 function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*6); e.shieldFlash=Math.max(0,(e.shieldFlash||0)-dt*6);
   if(bossIntro>0){ bossIntro=Math.max(0,bossIntro-dt); return; } // 警告表示中はまだ登場しない（画面外で待機）
   if(!e.entered){ e.x+=(e.tx-e.x)*Math.min(1,dt*1.6); if(Math.abs(e.x-e.tx)<4)e.entered=true; return; }
-  const vi=curryIdx();
+  if(e.kind==='chicken'){ updateChickenBoss(e,dt); return; }
+  if(e.kind==='bee'){ updateBeeBoss(e,dt); return; }
+  const vi=e.kind;
   if(vi===1){ // 玉ねぎ：ダメージを受けるたびに4段階で皮がむけて小さくなり、むけた皮がミサイルで飛んでくる
     const tgt=Math.min(4, Math.floor((1-e.hp/e.maxhp)/0.2)); // 80/60/40/20%で段階アップ
     while((e.peelLv||0)<tgt){ const preR=e.r; e.peelLv=(e.peelLv||0)+1; e.peeled=true; e.r*=0.86; // 一皮むけて一回り小さく
@@ -1226,7 +1254,7 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   else if(!e.peeled && vi<3 && e.hp/e.maxhp<0.5){ e.peeled=true; // にんじん・じゃがいもは半分で皮むけ
     Audio2.sfx.hit(); const pc=[['#c8600f','#e08a2a'],null,['#9c7838','#caa15e']][vi];
     for(let k=0;k<16;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),pc[k%2],1,rnd(120,260),0.6); spawnText(e.x,e.y-e.r-6,'皮むけた！','#fff',15); }
-  if(curryIdx()===5 && !e.cooked){
+  if(e.kind===5 && !e.cooked){
     if(!e.cooking && e.hp/e.maxhp<0.5){ e.cooking=2.0; Audio2.sfx.warn(); shake(6,0.3); } // 玄米撃破→攻撃をやめて約2秒ふるえる
     if(e.cooking>0){ e.cooking-=dt; // ふるえ中（描画側でジッター＆点滅）：小さなしぶきがモゾモゾ
       if(Math.random()<0.5) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),Math.random()<0.5?'#c79a5a':'#e8d4a8',1,rnd(60,180),0.4);
@@ -1239,7 +1267,7 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
         for(let k=0;k<56;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(200,480),0.95); }
       return; } } // ふるえている間は動かない・撃たない
   if(riceFx>0.9) return; // 炊き上がりのホワイトアウト中は動かない・撃たない
-  if(curryIdx()===3 && curryLoop>=1){ // 2週目〜の牛：半分で怒って真っ赤→時折 縦横無尽に駆け回る（無敵）
+  if(e.kind===3 && curryLoop>=1){ // 2週目〜の牛：半分で怒って真っ赤→時折 縦横無尽に駆け回る（無敵）
     if(!e.enraged && e.hp/e.maxhp<0.5){ e.enraged=true; e.rageCd=rnd(1.6,2.6); Audio2.sfx.warn(); shake(12,0.5); flash('#c8102e',0.35); spawnText(e.x,e.y-e.r-8,'ブチギレ！','#ff2e2e',20); }
     if(e.enraged){
       if(e.rampage>0){ e.rampage-=dt; e.invincible=true; // 駆け回り中は無敵
@@ -1250,7 +1278,7 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
       else { e.rageCd-=dt; if(e.rageCd<=0){ e.rampage=rnd(1.8,2.6); e.rageCd=rnd(3.5,5.5); e.rtx=rnd(W*0.32,W-70); e.rty=rnd(90,H-90); Audio2.sfx.big(); shake(6,0.2); spawnText(e.x,e.y-e.r-8,'縦横無尽！','#ff2e2e',15); return; } }
     }
   }
-  if(curryIdx()===2 && curryLoop>=1){ // 2週目〜のジャガイモ：半分でジャガイモの衛星ガード
+  if(e.kind===2 && curryLoop>=1){ // 2週目〜のジャガイモ：半分でジャガイモの衛星ガード
     if(!e.guardSet && e.hp/e.maxhp<0.5){ e.guardSet=true; e.guards=easyMode?8:12; e.guardA=0; e.guardHpEach=e.maxhp/e.guards; e.guardHp=e.guardHpEach; Audio2.sfx.warn(); shake(6,0.3); spawnText(e.x,e.y-e.r-8,'ジャガイモガード！','#caa15e',15); } // 衛星の総HP＝ボス1体分（硬い）
     if(e.guards>0){ e.guardA=(e.guardA||0)+dt*2.4; } }
   e.phaseTimer+=dt; e.y+=e.sweepDir*70*dt; if(e.y<110){e.y=110;e.sweepDir=1;} if(e.y>H-110){e.y=H-110;e.sweepDir=-1;}
@@ -1258,7 +1286,7 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
   if(e.fireCd<=0){ if(frac>0.5){ e.fireCd=0.8; const a=Math.atan2(player.y-e.y,player.x-e.x); const kr=easyMode?0:1; for(let k=-kr;k<=kr;k++){ const aa=a+k*0.22; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ff5ec9',boss:true});} Audio2.sfx.hit(); } // イージーは3発→1発
     else { e.fireCd=1.2; const n=easyMode?4:12; for(let k=0;k<n;k++){ const aa=k/n*TAU+e.angle; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*200,vy:Math.sin(aa)*200,r:6,color:'#ffd85e',boss:true});} Audio2.sfx.big(); } } // イージーは12発→4発
   // 材料ごとの必殺攻撃（玉ねぎ＝汁／じゃがいも＝ポテトフライ／牛＝闘牛突進／ルー＝火炎放射）
-  const bi=curryIdx(); if((bi<=4 && (bi>=1 || curryLoop>=1)) || (bi===5 && e.cooked)){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); } // にんじんは2週目〜、白米は炊けたら蒸気
+  const bi=e.kind; if((bi<=4 && (bi>=1 || curryLoop>=1)) || (bi===5 && e.cooked)){ e.spCd-=dt; if(e.spCd<=0) bossSpecial(e,bi); } // にんじんは2週目〜、白米は炊けたら蒸気
 }
 function bossSpecial(e,idx){ const a=Math.atan2(player.y-e.y,player.x-e.x);
   if(idx===0){ // にんじん（2週目〜）：ニンジンミサイルを時折2本
@@ -1304,7 +1332,8 @@ function bossFace(cx,cy,r,flash,lowHp,col){ // 顔（プレイヤー側＝少し
   ctx.beginPath(); if(lowHp){ ctx.moveTo(cx-r*0.17,cy+r*0.26); ctx.quadraticCurveTo(cx,cy+r*0.1,cx+r*0.17,cy+r*0.26);} else { ctx.arc(cx,cy+r*0.1,r*0.17,0.12*Math.PI,0.88*Math.PI);} ctx.stroke();
   ctx.fillStyle='rgba(255,120,120,.32)'; ctx.beginPath(); ctx.arc(cx-r*0.35,cy+r*0.08,r*0.09,0,TAU); ctx.arc(cx+r*0.35,cy+r*0.08,r*0.09,0,TAU); ctx.fill();
   ctx.lineCap='butt'; }
-function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, idx=curryIdx(), peeled=e.peeled; ctx.lineJoin='round';
+function drawBoss(e){ if(e.kind==='chicken'){ drawChickenBoss(e); return; } if(e.kind==='bee'){ drawBeeBoss(e); return; }
+  const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, idx=e.kind, peeled=e.peeled; ctx.lineJoin='round';
   if(idx===0){ // にんじん
     ctx.fillStyle=flash?'#fff':'#5aa832'; // 葉
     for(const o of [-0.42,0,0.42]){ ctx.beginPath(); ctx.moveTo(o*r*0.5,-r*0.5); ctx.lineTo(o*r*0.5-r*0.14,-r*1.2); ctx.lineTo(o*r*0.5+r*0.22,-r*1.02); ctx.closePath(); ctx.fill(); }
@@ -1409,16 +1438,102 @@ function drawBoss(e){ const flash=e.hitFlash>0, r=e.r, lowHp=e.hp/e.maxhp<0.5, i
 function defeatBoss(e){ boss=null; bossActive=false; bossPending=false; bossCooldown=2.6; // 次のボスまで間隔をあける（連続で出さない）
   for(let k=0;k<8;k++) setTimeout(()=>{ spawnParticles(e.x+rnd(-40,40),e.y+rnd(-40,40),k%2?'#ff8a3c':'#ffd85e',20,300,.9); Audio2.sfx.explode(); shake(12,.3); },k*90);
   spawnParticles(e.x,e.y,'#ffd85e',40,340,1.1); shake(22,.6); flash('#fff',.5);
-  const idx=curryIdx(), ing=CURRY[idx]; curryGot=idx+1; // 材料ゲット→鍋へ
-  spawnText(e.x,e.y-20, ing.e+ing.n+' ゲット！', ing.c, 20);
-  if(idx<=3){ prepFx={idx, t:0, max:2.0}; defeatFreeze=2.0; } // 撃破→スクロール停止＆切られた野菜／お肉パックのアップ（約2秒）
-  if(idx===5){ // お米＝6品目 → カレー完成！
-    addScore(8000); curryFx=4.0; Audio2.sfx.up(); showToast('🍛 カレー完成！','#ffd85e'); // カレー画面（4秒）→また1面から
+  const bidx=curryIdx(); curryGot=bidx+1; // 進行はステージ基準（6体でカレー完成）
+  const bk=e.kind;
+  if(bk==='chicken'){ spawnChicks(); spawnText(e.x,e.y-20,'🐔 にわとり たおした！','#e8c25a',18); } // 撃破→ひよこが駆け抜ける
+  else if(bk==='bee'){ beeAmbient=true; spawnText(e.x,e.y-20,'🐝 女王蜂 たおした！','#ffcf3a',18); } // 以降は働きバチの攻撃
+  else { const ing=CURRY[bk]; spawnText(e.x,e.y-20, ing.e+ing.n+' ゲット！', ing.c, 20);
+    if(bk<=3){ prepFx={idx:bk, t:0, max:2.0}; defeatFreeze=2.0; } } // 野菜／お肉のアップ
+  if(bidx===5){ // 6品目 → カレー完成！
+    addScore(8000); curryFx=4.0; Audio2.sfx.up(); showToast('🍛 カレー完成！','#ffd85e');
   } else {
-    addScore(3000+stage*500); showToast('★ '+ing.n+' クリア ★', ing.c);
+    const info=(typeof bk==='string')?BOSSX[bk]:CURRY[bk];
+    addScore(3000+stage*500); showToast('★ '+info.n+' クリア ★', info.c);
     setTimeout(()=>startStage(stage+1),2200);
   }
 }
+
+// ================= 追加ボス（3週目〜ランダム）：にわとり／女王蜂 =================
+const BOSSX={chicken:{n:'にわとり',e:'🐔',c:'#e8c25a'}, bee:{n:'女王蜂',e:'🐝',c:'#ffcf3a'}};
+function bossInfo(e){ return (e&&typeof e.kind==='string') ? BOSSX[e.kind] : CURRY[e?e.kind:curryIdx()]; }
+// --- にわとり：たまご爆弾（画面のどこかで0.5秒の爆炎）／撃破でひよこが不規則に駆け抜ける ---
+function updateChickenBoss(e,dt){
+  e.phaseTimer+=dt; e.y+=e.sweepDir*72*dt; if(e.y<120){e.y=120;e.sweepDir=1;} if(e.y>H-120){e.y=H-120;e.sweepDir=-1;}
+  e.fireCd-=dt; if(e.fireCd<=0){ e.fireCd=1.1; const a=Math.atan2(player.y-e.y,player.x-e.x), n=easyMode?1:3;
+    for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.18; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ffd85e',boss:true}); } Audio2.sfx.hit(); }
+  e.spCd-=dt; if(e.spCd<=0){ e.spCd=easyMode?3.0:2.1; const n=easyMode?1:2; for(let k=0;k<n;k++) layEggBomb(e); } }
+function layEggBomb(e){ const tx=rnd(70,W-40), ty=rnd(60,H-60), a=Math.atan2(ty-e.y,tx-e.x), sp=rnd(300,380);
+  eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:12,color:'#f6ecd2',boss:true,kind:'eggbomb',tx,ty,spin:rnd(-6,6)}); Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-6,'たまごばくだん！','#f6ecd2',12); }
+function eggExplode(x,y){ Audio2.sfx.explode(); shake(6,0.25); flash('#ffb04a',0.12); spawnParticles(x,y,'#ff7a2e',18,260,0.6); spawnParticles(x,y,'#ffd85e',8,180,0.4);
+  eBullets.push({x,y,vx:0,vy:0,r:46,color:'#ff7a2e',boss:true,kind:'eggflame',life:0.5,t:0}); } // 0.5秒 その場で爆炎
+let chicks=[];
+function spawnChicks(){ const n=easyMode?5:9; for(let i=0;i<n;i++) chicks.push({x:W+rnd(20,170),y:rnd(70,H-70),vx:-rnd(190,300),t:rnd(0,TAU),s:15,legT:0,delay:i*0.16,wob:rnd(70,140)}); }
+function updateChicks(dt){ for(let i=chicks.length-1;i>=0;i--){ const c=chicks[i]; if(c.delay>0){c.delay-=dt;continue;} c.t+=dt; c.legT+=dt;
+  c.x+=c.vx*dt; c.y+=Math.sin(c.t*7+c.x*0.03)*c.wob*dt + rnd(-50,50)*dt; c.y=clamp(c.y,34,H-34); if(c.x<-40) chicks.splice(i,1); } }
+function drawChicks(){ for(const c of chicks){ if(c.delay>0)continue; ctx.save(); ctx.translate(c.x,c.y); drawChick(c.s,c.legT); ctx.restore(); } }
+function drawChick(s,t){ const hop=Math.abs(Math.sin(t*10))*s*0.2; ctx.save(); ctx.translate(0,-hop); ctx.lineJoin='round';
+  ctx.shadowColor='#ffcf3a'; ctx.shadowBlur=6; ctx.fillStyle='#ffd23a'; ctx.beginPath(); ctx.ellipse(0,0,s,s*0.9,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.arc(-s*0.75,-s*0.5,s*0.6,0,TAU); ctx.fill(); ctx.shadowBlur=0;
+  ctx.fillStyle='#f4a01e'; ctx.beginPath(); ctx.moveTo(-s*1.3,-s*0.5); ctx.lineTo(-s*1.65,-s*0.4); ctx.lineTo(-s*1.3,-s*0.28); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#2a1a10'; ctx.beginPath(); ctx.arc(-s*0.95,-s*0.6,s*0.1,0,TAU); ctx.fill();
+  ctx.strokeStyle='#f4a01e'; ctx.lineWidth=s*0.13; ctx.lineCap='round'; const sw=Math.sin(t*13)*s*0.32;
+  ctx.beginPath(); ctx.moveTo(-s*0.1,s*0.82); ctx.lineTo(-s*0.1+sw,s*1.18); ctx.moveTo(s*0.32,s*0.82); ctx.lineTo(s*0.32-sw,s*1.18); ctx.stroke(); ctx.restore(); }
+function drawChickenBoss(e){ const r=e.r, flash=e.hitFlash>0, lowHp=e.hp/e.maxhp<0.5; ctx.lineJoin='round';
+  ctx.fillStyle=flash?'#fff':'#e8c25a'; ctx.strokeStyle='#c69a30'; ctx.lineWidth=2; // 尾
+  for(const o of [-0.3,0,0.3]){ ctx.beginPath(); ctx.moveTo(r*0.7,o*r*0.4); ctx.quadraticCurveTo(r*1.5,o*r*0.9-r*0.2,r*1.3,o*r*1.2); ctx.quadraticCurveTo(r*0.9,o*r*0.6,r*0.7,o*r*0.4); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  ctx.fillStyle=flash?'#fff':'#fbfbf4'; ctx.strokeStyle='#d8d0bc'; ctx.shadowColor='#eee'; ctx.shadowBlur=10; // 体
+  ctx.beginPath(); ctx.ellipse(0,r*0.1,r*0.95,r*0.85,0,0,TAU); ctx.fill(); ctx.stroke(); ctx.shadowBlur=0;
+  ctx.beginPath(); ctx.arc(-r*0.7,-r*0.5,r*0.5,0,TAU); ctx.fill(); ctx.stroke(); // 頭
+  ctx.fillStyle='#e0392f'; for(const o of [-0.2,0.1,0.4]){ ctx.beginPath(); ctx.arc(-r*0.7+o*r,-r*0.95,r*0.16,0,TAU); ctx.fill(); } // とさか
+  ctx.beginPath(); ctx.ellipse(-r*0.95,-r*0.15,r*0.1,r*0.18,0,0,TAU); ctx.fill(); // 肉垂
+  ctx.fillStyle='#f4a01e'; ctx.beginPath(); ctx.moveTo(-r*1.2,-r*0.5); ctx.lineTo(-r*1.58,-r*0.4); ctx.lineTo(-r*1.2,-r*0.25); ctx.closePath(); ctx.fill(); // くちばし
+  ctx.fillStyle=flash?'#fff':(lowHp?'#ff3b3b':'#2a1a10'); ctx.beginPath(); ctx.arc(-r*0.82,-r*0.6,r*0.09,0,TAU); ctx.fill(); // 目
+  ctx.fillStyle='#efe6cf'; ctx.strokeStyle='#d8d0bc'; ctx.beginPath(); ctx.ellipse(r*0.05,r*0.15,r*0.5,r*0.4,0.3,0,TAU); ctx.fill(); ctx.stroke(); } // 翼
+// --- 女王蜂：働き蜂12匹（6ガード＝倒せない／6攻撃＝精度の悪いホーミング・全滅で補充） ---
+function initBees(e){ e.bees=[]; e.beeA=0; for(let i=0;i<12;i++) e.bees.push({ang:i/12*TAU, guard:(i%2===0), alive:true, hp:2, maxhp:2, fcd:rnd(0.6,2.4), hitFlash:0, x:e.x, y:e.y}); }
+function beeShot(bee){ const a=Math.atan2(player.y-bee.y,player.x-bee.x)+rnd(-0.45,0.45), sp=rnd(150,205);
+  eBullets.push({x:bee.x,y:bee.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:8,color:'#ffe07a',boss:true,kind:'beesting',spd:sp,turn:1.5,life:3.6}); Audio2.sfx.hit(); } // 悪いホーミング
+function updateBeeBoss(e,dt){ e.beeA=(e.beeA||0)+dt*1.05;
+  e.phaseTimer+=dt; e.y+=e.sweepDir*46*dt; if(e.y<140){e.y=140;e.sweepDir=1;} if(e.y>H-140){e.y=H-140;e.sweepDir=-1;}
+  const rad=e.r+72; let atk=0;
+  for(const bee of e.bees){ if(!bee.alive) continue; bee.hitFlash=Math.max(0,bee.hitFlash-dt*6);
+    bee.x=e.x+Math.cos(bee.ang+e.beeA)*rad; bee.y=e.y+Math.sin(bee.ang+e.beeA)*rad;
+    if(!bee.guard){ atk++; bee.fcd-=dt; if(bee.fcd<=0){ bee.fcd=rnd(1.7,2.9)*(easyMode?1.6:1); beeShot(bee); } } }
+  if(atk===0){ for(const bee of e.bees){ if(!bee.guard){ bee.alive=true; bee.hp=bee.maxhp; bee.fcd=rnd(1.0,2.2); } } Audio2.sfx.warn(); spawnText(e.x,e.y-e.r-10,'はたらきバチ 補充！','#ffcf3a',13); } // 全滅で補充
+  e.fireCd-=dt; if(e.fireCd<=0){ e.fireCd=1.5; const a=Math.atan2(player.y-e.y,player.x-e.x), n=easyMode?1:3;
+    for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.2; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,color:'#ffcf3a',boss:true}); } } }
+function beeHit(bx,by,dmg){ if(!boss||boss.kind!=='bee'||!boss.bees) return false; // 弾が働き蜂に当たったか
+  for(const bee of boss.bees){ if(!bee.alive) continue; const rr=boss.r*0.34+6; if(dist2(bx,by,bee.x,bee.y)<rr*rr){
+    if(bee.guard){ bee.hitFlash=1; if(Math.random()<0.5) spawnParticles(bee.x,bee.y,'#8fb4d8',2,90,0.2); return true; } // ガード蜂は倒せない・弾を止める
+    bee.hp-=dmg; bee.hitFlash=1; spawnParticles(bee.x,bee.y,'#ffcf3a',3,120,0.3);
+    if(bee.hp<=0){ bee.alive=false; spawnParticles(bee.x,bee.y,'#ffe07a',10,200,0.5); Audio2.sfx.explode(); addScore(50); } return true; } }
+  return false; }
+function drawWorkerBee(x,y,s,guard,flash){ ctx.save(); ctx.translate(x,y); const wob=Math.sin(performance.now()*0.03+x*0.1);
+  ctx.shadowColor=guard?'#8fb4d8':'#ffcf3a'; ctx.shadowBlur=8; ctx.fillStyle='rgba(205,232,255,.55)';
+  ctx.beginPath(); ctx.ellipse(-s*0.2,-s*0.7-wob*s*0.1,s*0.5,s*0.28,-0.5,0,TAU); ctx.ellipse(s*0.2,-s*0.7+wob*s*0.1,s*0.5,s*0.28,0.5,0,TAU); ctx.fill(); // 羽
+  ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':(guard?'#6f7f92':'#ffcf3a'); ctx.strokeStyle=guard?'#3a4656':'#7a5a10'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.ellipse(0,0,s*0.62,s*0.82,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=guard?'#3a4656':'#2a1a10'; for(const oy of [-0.2,0.25]){ ctx.beginPath(); ctx.ellipse(0,oy*s,s*0.6,s*0.13,0,0,TAU); ctx.fill(); } // しま
+  ctx.fillStyle='#2a1a10'; ctx.beginPath(); ctx.arc(-s*0.2,-s*0.5,s*0.09,0,TAU); ctx.arc(s*0.2,-s*0.5,s*0.09,0,TAU); ctx.fill(); // 目
+  if(guard){ ctx.strokeStyle='rgba(143,180,216,.8)'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(0,0,s*1.05,0,TAU); ctx.stroke(); } // ガードのオーラ
+  ctx.restore(); }
+function drawBeeBoss(e){ const r=e.r, flash=e.hitFlash>0, lowHp=e.hp/e.maxhp<0.5; ctx.lineJoin='round';
+  ctx.shadowColor='#ffcf3a'; ctx.shadowBlur=14; ctx.fillStyle='rgba(225,240,255,.5)'; // 羽
+  ctx.beginPath(); ctx.ellipse(-r*0.3,-r*0.9,r*0.7,r*0.4,-0.5,0,TAU); ctx.ellipse(r*0.3,-r*0.9,r*0.7,r*0.4,0.5,0,TAU); ctx.fill();
+  ctx.shadowBlur=0; ctx.fillStyle=flash?'#fff':'#ffcf3a'; ctx.strokeStyle='#7a5a10'; ctx.lineWidth=3; // 体
+  ctx.beginPath(); ctx.ellipse(0,r*0.05,r*0.85,r*1.05,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#2a1a10'; for(const oy of [-0.35,0.05,0.45]){ ctx.beginPath(); ctx.ellipse(0,oy*r,r*0.85,r*0.16,0,0,TAU); ctx.fill(); } // しま
+  ctx.fillStyle='#3a2a10'; ctx.beginPath(); ctx.moveTo(0,r*1.08); ctx.lineTo(-r*0.14,r*0.85); ctx.lineTo(r*0.14,r*0.85); ctx.closePath(); ctx.fill(); // 針
+  bossFace(0,-r*0.4,r*0.7,flash,lowHp,'#2a1a10');
+  ctx.fillStyle='#ffd23a'; ctx.strokeStyle='#e0a800'; ctx.lineWidth=2; ctx.beginPath(); // 王冠
+  ctx.moveTo(-r*0.5,-r*0.95); ctx.lineTo(-r*0.5,-r*1.35); ctx.lineTo(-r*0.25,-r*1.1); ctx.lineTo(0,-r*1.42); ctx.lineTo(r*0.25,-r*1.1); ctx.lineTo(r*0.5,-r*1.35); ctx.lineTo(r*0.5,-r*0.95); ctx.closePath(); ctx.fill(); ctx.stroke();
+  for(const bee of e.bees){ if(bee.alive) drawWorkerBee(bee.x-e.x, bee.y-e.y, r*0.32, bee.guard, bee.hitFlash>0); } }
+// 撃破後の働きバチ乱入（ボスがいなくても飛んでくる）
+let beeAmbient=false, beeSwarm=[], beeAmbCd=0;
+function spawnAmbientBee(){ beeSwarm.push({x:W+30,y:rnd(80,H-80),t:rnd(0,TAU),fcd:rnd(0.5,1.2),life:6.5}); }
+function updateBeeSwarm(dt){ for(let i=beeSwarm.length-1;i>=0;i--){ const b=beeSwarm[i]; b.t+=dt; b.life-=dt; b.x-=140*dt; b.y+=Math.sin(b.t*4)*70*dt; b.y=clamp(b.y,40,H-40);
+  b.fcd-=dt; if(b.fcd<=0){ b.fcd=rnd(1.3,2.1); beeShot(b); } if(b.x<-40||b.life<=0) beeSwarm.splice(i,1); } }
+function drawBeeSwarm(){ for(const b of beeSwarm){ ctx.save(); ctx.translate(b.x,b.y); drawWorkerBee(0,0,19,false,false); ctx.restore(); } }
 
 // ================= DIRECTOR =================
 let stage=1, spawnTimer=0, distance=0, stageBanner=0, stageRemaining=0, bossPending=false, bossCooldown=0, stagePool=[], stageTotal=0, katsuoDone=false;
@@ -1429,6 +1544,7 @@ function playerPower(){ let p=player.speedLvl*0.4;
 // Blended difficulty: starts near 0 and ramps up with both stage and player power.
 function diffLevel(){ return (stage-1)*1.1 + playerPower()*0.75; }
 function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanner=2.2; Audio2.sfx.up(); showToast('STAGE '+n,'#57f6ff');
+  if(n===1){ beeAmbient=false; beeSwarm.length=0; chicks.length=0; } // 周回のはじめにリセット
   stagePool=['fan','straight','wave','gold','gold']; if(n>=2) stagePool.push('gun','wave','gold'); if(n>=3) stagePool.push('turret','gun');
   stageRemaining=14+n*8;   // total enemies to release this stage
   stageTotal=stageRemaining; katsuoDone=false; // 1ステージ1体のカツオ
@@ -1477,8 +1593,8 @@ function drawHUD(){ ctx.save();
   for(let k=0;k<n;k++){ ctx.globalAlpha = k<curryGot?1:0.26; ctx.fillText(CURRY[k].e, cx0+k*26, 34); } ctx.globalAlpha=1;
   // boss hp
   if(bossActive&&boss){ const w=W-120,h=9,x=60,y=52; ctx.fillStyle='rgba(0,0,0,.5)'; roundRect(x-2,y-2,w+4,h+4,5); ctx.fill();
-    const ing=CURRY[curryIdx()]; ctx.fillStyle=ing.c; ctx.shadowColor=ing.c; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
-    const bn=(curryIdx()===5)?(boss.cooked?'ごはん':'玄米'):ing.n; // お米ボスは玄米→ごはん
+    const ing=bossInfo(boss); ctx.fillStyle=ing.c; ctx.shadowColor=ing.c; ctx.shadowBlur=8; roundRect(x,y,w*clamp(boss.hp/boss.maxhp,0,1),h,4); ctx.fill(); ctx.shadowBlur=0;
+    const bn=(boss.kind===5)?(boss.cooked?'ごはん':'玄米'):ing.n; // お米ボスは玄米→ごはん
     ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.font='900 11px "Trebuchet MS"'; ctx.textBaseline='top'; ctx.fillText('★ '+ing.e+bn+'ボス ★',W/2,y-3); }
   if(stageBanner>0){ const a=Math.min(1, stageBanner>1.6?(2.2-stageBanner)/0.6:stageBanner/1.0); ctx.globalAlpha=a; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 40px "Trebuchet MS"'; ctx.fillStyle='#fff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=18; ctx.fillText('STAGE '+stage,W/2,H*0.4); ctx.globalAlpha=1; ctx.shadowBlur=0; }
@@ -1559,7 +1675,7 @@ function drawPrepFx(){ // 撃破→スクロール停止して「切られた野
   ctx.shadowBlur=0; ctx.restore();
 }
 function drawBossIntro(){ // ボス登場の約1秒警告：点滅する大きな WARNING ＋ 材料名
-  const ing=CURRY[curryIdx()], blink=Math.floor(bossIntro*8)%2===0;
+  const ing=bossInfo(boss), blink=Math.floor(bossIntro*8)%2===0;
   const pop=Math.min(1,(1.0-bossIntro)/0.22);  // 登場時にビヨンと大きくなる
   const ease=1-Math.pow(1-pop,3);
   ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -1572,7 +1688,7 @@ function drawBossIntro(){ // ボス登場の約1秒警告：点滅する大き�
   // WARNING（大きく）
   ctx.fillStyle=blink?'#fff':'#ff5e8a'; ctx.shadowColor='#ff2e6e'; ctx.shadowBlur=18; ctx.font='900 62px "Trebuchet MS"'; ctx.fillText('⚠ WARNING ⚠',0,-28);
   // 材料ボス名（大きく）※お米は最初「玄米」で登場
-  const inm=(curryIdx()===5)?'玄米':ing.n;
+  const inm=(boss&&boss.kind===5)?'玄米':ing.n;
   ctx.shadowColor=ing.c; ctx.shadowBlur=20; ctx.fillStyle='#fff'; ctx.font='900 40px "Trebuchet MS"'; ctx.fillText(ing.e+' '+inm+'ボス しゅつげん！',0,40);
   ctx.shadowBlur=0; ctx.restore();
 }
@@ -1718,7 +1834,7 @@ function drawSumitamaLogo(){ const cv=document.getElementById('logoCanvas'); if(
   g.restore(); }
 try{ drawSumitamaLogo(); }catch(e){}
 function startGame(){ score=0; distance=0; stage=0; powerStock=0; lives=3; katsuoDone=false; carrier=null;
-  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; runners.length=0; pawFx.length=0; bombMissiles.length=0; bombFx.length=0;
+  bullets.length=0; enemies.length=0; eBullets.length=0; particles.length=0; powerups.length=0; texts.length=0; options.length=0; missiles.length=0; blasts.length=0; catRunners.length=0; catLaserT=0; runners.length=0; pawFx.length=0; bombMissiles.length=0; bombFx.length=0; chicks.length=0; beeSwarm.length=0; beeAmbient=false;
   boss=null; bossActive=false; bossPending=false; bossCooldown=0; bossIntro=0; stageRemaining=0; curryGot=0; curryFx=0; prepFx=null; defeatFreeze=0; curryLoop=0; riceFx=0; kittenMode=false; demo=null; laserDemoDone=false; droneDemoDone=false; nekoBtn.classList.remove('on'); resetPlayer(); initStars(); dragActive=false; dpadEnd(); refreshPowHint();
   titleScreen.classList.add('hidden'); overScreen.classList.add('hidden'); pauseScreen.classList.add('hidden'); pauseBtn.style.display='flex';
   state='play'; Audio2.init(); Audio2.resume(); Audio2.startMusic(); startStage(1); }
@@ -1755,7 +1871,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
     } else {
     // drag → set player toward target
     if(dragActive && player.tx!==undefined){ const ddx=player.tx-player.x, ddy=player.ty-player.y; const d=Math.hypot(ddx,ddy); if(d>1){ const mv=Math.min(d,(player.slowT>0?210:520)*dt); player.x+=ddx/d*mv; player.y+=ddy/d*mv; } player.thrust=1; }
-    updatePlayer(dt); updateDirector(dt); updateAmbient(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updateRunners(dt); updatePawFx(dt); updateBomb(dt);
+    updatePlayer(dt); updateDirector(dt); updateAmbient(dt); updateEnemies(dt); updateBullets(dt); updateEBullets(dt); updatePowerups(dt); updateCarrier(dt); updateBlasts(dt); updateCatRunners(dt); updateRunners(dt); updateChicks(dt); updateBeeSwarm(dt); updatePawFx(dt); updateBomb(dt);
     }
   }
   if(shakeTime>0){ shakeTime-=dt; if(shakeTime<=0)shakeMag=0; }
@@ -1766,7 +1882,7 @@ function loop(now){ let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05; reques
   ctx.fillStyle='#05060f'; ctx.fillRect(0,0,W,H);
   let ox=0,oy=0; if(shakeMag>0){ ox=rnd(-shakeMag,shakeMag); oy=rnd(-shakeMag,shakeMag); ctx.translate(ox,oy); }
   drawTerrain(); drawStars(); drawPowerups(); drawParticles(); drawBullets(); drawBlasts(); drawCatRunners();
-  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawRunners(); drawPlayer(); drawPawFx(); drawBomb(); drawTexts();
+  for(const e of enemies) drawEnemy(e); drawOptions(); drawCarrier(); drawRunners(); drawChicks(); drawBeeSwarm(); drawPlayer(); drawPawFx(); drawBomb(); drawTexts();
   if(shakeMag>0) ctx.translate(-ox,-oy);
   if(state==='play'||state==='pause') drawHUD();
   if(demo) drawDemo();

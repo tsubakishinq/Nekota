@@ -769,12 +769,14 @@ function burstFries(x,y){ Audio2.sfx.explode(); spawnParticles(x,y,'#eeb64a',16,
     eBullets.push({x,y,vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:11,color:'#eeb64a',boss:true,kind:'fry',ang:aa,spin:rnd(-6,6)}); } }
 function spawnMiniOnion(){ const y=rnd(80,H-80), r=24, hp=easyMode?1:2; // 本体の約1/3サイズの玉ねぎ
   enemies.push({x:W+40,y,t:'mionion',hitFlash:0,seed:Math.random()*TAU,fireCd:99,noItem:true,hp,maxhp:hp,r,vx:-135,vy:0,score:180,color:'#efe1a6',amp:rnd(40,90),baseY:y}); }
-let ambCarrotCd=0, ambOnionCd=0, ambFryCd=0;
+function spawnStrayRunner(){ spawnCurryRunner(rnd(95,H-95), 0); } // ルーボス撃破後：インド人（カレーコック）が走ってくる（当たる）
+let ambCarrotCd=0, ambOnionCd=0, ambFryCd=0, ambIndianCd=0;
 function updateAmbient(dt){ if(curryLoop<1) return;                       // 2周目以降だけ
   if(bossActive||bossIntro>0||riceFx>0||curryFx>0) return;                 // ボス戦・演出中は出さない
   if(stage>=2){ ambCarrotCd-=dt; if(ambCarrotCd<=0){ ambCarrotCd=rnd(2.4,3.8)*(easyMode?1.6:1); spawnStrayCarrot(); } } // ニンジンボス撃破後
   if(stage>=3){ ambOnionCd-=dt; if(ambOnionCd<=0){ ambOnionCd=rnd(3.6,5.4)*(easyMode?1.5:1); spawnMiniOnion(); } }   // 玉ねぎボス撃破後
-  if(stage>=4){ ambFryCd-=dt; if(ambFryCd<=0){ ambFryCd=rnd(3.6,5.0)*(easyMode?1.5:1); spawnStrayFry(); } } }        // じゃがいもボス撃破後（まん中で12本にはじける）
+  if(stage>=4){ ambFryCd-=dt; if(ambFryCd<=0){ ambFryCd=rnd(3.6,5.0)*(easyMode?1.5:1); spawnStrayFry(); } }          // じゃがいもボス撃破後（まん中で12本にはじける）
+  if(stage>=5){ ambIndianCd-=dt; if(ambIndianCd<=0){ ambIndianCd=rnd(3.4,4.8)*(easyMode?1.5:1); spawnStrayRunner(); } } } // ルーボス撃破後：インド人が走ってくる
 
 // ================= POWERUPS (capsule) =================
 function spawnPowerup(x,y){ powerups.push({x,y,vx:-95,vy:0,r:26,seed:Math.random()*TAU}); } // 肉球マークを大きく
@@ -1159,8 +1161,10 @@ function updateBoss(e,dt){ e.angle+=dt*1.4; e.hitFlash=Math.max(0,e.hitFlash-dt*
       if(Math.random()<0.5) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),Math.random()<0.5?'#c79a5a':'#e8d4a8',1,rnd(60,180),0.4);
       if(e.cooking<=0){ e.cooked=true; riceFx=RTOT; // ふるえ終わり→大きな殻が飛び散る＋ホワイトアウト＋白米が炊き上がる
         Audio2.sfx.big(); Audio2.sfx.up(); shake(28,0.9); flash('#fff',0.75);
-        const n=easyMode?12:20; for(let k=0;k<n;k++){ const ha=k/n*TAU+rnd(-0.22,0.22), sp=rnd(340,620); // 大きな殻
-          eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(16,24),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); }
+        const rings=easyMode?2:3, per=easyMode?8:11; // 大きな殻を3重（速さ違いの3層）で飛ばす
+        for(let ri=0;ri<rings;ri++){ const sp=340+ri*160, off=ri*(TAU/per/2); // 層ごとに速さと角度をずらして3重に広がる
+          for(let k=0;k<per;k++){ const ha=k/per*TAU+off+rnd(-0.1,0.1);
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(ha)*sp,vy:Math.sin(ha)*sp,r:rnd(15,23),color:'#b98a52',boss:true,kind:'husk',spin:rnd(0,1)<0.5?-1:1}); } }
         for(let k=0;k<56;k++) spawnParticles(e.x+rnd(-e.r,e.r),e.y+rnd(-e.r,e.r),k%2?'#fff':'#f2ead0',1,rnd(200,480),0.95); }
       return; } } // ふるえている間は動かない・撃たない
   if(riceFx>0.9) return; // 炊き上がりのホワイトアウト中は動かない・撃たない
@@ -1358,7 +1362,7 @@ function startStage(n){ stage=n; bossActive=false; bossPending=false; stageBanne
   stagePool=['fan','straight','wave','gold','gold']; if(n>=2) stagePool.push('gun','wave','gold'); if(n>=3) stagePool.push('turret','gun');
   stageRemaining=14+n*8;   // total enemies to release this stage
   stageTotal=stageRemaining; katsuoDone=false; // 1ステージ1体のカツオ
-  ambCarrotCd=rnd(1.6,2.6); ambOnionCd=rnd(2.2,3.4); ambFryCd=rnd(1.6,2.6); // ステージ開始直後は少し猶予
+  ambCarrotCd=rnd(1.6,2.6); ambOnionCd=rnd(2.2,3.4); ambFryCd=rnd(1.6,2.6); ambIndianCd=rnd(2.4,3.6); // ステージ開始直後は少し猶予
   spawnTimer=1.6; }        // grace period so a weak start isn't swarmed
 function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+stage);
   if(curryFx>0){ curryFx-=dt; if(curryFx<=0){ curryGot=0; curryLoop++; startStage(1); showToast((curryLoop+1)+'周目！てきが つよくなった','#ff8a3c'); } return; } // カレー完成→周回アップ→また1面から（敵が固くなる）

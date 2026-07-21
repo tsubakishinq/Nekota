@@ -327,17 +327,17 @@ let chargeBeam=0; // >0の間、太い青レーザーを前方へ放出（約1�
 function endCharge(){ if(!player.charging) return; const tier=chargeTier(player.chargeT); player.charging=false; player.chargeT=0;
   if(tier===3 && dpad.dx>0.35){ fireBeamBlast(); } // 青MAX＋前へスワイプして離す → 太い青ビーム
   else fireChargeHomers(tier); }
-function fireBeamBlast(){ chargeBeam=1.0; Audio2.sfx.laser(); Audio2.sfx.power(); flash('#3aa6ff',0.28); spawnParticles(player.x+player.r,player.y,'#8fd0ff',20,360,0.5); spawnText(player.x,player.y-30,'ブルーレーザー！','#3aa6ff',16); }
+function fireBeamBlast(){ chargeBeam=2.0; Audio2.sfx.laser(); Audio2.sfx.power(); flash('#3aa6ff',0.3); spawnParticles(player.x+player.r,player.y,'#8fd0ff',24,400,0.6); spawnText(player.x,player.y-34,'ブルーレーザー！','#3aa6ff',18); } // 約2秒・太め
 function updateChargeBeam(dt){ if(chargeBeam<=0) return; chargeBeam=Math.max(0,chargeBeam-dt);
-  const bx=player.x+player.r, by=player.y, halfT=player.r*0.95;
+  const bx=player.x+player.r, by=player.y, halfT=player.r*1.7;
   for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.knocked||e.x<bx-e.r) continue;
-    if(Math.abs(e.y-by)<halfT+e.r){ if(e.t==='boss') hitEnemy(e, e.maxhp*0.125*dt, e.x, e.y); else hitEnemy(e, 34*dt, e.x, e.y); } } // 帯の中の敵に連続ダメージ（ボスは1秒で約12.5%）
+    if(Math.abs(e.y-by)<halfT+e.r){ if(e.t==='boss') hitEnemy(e, e.maxhp*0.0625*dt, e.x, e.y); else hitEnemy(e, 34*dt, e.x, e.y); } } // 帯の中の敵に連続ダメージ（ボスは2秒当てて約12.5%＝ボムの半分）
   // 帯の中のザコ弾を消す＋働きバチも削る
   if(beeSwarm.length){ for(let i=beeSwarm.length-1;i>=0;i--){ const b=beeSwarm[i]; if(b.x>=bx-24 && Math.abs(b.y-by)<halfT){ b.hp-=34*dt; b.hitFlash=1; if(b.hp<=0){ spawnParticles(b.x,b.y,'#ffe07a',10,200,0.5); addScore(80); beeSwarm.splice(i,1); } } } }
   if(Math.random()<0.9) spawnParticles(bx+rnd(0,W-bx),by+rnd(-halfT,halfT),Math.random()<0.5?'#8fd0ff':'#fff',1,200,0.3); }
 function drawChargeBeam(){ if(chargeBeam<=0) return; const bx=player.x+player.r, by=player.y;
-  const env=Math.min(1,(1.0-chargeBeam)*8)*Math.min(1,chargeBeam*8); // 出はじめ／終わりだけ細く
-  const halfT=player.r*0.95*(0.55+0.45*env)*(0.92+0.08*Math.sin(performance.now()*0.05));
+  const env=Math.min(1,(2.0-chargeBeam)*8)*Math.min(1,chargeBeam*8); // 出はじめ／終わりだけ細く（0〜2秒）
+  const halfT=Math.max(2, player.r*1.75*(0.6+0.4*env)*(0.93+0.07*Math.sin(performance.now()*0.05)));
   ctx.save(); ctx.globalCompositeOperation='lighter';
   ctx.fillStyle='rgba(58,120,255,.35)'; ctx.fillRect(bx,by-halfT,W-bx,halfT*2); // 外側グロー
   ctx.fillStyle='rgba(90,180,255,.6)'; ctx.fillRect(bx,by-halfT*0.6,W-bx,halfT*1.2);
@@ -364,8 +364,9 @@ const TOPHINTS=[
  '🛸 ドローンボタン：ドローンで えんきょり攻撃！',
  '💣 ボム：🍙ボタン長押しで ミサイル総攻撃！',
 ];
-const CHARGE_HINT='👆 レーザーMAX：十字キーをダブルタップで溜めて発射！'; const HINT_EACH=3.2;
-function topHintList(){ return player.laserMode===4 ? TOPHINTS.concat([CHARGE_HINT]) : TOPHINTS; } // MAX時はチャージ説明も加える
+const CHARGE_HINT='👆 レーザーMAX：十字キーをダブルタップで溜めて発射！';
+const BEAM_HINT='🔵 溜めMAXで前にスワイプして離す→太い青レーザー放出！'; const HINT_EACH=3.2;
+function topHintList(){ return player.laserMode===4 ? TOPHINTS.concat([CHARGE_HINT, BEAM_HINT]) : TOPHINTS; } // MAX時はチャージ／ビームの説明も加える
 function fire(){
   const dl=player.doubleLv; // 0 single, 1 double(+up), 2 triple(+up+down)
   if(player.laserMode===4){ player.fireCd=0.11; // 最強：通常は前方2発（高速）だけ。ダブル以上を持っていると斜め上下も加わる

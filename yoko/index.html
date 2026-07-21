@@ -273,7 +273,7 @@ const player={ x:170, y:H/2, r:15, alive:true, invuln:0, thrust:0,
   slowT:0, // 玉ねぎ汁を浴びると一定時間スピードダウン
   missileLvl:0, missileBurst:false, shield:0, redInvuln:0, dead:false }; // missileLvl 0-3, laserMode 0-4
 function resetPlayer(){ player.x=170; player.y=H/2; player.alive=true; player.invuln=1.2; player.fireCd=0; player.diagCd=0; player.slowT=0; player.bank=0; player._py=undefined;
-  player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; player.charging=false; player.chargeT=0; }
+  player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.redInvuln=0; player.charging=false; player.chargeT=0; chargeBeam=0; }
 function playerSpeed(){ let s=BASE_SPEED*(1+player.speedLvl*0.33); if(player.slowT>0) s*=0.4; return s; } // 3段階で最大約2倍（汁で0.4倍）
 
 // power-up bar (Gradius)
@@ -306,6 +306,7 @@ function updatePlayer(dt){
   if(player.charging){ player.chargeT=(player.chargeT||0)+dt; // 溜め中は自動ショット停止
     if(Math.random()<0.6){ const col=CHARGE_COL[chargeTier(player.chargeT)]; spawnParticles(player.x+player.r*0.6,player.y+rnd(-8,8),col,1,90,0.3); } } // 溜めの火花
   else { player.fireCd-=dt; if(player.fireCd<=0){ fire(); } }
+  updateChargeBeam(dt); // 太い青ビーム放出中
   updateOptions(dt);
   // thruster
   if(Math.random()<0.9) spawnParticles(player.x-player.r, player.y+rnd(-3,3), Math.random()<.5?'#57f6ff':'#8be9ff',1,60,0.25);
@@ -322,7 +323,28 @@ const CHARGE_COL=['','#ffffff','#ff4d5e','#3aa6ff'], CHARGE_RGB=['','255,255,255
 function chargeReady(){ return player.alive && player.laserMode===4; }
 function chargeTier(t){ return t>=3?3 : t>=1.5?2 : 1; } // 1=白(〜1.5秒) 2=赤(1.5〜3秒) 3=青(3秒〜)
 function startCharge(){ if(!chargeReady()||player.charging) return; player.charging=true; player.chargeT=0; Audio2.sfx.power(); }
-function endCharge(){ if(!player.charging) return; const tier=chargeTier(player.chargeT); player.charging=false; player.chargeT=0; fireChargeHomers(tier); }
+let chargeBeam=0; // >0の間、太い青レーザーを前方へ放出（約1秒）
+function endCharge(){ if(!player.charging) return; const tier=chargeTier(player.chargeT); player.charging=false; player.chargeT=0;
+  if(tier===3 && dpad.dx>0.35){ fireBeamBlast(); } // 青MAX＋前へスワイプして離す → 太い青ビーム
+  else fireChargeHomers(tier); }
+function fireBeamBlast(){ chargeBeam=1.0; Audio2.sfx.laser(); Audio2.sfx.power(); flash('#3aa6ff',0.28); spawnParticles(player.x+player.r,player.y,'#8fd0ff',20,360,0.5); spawnText(player.x,player.y-30,'ブルーレーザー！','#3aa6ff',16); }
+function updateChargeBeam(dt){ if(chargeBeam<=0) return; chargeBeam=Math.max(0,chargeBeam-dt);
+  const bx=player.x+player.r, by=player.y, halfT=player.r*0.95;
+  for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; if(e.knocked||e.x<bx-e.r) continue;
+    if(Math.abs(e.y-by)<halfT+e.r){ if(e.t==='boss') hitEnemy(e, e.maxhp*0.125*dt, e.x, e.y); else hitEnemy(e, 34*dt, e.x, e.y); } } // 帯の中の敵に連続ダメージ（ボスは1秒で約12.5%）
+  // 帯の中のザコ弾を消す＋働きバチも削る
+  if(beeSwarm.length){ for(let i=beeSwarm.length-1;i>=0;i--){ const b=beeSwarm[i]; if(b.x>=bx-24 && Math.abs(b.y-by)<halfT){ b.hp-=34*dt; b.hitFlash=1; if(b.hp<=0){ spawnParticles(b.x,b.y,'#ffe07a',10,200,0.5); addScore(80); beeSwarm.splice(i,1); } } } }
+  if(Math.random()<0.9) spawnParticles(bx+rnd(0,W-bx),by+rnd(-halfT,halfT),Math.random()<0.5?'#8fd0ff':'#fff',1,200,0.3); }
+function drawChargeBeam(){ if(chargeBeam<=0) return; const bx=player.x+player.r, by=player.y;
+  const env=Math.min(1,(1.0-chargeBeam)*8)*Math.min(1,chargeBeam*8); // 出はじめ／終わりだけ細く
+  const halfT=player.r*0.95*(0.55+0.45*env)*(0.92+0.08*Math.sin(performance.now()*0.05));
+  ctx.save(); ctx.globalCompositeOperation='lighter';
+  ctx.fillStyle='rgba(58,120,255,.35)'; ctx.fillRect(bx,by-halfT,W-bx,halfT*2); // 外側グロー
+  ctx.fillStyle='rgba(90,180,255,.6)'; ctx.fillRect(bx,by-halfT*0.6,W-bx,halfT*1.2);
+  ctx.fillStyle='rgba(190,230,255,.85)'; ctx.fillRect(bx,by-halfT*0.28,W-bx,halfT*0.56);
+  ctx.fillStyle='rgba(255,255,255,.95)'; ctx.fillRect(bx,by-halfT*0.12,W-bx,halfT*0.24); // 白い芯
+  ctx.shadowColor='#8fd0ff'; ctx.shadowBlur=24; ctx.fillStyle='rgba(200,235,255,.9)'; ctx.beginPath(); ctx.arc(bx,by,halfT*1.25,0,TAU); ctx.fill(); // 銃口フラッシュ
+  ctx.restore(); }
 function fireChargeHomers(tier){ const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
   const n=[0,1,3,5][tier], dmul=[0,1.6,2.5,3.8][tier], col=CHARGE_COL[tier], rgb=CHARGE_RGB[tier];
   const cand=enemies.filter(e=>e.x>fx-60).sort((a,b)=>dist2(fx,fy,a.x,a.y)-dist2(fx,fy,b.x,b.y));
@@ -677,7 +699,7 @@ function revive(){ if(state!=='play') return; player.x=carrier?carrier.x:170; pl
   player.invuln=1; player.redInvuln=0; player.slowT=0; player.bank=0; player._py=undefined; // 1秒間 点滅無敵で復活
   // 初期状態で復活：パワーアップを全部リセット
   player.laserMode=0; player.laserBoost=0; player.doubleLv=0; player.speedLvl=0; player.missileLvl=0; player.missileBurst=false; player.shield=0; player.beamHist=null;
-  options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); player.charging=false; player.chargeT=0; refreshPowHint();
+  options.length=0; kittenMode=false; nekoBtn.classList.remove('on'); player.charging=false; player.chargeT=0; chargeBeam=0; refreshPowHint();
   spawnParticles(player.x,player.y,'#fff',24,260,0.6); spawnParticles(player.x,player.y,'#57f6ff',18,200,0.6); Audio2.sfx.power(); showToast('のこり '+lives+'機','#57f6ff');
 }
 function drawCarrier(){ if(!carrier) return; ctx.save(); ctx.translate(carrier.x,carrier.y+Math.sin(carrier.t*8)*1.5);
@@ -873,7 +895,7 @@ function maybeStartDemo(){ if(demoBusy()) return;
 function demoDummy(y){ enemies.push({t:'straight',x:rnd(W*0.66,W*0.82),y,hp:6,maxhp:6,r:16,vx:0,vy:0,color:'#ff8a5e',score:0,noItem:true,seed:0,hitFlash:0,fireCd:999,demo:true}); }
 function startDemo(type){ demo={type,t:0,fired:false,spawned:false};
   enemies.length=0; eBullets.length=0; bullets.length=0; missiles.length=0; bombMissiles.length=0; // 敵と弾を一旦かたづける
-  player.invuln=0; player.charging=false; player.chargeT=0;
+  player.invuln=0; player.charging=false; player.chargeT=0; chargeBeam=0;
   if(type==='laser'){ kittenMode=false; nekoBtn.classList.remove('on'); }
   player.tx=undefined; player.ty=undefined; dragActive=false;
   Audio2.sfx.up(); flash('#57f6ff',0.3); shake(6,0.3); showToast('★ れんしゅうタイム ★','#57f6ff'); }
@@ -892,7 +914,7 @@ function updateDemo(dt){ const d=demo; d.t+=dt; const t=d.t;
   }
   if(t>=6.4) endDemo(); }
 function endDemo(){ demo=null; enemies.length=0; kittenMode=false; nekoBtn.classList.remove('on');
-  player.invuln=1.6; player.charging=false; player.chargeT=0; Audio2.sfx.up(); flash('#5effa0',0.25); showToast('スタート！','#5effa0'); }
+  player.invuln=1.6; player.charging=false; player.chargeT=0; chargeBeam=0; Audio2.sfx.up(); flash('#5effa0',0.25); showToast('スタート！','#5effa0'); }
 function drawDemo(){ const d=demo, t=d.t; ctx.save(); ctx.fillStyle='rgba(3,6,18,0.34)'; ctx.fillRect(0,0,W,H);
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font='900 30px "Trebuchet MS"'; ctx.fillStyle='#57f6ff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=12; ctx.fillText('★ れんしゅうタイム DEMO ★', W/2, H*0.14); ctx.shadowBlur=0;
@@ -1164,6 +1186,7 @@ function drawPlayer(){ if(!player.alive) return; const blink=player.invuln>0&&Ma
         ctx.lineWidth=2.5; ctx.strokeStyle='rgba(210,255,255,.95)'; const a=t*(n%2?-1:1)+n; ctx.beginPath(); ctx.arc(0,0,R,a,a+0.7); ctx.stroke(); }
       ctx.restore(); ctx.shadowBlur=0; }
   }
+  drawChargeBeam(); // 太い青ビーム（機体の後ろに描いて機体は上に）
   ctx.globalAlpha=blink?0.4:1; drawCatShip(player.x,player.y,player.r*1.5, player.bank||0); ctx.globalAlpha=1; // 当たり判定は小さめのまま見た目を大きく
   if(player.charging){ const tier=chargeTier(player.chargeT||0), col=CHARGE_COL[tier], on=Math.floor(performance.now()*0.016)%2===0; // 溜め中は機体が白→赤→青に点滅
     ctx.save(); ctx.translate(player.x,player.y); ctx.globalCompositeOperation='lighter'; ctx.shadowColor=col; ctx.shadowBlur=26;

@@ -327,7 +327,7 @@ function fireChargeHomers(tier){ const fx=player.x+player.r+CHARGE_OFF, fy=playe
   const n=[0,1,3,5][tier], dmul=[0,1.6,2.5,3.8][tier], col=CHARGE_COL[tier], rgb=CHARGE_RGB[tier];
   const cand=enemies.filter(e=>e.x>fx-60).sort((a,b)=>dist2(fx,fy,a.x,a.y)-dist2(fx,fy,b.x,b.y));
   for(let i=0;i<n;i++){ const ang=(i-(n-1)/2)*0.22, dx=Math.cos(ang), dy=Math.sin(ang), sp=1200; const tg=cand.length?cand[i%cand.length]:null;
-    bullets.push({x:fx,y:fy,vx:dx*sp,vy:dy*sp,r:3,dmg:LBASE*laserMul()*dmul,color:col,crgb:rgb,kind:'laser',pierce:true,len:tier*16+48,thickV:1.5,hitThick:tier+5,dx,dy,ang,home:true,cathome:true,charge:true,spd:sp,life:2.8,launch:0.08,target:tg}); } // 糸のように細いホーミングレーザー
+    bullets.push({x:fx,y:fy,vx:dx*sp,vy:dy*sp,r:3,dmg:LBASE*laserMul()*dmul,color:col,crgb:rgb,kind:'laser',pierce:false,ctier:tier,len:tier*16+48,thickV:1.5,hitThick:tier+5,dx,dy,ang,home:true,cathome:true,charge:true,spd:sp,life:2.8,launch:0.08,target:tg}); } // 糸のように細いホーミングレーザー（ボスにはHP割合ダメージ）
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,col,16,320,0.55); shake(tier*2+2,0.16); flash(col,0.16);
   spawnText(player.x,player.y-28, tier===3?'チャージMAX！':tier===2?'チャージ！':'チャージ', col, 14); }
 // ===== レーザーMAX到達時：画面の上に操作ヒントを順番に表示 =====
@@ -922,12 +922,14 @@ function updateBullets(dt){
     else if(b.home){ if(b.x<-40||b.x>W+40||b.y<-40||b.y>H+40){ bullets.splice(i,1); continue; } } // ホーミングは画面外で消す
     else if(b.x>W+30||b.x<-30||b.y<-30||b.y>H+30){ bullets.splice(i,1); continue; }
     if(boss&&boss.kind==='bee' && beeHit(b.x,b.y,b.dmg||1)){ bullets.splice(i,1); continue; } // 働き蜂が弾をガード／攻撃蜂に命中
+    if(beeSwarm.length && swarmBeeHit(b.x,b.y,b.dmg||1)){ if(!b.pierce){ bullets.splice(i,1); continue; } } // 道中の働き蜂は倒せる
     let hit=false;
     for(let j=enemies.length-1;j>=0;j--){ const e=enemies[j]; let overlap;
       if(b.kind==='laser'){ const rr=e.r+b.hitThick; overlap = segDist2(e.x,e.y, b.x-b.len*b.dx,b.y-b.len*b.dy, b.x+b.len*b.dx,b.y+b.len*b.dy) < rr*rr; }
       else if(b.kind==='ring'){ const rx=b.r*b.hRatio, ry=b.r*b.vRatio; const nx=(e.x-b.x)/rx, ny=(e.y-b.y)/ry; const nr=Math.sqrt(nx*nx+ny*ny); const band=(e.r+5)/((rx+ry)*0.5); overlap = Math.abs(nr-1)<band; }
       else { const rr=b.r+e.r; overlap = dist2(b.x,b.y,e.x,e.y)<rr*rr; }
-      if(overlap){ hitEnemy(e,b.dmg,b.x,b.y); if(!b.pierce){ bullets.splice(i,1); hit=true; break; } } }
+      if(overlap){ let dmg=b.dmg; if(b.charge && e.t==='boss') dmg=e.maxhp*([0,0.03,0.0233,0.025][b.ctier]||0.02); // MAX(青)は5本で約12.5%＝ボムの半分
+        hitEnemy(e,dmg,b.x,b.y); if(!b.pierce){ bullets.splice(i,1); hit=true; break; } } }
     if(hit) continue;
   }
   // homing missiles: 発射直後は上下に散り(launch)、その後それぞれホーミング
@@ -1516,10 +1518,13 @@ function drawBeeBoss(e){ const r=e.r; const Hs=r*3.1, Wd=Hs*(queenImg.naturalWid
   for(const bee of e.bees){ if(bee.alive) drawWorkerBee(bee.x-e.x, bee.y-e.y, r*0.34, bee.guard, bee.hitFlash>0); } }
 // 撃破後の働きバチ乱入（ボスがいなくても飛んでくる）
 let beeAmbient=false, beeSwarm=[], beeAmbCd=0;
-function spawnAmbientBee(){ beeSwarm.push({x:W+30,y:rnd(80,H-80),t:rnd(0,TAU),fcd:rnd(0.5,1.2),life:6.5}); }
-function updateBeeSwarm(dt){ for(let i=beeSwarm.length-1;i>=0;i--){ const b=beeSwarm[i]; b.t+=dt; b.life-=dt; b.x-=140*dt; b.y+=Math.sin(b.t*4)*70*dt; b.y=clamp(b.y,40,H-40);
+function spawnAmbientBee(){ const hp=easyMode?3:5; beeSwarm.push({x:W+30,y:rnd(80,H-80),t:rnd(0,TAU),fcd:rnd(0.5,1.2),life:6.5,hp,maxhp:hp,hitFlash:0}); }
+function updateBeeSwarm(dt){ for(let i=beeSwarm.length-1;i>=0;i--){ const b=beeSwarm[i]; b.t+=dt; b.life-=dt; b.hitFlash=Math.max(0,(b.hitFlash||0)-dt*6); b.x-=140*dt; b.y+=Math.sin(b.t*4)*70*dt; b.y=clamp(b.y,40,H-40);
   b.fcd-=dt; if(b.fcd<=0){ b.fcd=rnd(1.3,2.1); beeShot(b); } if(b.x<-40||b.life<=0) beeSwarm.splice(i,1); } }
-function drawBeeSwarm(){ for(const b of beeSwarm){ ctx.save(); ctx.translate(b.x,b.y); drawWorkerBee(0,0,19,false,false); ctx.restore(); } }
+function swarmBeeHit(bx,by,dmg){ for(let i=beeSwarm.length-1;i>=0;i--){ const b=beeSwarm[i]; if(dist2(bx,by,b.x,b.y)<24*24){ // 少し硬めだが倒せる
+    b.hp-=dmg; b.hitFlash=1; spawnParticles(b.x,b.y,'#ffcf3a',3,120,0.3); Audio2.sfx.hit();
+    if(b.hp<=0){ spawnParticles(b.x,b.y,'#ffe07a',12,220,0.5); Audio2.sfx.explode(); addScore(80); beeSwarm.splice(i,1); } return true; } } return false; }
+function drawBeeSwarm(){ for(const b of beeSwarm){ ctx.save(); ctx.translate(b.x,b.y); drawWorkerBee(0,0,19,false,b.hitFlash>0); ctx.restore(); } }
 
 // ================= DIRECTOR =================
 let stage=1, spawnTimer=0, distance=0, stageBanner=0, stageRemaining=0, bossPending=false, bossCooldown=0, stagePool=[], stageTotal=0, katsuoDone=false;
@@ -1562,7 +1567,7 @@ function updateDirector(dt){ if(stageBanner>0) stageBanner-=dt; distance+=dt*(6+
 let score=0, high=parseInt(localStorage.getItem('nekota_yoko_high')||'0',10)||0;
 function addScore(n){ score+=n; }
 let shakeMag=0,shakeTime=0,flashColor=null,flashA=0;
-function shake(m,t){ shakeMag=Math.max(shakeMag,m); shakeTime=Math.max(shakeTime,t); }
+function shake(m,t){ /* 画面ゆれは無効化 */ }
 function flash(c,a){ flashColor=c; flashA=Math.max(flashA,a); }
 
 // ================= HUD =================

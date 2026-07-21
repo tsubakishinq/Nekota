@@ -898,14 +898,18 @@ function startDemo(type){ demo={type,t:0,fired:false,spawned:false};
   enemies.length=0; eBullets.length=0; bullets.length=0; missiles.length=0; bombMissiles.length=0; // 敵と弾を一旦かたづける
   player.invuln=0; player.charging=false; player.chargeT=0; chargeBeam=0;
   if(type==='laser'){ kittenMode=false; nekoBtn.classList.remove('on'); }
-  player.tx=undefined; player.ty=undefined; dragActive=false;
+  player.tx=undefined; player.ty=undefined; dragActive=false; dpad.dx=0; dpad.dy=0; // 十字キー入力なし＝①はホーミング
   Audio2.sfx.up(); flash('#57f6ff',0.3); shake(6,0.3); showToast('★ れんしゅうタイム ★','#57f6ff'); }
 function updateDemo(dt){ const d=demo; d.t+=dt; const t=d.t;
   player.x+=(W*0.26-player.x)*Math.min(1,dt*4); player.y+=(H*0.5-player.y)*Math.min(1,dt*4); player.thrust=0.6; player.invuln=0;
-  if(d.type==='laser'){ // レーザー溜めのデモ
+  if(d.type==='laser'){ // レーザーのデモ：①溜め→ホーミング ②溜め→前スワイプ→太い青ビーム
     if(t>=0.7 && !d.spawned){ d.spawned=true; demoDummy(H*0.36); demoDummy(H*0.64); }
-    if(t>=0.9 && t<5.2 && !d.fired){ player.charging=true; player.chargeT=(player.chargeT||0)+dt;
-      if(player.chargeT>=3.2){ d.fired=true; endCharge(); } } // 溜まったら青(MAX)で発射
+    if(t>=0.9 && !d.fired){ player.charging=true; player.chargeT=(player.chargeT||0)+dt;
+      if(player.chargeT>=3.2){ d.fired=true; endCharge(); } } // ①溜まったらホーミング（dpad.dx=0）
+    if(t>=4.9 && !d.spawned2){ d.spawned2=true; for(const yy of [0.4,0.5,0.6]) demoDummy(H*yy); }
+    if(t>=5.1 && d.fired && !d.fired2){ player.charging=true; player.chargeT=(player.chargeT||0)+dt;
+      if(player.chargeT>=3.2){ d.fired2=true; player.charging=false; player.chargeT=0; fireBeamBlast(); } } // ②MAXで前スワイプ→ビーム
+    if(chargeBeam>0 && enemies.length<2) demoDummy(clamp(H*0.5+rnd(-50,50),80,H-80)); // ビームの前に的を補充
   } else { // ドローンのデモ（今持っている1機だけで実演・増やさない）
     if(t>=0.7 && !d.spawned){ d.spawned=true;
       demoDummy(H*0.34); demoDummy(H*0.62);
@@ -913,15 +917,16 @@ function updateDemo(dt){ const d=demo; d.t+=dt; const t=d.t;
       options.forEach((o,i)=>{ const a=i/Math.max(1,options.length)*TAU; o.vx=Math.cos(a)*320; o.vy=Math.sin(a)*320; o.fcd=rnd(0,0.1); }); }
     if(d.spawned && t<5.6 && enemies.length===0){ demoDummy(rnd(H*0.3,H*0.7)); } // 的が無くなったら補充
   }
-  if(t>=6.4) endDemo(); }
+  if(t>=(d.type==='laser'?11.0:6.4)) endDemo(); }
 function endDemo(){ demo=null; enemies.length=0; kittenMode=false; nekoBtn.classList.remove('on');
   player.invuln=1.6; player.charging=false; player.chargeT=0; chargeBeam=0; Audio2.sfx.up(); flash('#5effa0',0.25); showToast('スタート！','#5effa0'); }
 function drawDemo(){ const d=demo, t=d.t; ctx.save(); ctx.fillStyle='rgba(3,6,18,0.34)'; ctx.fillRect(0,0,W,H);
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font='900 30px "Trebuchet MS"'; ctx.fillStyle='#57f6ff'; ctx.shadowColor='#57f6ff'; ctx.shadowBlur=12; ctx.fillText('★ れんしゅうタイム DEMO ★', W/2, H*0.14); ctx.shadowBlur=0;
+  const laser=d.type==='laser', endT=laser?11.0:6.4;
   let cap = t<0.8 ? 'てきが いなくなった！ れんしゅうしよう'
-    : t>=5.7 ? 'いくぞ！'
-    : d.type==='laser' ? '十字キーをダブルタップで レーザーを溜めて発射！'
+    : t>=endT-0.8 ? 'いくぞ！'
+    : laser ? (t<4.8 ? '① 十字キーをダブルタップで レーザーを溜めて発射！' : '② MAXまで溜めたら 前にスワイプ→太い青レーザー！')
     : 'ドローンボタンで ドローンが散開して攻撃！';
   ctx.font='900 38px "Trebuchet MS","Hiragino Kaku Gothic ProN",sans-serif'; const w=Math.min(W-24, ctx.measureText(cap).width+56), by=H*0.82;
   ctx.fillStyle='rgba(9,12,34,.88)'; ctx.strokeStyle='rgba(255,216,94,.9)'; ctx.lineWidth=3; roundRect(W/2-w/2,by-36,w,72,20); ctx.fill(); ctx.stroke();

@@ -423,7 +423,9 @@
     clearTimeout(showResult._t); showResult._t=setTimeout(()=>{p.textContent='';},1600);
   }
 
-  let highScore = parseInt(localStorage.getItem('nekota_shokudo_high')||'0',10)||0;
+  function loadHigh(){ try{ return parseInt(localStorage.getItem('nekota_shokudo_high')||'0',10)||0; }catch(e){ return 0; } }
+  function saveHigh(v){ try{ localStorage.setItem('nekota_shokudo_high', String(v)); }catch(e){} }
+  let highScore = loadHigh();
 
   // ----- loop -----
   let last=0, rafId=0;
@@ -449,7 +451,7 @@
   function gameOver(){
     running=false; overed=true; cur=null; draw();
     const isRec=score>highScore;
-    if(isRec){ highScore=score; localStorage.setItem('nekota_shokudo_high', String(highScore)); }
+    if(isRec){ highScore=score; saveHigh(highScore); }
     el('goScore').textContent=score; el('goMeals').textContent=meals; el('goHigh').textContent=highScore;
     el('newRec').classList.toggle('hidden', !isRec);
     updateHud(); show('overScreen');

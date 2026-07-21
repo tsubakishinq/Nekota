@@ -305,7 +305,8 @@ function updatePlayer(dt){
   if(player.charging && !chargeReady()) player.charging=false; // 最強でなくなったら溜め解除
   if(player.charging){ player.chargeT=(player.chargeT||0)+dt; // 溜め中は自動ショット停止
     if(Math.random()<0.6){ const col=CHARGE_COL[chargeTier(player.chargeT)]; spawnParticles(player.x+player.r*0.6,player.y+rnd(-8,8),col,1,90,0.3); } } // 溜めの火花
-  else { player.fireCd-=dt; if(player.fireCd<=0){ fire(); } }
+  else { const ctrl = dpad.active||dragActive||keys['arrowleft']||keys['arrowright']||keys['arrowup']||keys['arrowdown']||keys['w']||keys['a']||keys['s']||keys['d']; // 十字キー等を触っている時だけ攻撃
+    if(ctrl){ player.fireCd-=dt; if(player.fireCd<=0){ fire(); } } }
   updateChargeBeam(dt); // 太い青ビーム放出中
   updateOptions(dt);
   // thruster

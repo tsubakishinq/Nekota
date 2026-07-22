@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ネコタぷよ">
+<title>NEKOTA ぷよ — こども向けネオン連鎖ゲーム</title>
+<style>
+  :root{
+    --neon:#57f6ff; --neon2:#ff5ec9; --gold:#ffd85e; --bg0:#04030f; --bg1:#0b0a24;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:radial-gradient(circle at 50% -10%, #17123f 0%, var(--bg1) 40%, var(--bg0) 100%);
+    color:#eaf6ff; font-family:"Trebuchet MS","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+    overflow:hidden; display:flex; align-items:center; justify-content:center; touch-action:none;
+    user-select:none; -webkit-user-select:none;
+  }
+  #wrap{
+    position:relative; width:100vw; height:100vh; max-width:520px; max-height:920px;
+    margin:auto; display:flex; flex-direction:column;
+    box-shadow:0 0 60px rgba(87,246,255,.15), inset 0 0 120px rgba(0,0,0,.6);
+    overflow:hidden;
+  }
+
+  /* ===== HUD ===== */
+  #hud{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 14px 6px; flex:0 0 auto;}
+  .brand{font-weight:900; letter-spacing:2px; font-size:clamp(16px,5vw,22px); line-height:1;
+    background:linear-gradient(180deg,#fff,var(--neon) 55%,var(--neon2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 12px rgba(87,246,255,.5));}
+  .brand small{display:block; font-size:9px; letter-spacing:5px; color:var(--gold);
+    -webkit-text-fill-color:var(--gold); margin-top:3px;}
+  .hud-stats{display:flex; gap:14px; text-align:right;}
+  .hud-stats .s{display:flex; flex-direction:column; align-items:flex-end;}
+  .hud-stats .v{font-size:clamp(15px,5vw,20px); font-weight:900; color:#fff; line-height:1;}
+  .hud-stats .l{font-size:9px; letter-spacing:2px; color:#7f95c9; margin-top:3px;}
+
+  /* ===== Play area ===== */
+  #play{flex:1 1 auto; display:flex; gap:10px; padding:0 14px; min-height:0; align-items:stretch;}
+  #boardBox{position:relative; height:100%; display:flex; align-items:center; justify-content:center;}
+  #board{display:block; height:100%; width:auto;
+    background:rgba(4,6,18,.72); border-radius:14px;
+    border:2px solid rgba(255,94,201,.28);
+    box-shadow:0 0 26px rgba(255,94,201,.18), inset 0 0 40px rgba(0,0,0,.5);}
+  #side{flex:1 1 auto; display:flex; flex-direction:column; gap:12px; min-width:0; padding-top:2px;}
+  .panel{background:rgba(9,12,34,.6); border:1px solid rgba(87,246,255,.2); border-radius:14px;
+    padding:10px; display:flex; flex-direction:column; align-items:center; gap:6px;}
+  .panel .cap{font-size:10px; letter-spacing:3px; color:var(--gold); font-weight:800;}
+  #next{display:block; width:100%; max-width:70px; height:auto; aspect-ratio:1/2;}
+  .miniStat{width:100%;}
+  .miniStat .cap{margin-bottom:2px;}
+  .miniStat .val{font-size:clamp(18px,6vw,26px); font-weight:900; color:#fff; line-height:1;
+    filter:drop-shadow(0 0 8px rgba(87,246,255,.4));}
+  .praise{font-size:13px; color:var(--neon2); font-weight:900; text-align:center; min-height:16px;
+    filter:drop-shadow(0 0 8px rgba(255,94,201,.5));}
+
+  /* ===== Controls ===== */
+  #controls{flex:0 0 auto; padding:8px 12px 14px;}
+  .ctrl-row{display:flex; gap:10px; justify-content:center; margin-top:9px;}
+  .cbtn{flex:1; min-width:0; font:inherit; font-weight:900; color:#eaf6ff;
+    background:linear-gradient(180deg,rgba(30,38,86,.95),rgba(14,18,46,.95));
+    border:2px solid rgba(87,246,255,.35); border-radius:16px; padding:14px 4px;
+    font-size:clamp(20px,7vw,26px); cursor:pointer;
+    box-shadow:0 4px 0 rgba(0,0,0,.45), 0 0 14px rgba(87,246,255,.12);
+    transition:transform .06s, box-shadow .12s, background .12s;
+    display:flex; flex-direction:column; align-items:center; gap:2px; line-height:1;}
+  .cbtn .lab{font-size:9px; letter-spacing:1px; color:#9fb4de; font-weight:700;}
+  .cbtn:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.45), 0 0 14px rgba(87,246,255,.12);}
+  .cbtn.rot{border-color:rgba(255,94,201,.5); background:linear-gradient(180deg,rgba(70,26,58,.95),rgba(38,14,32,.95));}
+  .cbtn.hard{border-color:rgba(255,216,94,.55); background:linear-gradient(180deg,rgba(70,58,22,.95),rgba(40,32,10,.95));}
+
+  /* ===== Overlays ===== */
+  .overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; text-align:center; gap:18px; padding:26px; z-index:20;
+    background:radial-gradient(circle at 50% 30%, rgba(11,10,36,.5), rgba(4,3,15,.9));
+    backdrop-filter:blur(3px);}
+  .overlay.hidden{display:none;}
+  .logo{font-size:clamp(40px,13vw,72px); font-weight:900; letter-spacing:3px; line-height:.95;
+    background:linear-gradient(180deg,#fff,var(--neon) 55%,var(--neon2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 18px rgba(87,246,255,.55));}
+  .logo small{display:block; font-size:clamp(11px,3.4vw,16px); letter-spacing:8px; margin-top:8px;
+    color:var(--gold); -webkit-text-fill-color:var(--gold); filter:drop-shadow(0 0 6px rgba(255,216,94,.6));}
+  .emblem{font-size:clamp(60px,20vw,110px); filter:drop-shadow(0 0 22px rgba(255,94,201,.7));
+    animation:bob 2.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-12px) rotate(3deg)}}
+  .btn{font:inherit; font-weight:800; letter-spacing:2px; font-size:clamp(16px,5vw,22px);
+    color:#04030f; background:linear-gradient(180deg,#aefcff,var(--neon)); border:none; cursor:pointer;
+    padding:16px 46px; border-radius:40px; box-shadow:0 0 22px rgba(87,246,255,.6), 0 6px 0 #1d7f88;
+    transition:transform .08s, box-shadow .2s;}
+  .btn:active{transform:translateY(4px); box-shadow:0 0 22px rgba(87,246,255,.6), 0 2px 0 #1d7f88;}
+  .btn.pink{background:linear-gradient(180deg,#ffb8e6,var(--neon2)); box-shadow:0 0 22px rgba(255,94,201,.6),0 6px 0 #8f2f6c;}
+  .panel-info{max-width:360px; background:rgba(9,12,34,.6); border:1px solid rgba(87,246,255,.22);
+    border-radius:16px; padding:16px 20px; font-size:clamp(12px,3.6vw,15px); line-height:1.85; color:#bcd6ff;}
+  .panel-info b{color:var(--neon);}
+  .panel-info .em{display:inline-block; width:1.4em; text-align:center;}
+  .go-title{font-size:clamp(32px,10vw,56px); font-weight:900; letter-spacing:4px;
+    color:var(--neon2); filter:drop-shadow(0 0 16px rgba(255,94,201,.6));}
+  .stat-row{display:flex; gap:30px; justify-content:center; flex-wrap:wrap;}
+  .stat{display:flex; flex-direction:column; align-items:center;}
+  .stat .v{font-size:clamp(24px,8vw,38px); font-weight:900; color:#fff;}
+  .stat .l{font-size:11px; letter-spacing:3px; color:#7f95c9; margin-top:2px;}
+  .newrec{color:var(--gold); font-weight:900; letter-spacing:2px; animation:pulse 1s infinite; font-size:clamp(16px,5vw,24px);}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.08)}}
+  .hs{color:var(--gold); font-weight:800;}
+  .hint{font-size:11px; letter-spacing:1px; color:#5f74a8;}
+  #pauseBtn{position:absolute; top:10px; right:12px; z-index:5; width:38px; height:38px; border-radius:50%;
+    border:2px solid rgba(87,246,255,.4); background:rgba(9,12,34,.7); color:var(--neon);
+    font-size:16px; font-weight:900; cursor:pointer;}
+  #chainPop{position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); z-index:6;
+    font-size:clamp(30px,11vw,58px); font-weight:900; color:var(--gold); pointer-events:none;
+    filter:drop-shadow(0 0 16px rgba(255,216,94,.8)); opacity:0;}
+</style>
+</head>
+<body>
+<div id="wrap">
+
+  <div id="hud">
+    <div class="brand">NEKOTA<small>P U Y O</small></div>
+    <div class="hud-stats">
+      <div class="s"><div class="v" id="hudScore">0</div><div class="l">スコア</div></div>
+      <div class="s"><div class="v" id="hudLevel">1</div><div class="l">レベル</div></div>
+      <div class="s"><div class="v" id="hudChain">0</div><div class="l">さいだいれんさ</div></div>
+    </div>
+  </div>
+
+  <div id="play">
+    <div id="boardBox"><canvas id="board" width="180" height="360"></canvas></div>
+    <div id="side">
+      <div class="panel">
+        <div class="cap">つぎ</div>
+        <canvas id="next" width="60" height="120"></canvas>
+      </div>
+      <div class="panel miniStat">
+        <div class="cap">ハイスコア</div>
+        <div class="val" id="hudHigh">0</div>
+      </div>
+      <div class="praise" id="praise"></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div class="ctrl-row">
+      <button class="cbtn" id="btnLeft">◀<span class="lab">ひだり</span></button>
+      <button class="cbtn rot" id="btnRotate">↻<span class="lab">まわす</span></button>
+      <button class="cbtn" id="btnRight">▶<span class="lab">みぎ</span></button>
+    </div>
+    <div class="ctrl-row">
+      <button class="cbtn" id="btnDown">▼<span class="lab">ゆっくり</span></button>
+      <button class="cbtn hard" id="btnDrop">⤓<span class="lab">いっき</span></button>
+    </div>
+  </div>
+
+  <button id="pauseBtn" title="ポーズ">॥</button>
+  <div id="chainPop"></div>
+
+  <!-- Title -->
+  <div class="overlay" id="titleScreen">
+    <div class="emblem">🐱</div>
+    <div class="logo">ぷよ<small>N E K O T A</small></div>
+    <div class="panel-info">
+      おなじいろのぷよを<br>
+      <b>4つ</b>くっつけるとポン！とけえる✨<br>
+      うまくつなげて<b>れんさ</b>をねらおう🌈
+    </div>
+    <button class="btn pink" id="startBtn">あそぶ ▶</button>
+    <div class="hint">スマホをたてにしてね</div>
+  </div>
+
+  <!-- How to play -->
+  <div class="overlay hidden" id="helpScreen">
+    <div class="logo" style="font-size:clamp(28px,9vw,46px)">あそびかた</div>
+    <div class="panel-info" style="text-align:left">
+      <span class="em">◀▶</span> よこにうごかす<br>
+      <span class="em">↻</span> ぷよをまわす<br>
+      <span class="em">▼</span> ゆっくりおろす<br>
+      <span class="em">⤓</span> いっきにおとす<br>
+      <br>
+      おなじいろが<b>4つ</b>いじょうつながると<br>
+      ポン！ときえるよ。<br>
+      きえたうえのぷよがおちて<b>れんさ</b>すると<br>
+      スコアがぐーんとアップ！🌟
+    </div>
+    <button class="btn pink" id="helpBackBtn">わかった！</button>
+  </div>
+
+  <!-- Pause -->
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="logo" style="font-size:clamp(34px,10vw,52px)">ちょっと<br>やすみ</div>
+    <button class="btn" id="resumeBtn">つづける ▶</button>
+    <button class="btn pink" id="restartBtn">さいしょから</button>
+  </div>
+
+  <!-- Game over -->
+  <div class="overlay hidden" id="overScreen">
+    <div class="go-title">おしまい！</div>
+    <div class="newrec hidden" id="newRec">🎉 ハイスコアこうしん！ 🎉</div>
+    <div class="stat-row">
+      <div class="stat"><div class="v" id="goScore">0</div><div class="l">スコア</div></div>
+      <div class="stat"><div class="v" id="goChain">0</div><div class="l">さいだいれんさ</div></div>
+    </div>
+    <div class="hint">ハイスコア <span class="hs" id="goHigh">0</span></div>
+    <button class="btn pink" id="retryBtn">もういちど ▶</button>
+  </div>
+
+</div>
+
+<script>
+//  NEKOTA PUYO  —  kids-friendly neon chain puzzle
+(function(){
+  "use strict";
+
+  const COLS = 6, ROWS = 12;
+  const CELL = 30;                       // canvas 180x360
+  const boardCv = document.getElementById('board');
+  const bctx = boardCv.getContext('2d');
+  const nextCv = document.getElementById('next');
+  const nctx = nextCv.getContext('2d');
+
+  // 4 cute colours for kids
+  const COLORS = ['#ff6b8a','#7dff9e','#6f9bff','#ffd85e'];
+  const rand = n => (Math.random()*n)|0;
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+
+  // ----- state -----
+  let grid, cur, nextPair, score, maxChain, level, gravityMs, dropAcc,
+      running, paused, overed, busy;
+
+  function makeGrid(){ const g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(COLS).fill(null)); return g; }
+  function newPair(){ return [COLORS[rand(4)], COLORS[rand(4)]]; }  // [axis, child]
+
+  // child offset for each rotation: 0=up,1=right,2=down,3=left
+  const OFF = [[0,-1],[1,0],[0,1],[-1,0]];
+  function childXY(c){ const o=OFF[c.rot]; return [c.x+o[0], c.y+o[1]]; }
+
+  function blocked(x,y){
+    if(x<0||x>=COLS||y>=ROWS) return true;
+    if(y>=0 && grid[y][x]) return true;
+    return false;
+  }
+  function pairFits(x,y,rot){
+    const o=OFF[rot];
+    return !blocked(x,y) && !blocked(x+o[0], y+o[1]);
+  }
+
+  function spawn(){
+    const colors = nextPair || newPair();
+    nextPair = newPair();
+    cur = { x:2, y:0, rot:0, colors };   // axis at (2,0), child above (2,-1)
+    drawNext();
+    if(!pairFits(cur.x, cur.y, cur.rot)){ gameOver(); return; }
+    draw();
+  }
+
+  // ----- movement -----
+  function move(dx){
+    if(!canAct()) return;
+    if(pairFits(cur.x+dx, cur.y, cur.rot)){ cur.x+=dx; draw(); }
+  }
+  function rotate(){
+    if(!canAct()) return;
+    const nr = (cur.rot+1)&3;
+    if(pairFits(cur.x, cur.y, nr)){ cur.rot=nr; draw(); return; }
+    // wall kick sideways
+    for(const k of [-1,1,-2,2]){
+      if(pairFits(cur.x+k, cur.y, nr)){ cur.x+=k; cur.rot=nr; draw(); return; }
+    }
+    // kick up (rotating against floor)
+    if(pairFits(cur.x, cur.y-1, nr)){ cur.y-=1; cur.rot=nr; draw(); return; }
+  }
+  function softDrop(){
+    if(!canAct()) return;
+    if(pairFits(cur.x, cur.y+1, cur.rot)){ cur.y++; score+=1; updateHud(); draw(); }
+    else lockPair();
+    dropAcc=0;
+  }
+  function hardDrop(){
+    if(!canAct()) return;
+    let d=0; while(pairFits(cur.x, cur.y+1, cur.rot)){ cur.y++; d++; }
+    score += d; updateHud();
+    lockPair();
+  }
+  function canAct(){ return running && !paused && !overed && !busy; }
+
+  // ----- lock & resolve chains -----
+  function placePair(){
+    const [ax,ay]=[cur.x,cur.y];
+    const [cx,cy]=childXY(cur);
+    if(ay<0 || cy<0){ /* part above top */ }
+    if(ay>=0) grid[ay][ax]=cur.colors[0];
+    if(cy>=0) grid[cy][cx]=cur.colors[1];
+    // if any part couldn't be placed (still above top) -> over
+    return (ay>=0 || cy>=0) && !(ay<0 && cy<0);
+  }
+
+  async function lockPair(){
+    busy = true;
+    const [cx,cy]=childXY(cur);
+    // overflow check: if either cell lands above the board top row while blocked below
+    placePair();
+    cur = null;
+    await resolveChains();
+    if(!overed) spawn();
+    busy = false;
+    dropAcc = 0;
+    last = performance.now();
+  }
+
+  function applyGravity(){
+    let moved=false;
+    for(let x=0;x<COLS;x++){
+      let write=ROWS-1;
+      for(let y=ROWS-1;y>=0;y--){
+        if(grid[y][x]){
+          if(y!==write){ grid[write][x]=grid[y][x]; grid[y][x]=null; moved=true; }
+          write--;
+        }
+      }
+    }
+    return moved;
+  }
+
+  function findGroups(){
+    const seen = Array.from({length:ROWS},()=>new Array(COLS).fill(false));
+    const groups=[];
+    for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+      if(!grid[y][x] || seen[y][x]) continue;
+      const color=grid[y][x], stack=[[x,y]], cells=[];
+      seen[y][x]=true;
+      while(stack.length){
+        const [px,py]=stack.pop(); cells.push([px,py]);
+        for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+          const nx=px+dx, ny=py+dy;
+          if(nx>=0&&nx<COLS&&ny>=0&&ny<ROWS&&!seen[ny][nx]&&grid[ny][nx]===color){
+            seen[ny][nx]=true; stack.push([nx,ny]);
+          }
+        }
+      }
+      if(cells.length>=4) groups.push(cells);
+    }
+    return groups;
+  }
+
+  const CHAIN_MULT=[0,1,2,4,8,16,32,64,96,128,160,192];
+  async function resolveChains(){
+    applyGravity(); draw();
+    let chain=0;
+    while(true){
+      const groups = findGroups();
+      if(groups.length===0) break;
+      chain++;
+      let cleared=0;
+      for(const g of groups){ cleared+=g.length; for(const [x,y] of g) grid[y][x]='pop'; }
+      draw();                                   // flash the popping puyos
+      await sleep(160);
+      for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){ if(grid[y][x]==='pop') grid[y][x]=null; }
+      const mult = CHAIN_MULT[Math.min(chain,CHAIN_MULT.length-1)];
+      score += cleared * 10 * mult * level;
+      if(chain>maxChain) maxChain=chain;
+      totalClears += cleared;
+      // level up every 30 cleared puyos
+      const nl = 1 + Math.floor(totalClears/30);
+      if(nl!==level){ level=nl; updateGravity(); }
+      showChain(chain, cleared);
+      updateHud();
+      draw();
+      await sleep(120);
+      applyGravity(); draw();
+      await sleep(chain>1?180:100);
+    }
+  }
+  let totalClears = 0;
+
+  function updateGravity(){ gravityMs = Math.max(180, 780 - (level-1)*60); }
+
+  // ----- render -----
+  function drawPuyo(ctx, gx, gy, color, cell, alpha, pop){
+    const cx=gx*cell+cell/2, cy=gy*cell+cell/2, r=cell/2-2;
+    ctx.globalAlpha = alpha==null?1:alpha;
+    if(pop){
+      ctx.beginPath(); ctx.arc(cx,cy,r+2,0,Math.PI*2);
+      ctx.fillStyle='#ffffff'; ctx.fill(); ctx.globalAlpha=1; return;
+    }
+    // body with soft radial highlight
+    const g=ctx.createRadialGradient(cx-r*0.3,cy-r*0.35,r*0.2, cx,cy,r);
+    g.addColorStop(0,'#ffffff'); g.addColorStop(0.25,color); g.addColorStop(1,shade(color,-30));
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+    ctx.lineWidth=1.5; ctx.strokeStyle='rgba(0,0,0,0.22)'; ctx.stroke();
+    // cute eyes
+    const er=r*0.22, ex=r*0.34, ey=-r*0.05;
+    for(const s of [-1,1]){
+      ctx.beginPath(); ctx.arc(cx+s*ex, cy+ey, er, 0, Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx+s*ex, cy+ey+er*0.15, er*0.5, 0, Math.PI*2); ctx.fillStyle='#222'; ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+  function shade(hex,amt){
+    const n=parseInt(hex.slice(1),16);
+    let r=(n>>16)+amt, g=((n>>8)&255)+amt, b=(n&255)+amt;
+    r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+    return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+  }
+
+  function ghostY(){
+    let gy=cur.y; while(pairFits(cur.x, gy+1, cur.rot)) gy++; return gy;
+  }
+
+  function draw(){
+    bctx.clearRect(0,0,boardCv.width,boardCv.height);
+    bctx.strokeStyle='rgba(255,94,201,0.06)'; bctx.lineWidth=1;
+    for(let x=1;x<COLS;x++){ bctx.beginPath(); bctx.moveTo(x*CELL,0); bctx.lineTo(x*CELL,ROWS*CELL); bctx.stroke(); }
+    for(let y=1;y<ROWS;y++){ bctx.beginPath(); bctx.moveTo(0,y*CELL); bctx.lineTo(COLS*CELL,y*CELL); bctx.stroke(); }
+    for(let y=0;y<ROWS;y++) for(let x=0;x<COLS;x++){
+      const v=grid[y][x]; if(v) drawPuyo(bctx,x,y,v==='pop'?'#fff':v,CELL,1,v==='pop');
+    }
+    if(cur && running && !overed && !busy){
+      const gy=ghostY(), o=OFF[cur.rot];
+      // ghost
+      if(gy>=0) drawPuyo(bctx,cur.x,gy,cur.colors[0],CELL,0.2);
+      if(gy+o[1]>=0) drawPuyo(bctx,cur.x+o[0],gy+o[1],cur.colors[1],CELL,0.2);
+      // active
+      if(cur.y>=0) drawPuyo(bctx,cur.x,cur.y,cur.colors[0],CELL);
+      const [cx,cy]=childXY(cur); if(cy>=0) drawPuyo(bctx,cx,cy,cur.colors[1],CELL);
+    }
+  }
+
+  function drawNext(){
+    nctx.clearRect(0,0,nextCv.width,nextCv.height);
+    if(!nextPair) return;
+    const cell=30;
+    drawPuyo(nctx,0.5,0,nextPair[1],cell);   // child on top
+    drawPuyo(nctx,0.5,1,nextPair[0],cell);   // axis below
+  }
+
+  // ----- HUD & FX -----
+  const el = id=>document.getElementById(id);
+  function updateHud(){
+    el('hudScore').textContent=score; el('hudLevel').textContent=level;
+    el('hudChain').textContent=maxChain; el('hudHigh').textContent=highScore;
+  }
+  const PRAISE=['ナイス！','いいね！','グッド！','すごい！','キラキラ✨'];
+  function showChain(chain, cleared){
+    const p=el('praise');
+    if(chain>=2){
+      const pop=el('chainPop');
+      pop.textContent=chain+'れんさ！';
+      pop.animate([{opacity:0,transform:'translate(-50%,-50%) scale(0.5)'},
+                   {opacity:1,transform:'translate(-50%,-50%) scale(1.15)'},
+                   {opacity:1,transform:'translate(-50%,-50%) scale(1)'},
+                   {opacity:0,transform:'translate(-50%,-50%) scale(1.1)'}],{duration:900});
+      p.textContent=chain+'れんさ！すごい🔥';
+    } else {
+      p.textContent=PRAISE[rand(PRAISE.length)];
+    }
+    boardCv.animate([{filter:'brightness(1.8)'},{filter:'brightness(1)'}],{duration:220});
+    el('hudScore').style.color='#ffd85e'; setTimeout(()=>{el('hudScore').style.color='#fff';},260);
+    clearTimeout(showChain._t); showChain._t=setTimeout(()=>{p.textContent='';},1500);
+  }
+
+  let highScore = parseInt(localStorage.getItem('nekota_puyo_high')||'0',10)||0;
+
+  // ----- loop -----
+  let last=0, rafId=0;
+  function loop(ts){
+    rafId=requestAnimationFrame(loop);
+    if(!running||paused||overed||busy){ last=ts; return; }
+    const dt=ts-last; last=ts;
+    dropAcc+=dt;
+    if(dropAcc>=gravityMs){
+      dropAcc=0;
+      if(pairFits(cur.x, cur.y+1, cur.rot)){ cur.y++; draw(); }
+      else lockPair();
+    }
+  }
+
+  // ----- flow -----
+  function startGame(){
+    grid=makeGrid(); score=0; maxChain=0; level=1; totalClears=0;
+    dropAcc=0; overed=false; paused=false; running=true; busy=false;
+    updateGravity(); nextPair=newPair();
+    hideAllOverlays(); el('praise').textContent='';
+    spawn(); updateHud(); draw();
+    last=performance.now(); if(!rafId) rafId=requestAnimationFrame(loop);
+  }
+  function gameOver(){
+    running=false; overed=true; cur=null; draw();
+    const isRec=score>highScore;
+    if(isRec){ highScore=score; localStorage.setItem('nekota_puyo_high', String(highScore)); }
+    el('goScore').textContent=score; el('goChain').textContent=maxChain; el('goHigh').textContent=highScore;
+    el('newRec').classList.toggle('hidden', !isRec);
+    updateHud(); show('overScreen');
+  }
+  function hideAllOverlays(){ ['titleScreen','helpScreen','pauseScreen','overScreen'].forEach(id=>el(id).classList.add('hidden')); }
+  function show(id){ el(id).classList.remove('hidden'); }
+  function pause(){ if(!running||overed) return; paused=true; show('pauseScreen'); }
+  function resume(){ paused=false; el('pauseScreen').classList.add('hidden'); last=performance.now(); }
+
+  // ----- buttons -----
+  function press(id, fn, repeat){
+    const b=el(id); let iv=null,to=null;
+    const start=e=>{ e.preventDefault(); fn();
+      if(repeat){ to=setTimeout(()=>{ iv=setInterval(fn,80); },200); } };
+    const end=()=>{ if(to){clearTimeout(to);to=null;} if(iv){clearInterval(iv);iv=null;} };
+    b.addEventListener('touchstart',start,{passive:false});
+    b.addEventListener('touchend',end); b.addEventListener('touchcancel',end);
+    b.addEventListener('mousedown',start); b.addEventListener('mouseup',end); b.addEventListener('mouseleave',end);
+  }
+  press('btnLeft', ()=>move(-1), true);
+  press('btnRight', ()=>move(1), true);
+  press('btnRotate', rotate, false);
+  press('btnDown', softDrop, true);
+  press('btnDrop', hardDrop, false);
+
+  el('startBtn').addEventListener('click', startGame);
+  el('retryBtn').addEventListener('click', startGame);
+  el('restartBtn').addEventListener('click', startGame);
+  el('resumeBtn').addEventListener('click', resume);
+  el('pauseBtn').addEventListener('click', ()=>{ paused?resume():pause(); });
+  el('helpBackBtn').addEventListener('click', ()=>{ el('helpScreen').classList.add('hidden'); });
+
+  window.addEventListener('keydown', e=>{
+    if(el('titleScreen').classList.contains('hidden')===false){ if(e.key==='Enter'||e.key===' ') startGame(); return; }
+    switch(e.key){
+      case 'ArrowLeft': move(-1); break;
+      case 'ArrowRight': move(1); break;
+      case 'ArrowUp': case 'x': case 'X': rotate(); break;
+      case 'ArrowDown': softDrop(); break;
+      case ' ': e.preventDefault(); hardDrop(); break;
+      case 'p': case 'P': paused?resume():pause(); break;
+    }
+  });
+  document.addEventListener('gesturestart', e=>e.preventDefault());
+  window.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+
+  grid=makeGrid(); updateHud(); draw();
+})();
+</script>
+</body>
+</html>

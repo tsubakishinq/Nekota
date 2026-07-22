@@ -347,10 +347,12 @@ function drawChargeBeam(){ if(chargeBeam<=0) return; const bx=player.x+player.r,
   ctx.shadowColor='#8fd0ff'; ctx.shadowBlur=24; ctx.fillStyle='rgba(200,235,255,.9)'; ctx.beginPath(); ctx.arc(bx,by,halfT*1.25,0,TAU); ctx.fill(); // 銃口フラッシュ
   ctx.restore(); }
 function fireChargeHomers(tier){ const fx=player.x+player.r+CHARGE_OFF, fy=player.y;
-  const n=[0,1,3,5][tier], dmul=[0,1.6,2.5,3.8][tier], col=CHARGE_COL[tier], rgb=CHARGE_RGB[tier];
+  const blueN=Math.min(8, 4+(player.laserBoost||0)); // 青(MAX)は強化するほど4→最大8本
+  const n=[0,1,3,blueN][tier], dmul=[0,1.6,2.5,3.8][tier], col=CHARGE_COL[tier], rgb=CHARGE_RGB[tier];
   const cand=enemies.filter(e=>e.x>fx-60).sort((a,b)=>dist2(fx,fy,a.x,a.y)-dist2(fx,fy,b.x,b.y));
-  for(let i=0;i<n;i++){ const ang=(i-(n-1)/2)*0.22, dx=Math.cos(ang), dy=Math.sin(ang), sp=1200; const tg=cand.length?cand[i%cand.length]:null;
-    bullets.push({x:fx,y:fy,vx:dx*sp,vy:dy*sp,r:3,dmg:LBASE*laserMul()*dmul,color:col,crgb:rgb,kind:'laser',pierce:false,ctier:tier,len:tier*16+48,thickV:1.5,hitThick:tier+5,dx,dy,ang,home:true,cathome:true,charge:true,spd:sp,life:2.8,launch:0.08,target:tg}); } // 糸のように細いホーミングレーザー（ボスにはHP割合ダメージ）
+  for(let i=0;i<n;i++){ const ang=(n>1?(i/(n-1)-0.5):0)*1.7 + rnd(-0.15,0.15), sp=rnd(760,980); // 板野サーカス：扇状に飛び出してから曲がって追尾
+    const dx=Math.cos(ang), dy=Math.sin(ang); const tg=cand.length?cand[i%cand.length]:null;
+    bullets.push({x:fx,y:fy,vx:dx*sp,vy:dy*sp,r:3,dmg:LBASE*laserMul()*dmul,color:col,crgb:rgb,kind:'laser',pierce:false,ctier:tier,len:tier*10+30,thickV:1.4,hitThick:tier+5,dx,dy,ang,home:true,cathome:true,charge:true,spd:sp,life:3.6,launch:rnd(0.07,0.16),target:tg,trail:[]}); } // 細い曲線ホーミングレーザー（ボスにはHP割合ダメージ）
   Audio2.sfx.laser(); Audio2.sfx.power(); spawnParticles(fx,fy,col,16,320,0.55); shake(tier*2+2,0.16); flash(col,0.16);
   spawnText(player.x,player.y-28, tier===3?'チャージMAX！':tier===2?'チャージ！':'チャージ', col, 14); }
 // ===== レーザーMAX到達時：画面の上に操作ヒントを順番に表示 =====
@@ -940,12 +942,13 @@ function updateBullets(dt){
       if(b.launch>0){ b.launch-=dt; } // 分散フェーズは直進で散る
       else { let tgt=b.cathome?b.target:null; // 白猫は割り当てた敵を優先的に追う
         if(!tgt || tgt.hp<=0 || tgt.x<b.x-80 || enemies.indexOf(tgt)<0){ tgt=null; let bd=1e9; for(const e of enemies){ if(e.x<b.x-60) continue; const d=dist2(b.x,b.y,e.x,e.y); if(d<bd){bd=d;tgt=e;} } if(b.cathome) b.target=tgt; }
-        if(tgt){ const want=Math.atan2(tgt.y-b.y,tgt.x-b.x), cur=Math.atan2(b.vy,b.vx), tr=b.cathome?6:4.5;
+        if(tgt){ const want=Math.atan2(tgt.y-b.y,tgt.x-b.x), cur=Math.atan2(b.vy,b.vx), tr=b.charge?4.2:(b.cathome?6:4.5);
           let da=want-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
           const na=cur+Math.max(-tr*dt,Math.min(tr*dt,da)); b.vx=Math.cos(na)*b.spd; b.vy=Math.sin(na)*b.spd; } }
       b.dx=b.vx/b.spd; b.dy=b.vy/b.spd; b.ang=Math.atan2(b.vy,b.vx);
       if(b.life<=0){ bullets.splice(i,1); continue; } }
     b.x+=b.vx*dt; b.y+=b.vy*dt;
+    if(b.charge&&b.home){ (b.trail||(b.trail=[])).push(b.x,b.y); if(b.trail.length>48) b.trail.splice(0,2); } // 板野サーカスの曲線を描く軌跡を記録
     if(b.kind==='ring'){ b.r+=b.grow*dt; if(b.r>b.maxR) b.r=b.maxR; // grow to screen edge, then keep drifting
       if(b.x-b.r*b.hRatio>W+30){ bullets.splice(i,1); continue; } }
     else if(b.home){ if(b.x<-40||b.x>W+40||b.y<-40||b.y>H+40){ bullets.splice(i,1); continue; } } // ホーミングは画面外で消す
@@ -1037,10 +1040,15 @@ function drawBullets(){ ctx.globalCompositeOperation='lighter';
     if(b.cat){ // 猫レーザー弾＝跳ねる白猫のシルエット＋光る尾
       drawBeamTail(b, 80, 9, '255,255,255', '#cfe0ff');
       ctx.save(); ctx.globalCompositeOperation='source-over'; ctx.translate(b.x,b.y); ctx.rotate(b.ang||0); drawRunningCat(15); ctx.restore(); continue; }
-    if(b.charge){ // チャージホーミング：オーラと同じ色（白／赤／青）の、糸のように細い光るレーザー
-      drawBeamTail(b, 44, 3, b.crgb||'255,255,255', b.color);
-      ctx.shadowColor=b.color; ctx.shadowBlur=10; ctx.fillStyle=b.color; ctx.beginPath(); ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(b.x,b.y,b.len*0.72,Math.max(0.6,b.thickV*0.5),b.ang||0,0,TAU); ctx.fill(); continue; } // 白く細い芯
+    if(b.charge){ // チャージホーミング：板野サーカスの様に曲線を描く、糸のように細い光るレーザー
+      const tr=b.trail, n=tr?tr.length/2:0, rgb=b.crgb||'255,255,255';
+      if(n>1){ for(let pass=0;pass<2;pass++){ ctx.beginPath(); ctx.moveTo(tr[0],tr[1]);
+          for(let k=1;k<n;k++) ctx.lineTo(tr[k*2],tr[k*2+1]);
+          ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle=pass===0?'rgba('+rgb+',0.35)':'rgba('+rgb+',0.95)'; ctx.lineWidth=pass===0?6:2.2;
+          ctx.shadowColor=b.color; ctx.shadowBlur=pass===0?14:8; ctx.lineJoin='round'; ctx.stroke(); } }
+      ctx.shadowColor=b.color; ctx.shadowBlur=12; ctx.fillStyle=b.color; ctx.beginPath(); ctx.ellipse(b.x,b.y,b.len,b.thickV,b.ang||0,0,TAU); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.shadowBlur=6; ctx.beginPath(); ctx.arc(b.x,b.y,Math.max(1.2,b.thickV*1.1),0,TAU); ctx.fill(); ctx.shadowBlur=0; continue; } // 白く光る弾頭
     if(b.home){ // ホーミングレーザー＝光る尾＋明るい芯（白猫は白、虎はオレンジ）
       const cat=b.cathome;
       drawBeamTail(b, cat?34:30, cat?7:6.5, cat?'210,235,255':'255,181,74', cat?'#cfe0ff':'#ffcf7a');

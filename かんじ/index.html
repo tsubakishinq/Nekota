@@ -184,7 +184,7 @@
     <div class="emblem">📖</div>
     <div class="logo">ことば<br>づくり<small>N E K O T A</small></div>
     <div class="panel-info">
-      かんじを となりどうし ならべて<br><b>ことば</b>を つくると ピカッ！ときえる。<br>
+      ばらばらの かんじを うごかして・まわして<br><b>ことば</b>を つくると ピカッ！ときえる。<br>
       <div class="demoRow" id="demoRow"></div>
       <div class="wordChips" id="titleWords"></div>
     </div>
@@ -203,7 +203,8 @@
       <span style="display:inline-block;width:1.6em;text-align:center">↻</span> かんじをまわす<br>
       <span style="display:inline-block;width:1.6em;text-align:center">▼</span> ゆっくりおろす<br>
       <span style="display:inline-block;width:1.6em;text-align:center">⤓</span> いっきにおとす<br><br>
-      かんじを ならべて <b>ことば</b>（じゅくご）が<br>できると けえるよ。<br>
+      おちてくる かんじは バラバラ。<br>
+      うごかして・まわして となりに ならべ<br><b>ことば</b>（じゅくご）を つくると けえるよ。<br>
       よこは <b>ひだり→みぎ</b>、たては <b>うえ→した</b>の<br>ならびで よむよ。れんさも ねらおう🌟
     </div>
     <button class="btn green" id="helpBackBtn">わかった！</button>
@@ -267,23 +268,25 @@
   ];
   const WORDMAP = {}; WORDS.forEach(w=>{ WORDMAP[w.a+w.b]=w; });
   const KEYS = Object.keys(KANJI);
+  // kanji pools per difficulty (every kanji here can form at least one word)
+  const POOL_EASY = ['火','山','花','川'];   // 火山・花火・火花・山川
+  const POOL_FULL = Object.keys(KANJI);     // all 8 words
   const KANJI_FONT = '"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif';
   const rand = n => (Math.random()*n)|0;
   const sleep = ms => new Promise(r=>setTimeout(r,ms));
 
   // ----- state -----
   let grid, cur, nextPair, score, wordsMade, maxChain, level, totalWords,
-      gravityMs, dropAcc, running, paused, overed, busy, wordBias;
+      gravityMs, baseGravity, dropAcc, running, paused, overed, busy,
+      isEasy, activeKanji, activeWords;
   const foundSet = new Set();   // which words the player has made (for the side list)
 
   function makeGrid(){ const g=[]; for(let y=0;y<ROWS;y++) g.push(new Array(COLS).fill(null)); return g; }
   // bias pairs so a word is often possible; otherwise random kanji
+  // pieces are just random single kanji — the player arranges them into words
   function newPair(){
-    if(Math.random() < wordBias){
-      const w = WORDS[rand(WORDS.length)];
-      return Math.random()<0.5 ? [w.a, w.b] : [w.b, w.a];  // axis, child (either order)
-    }
-    return [KEYS[rand(KEYS.length)], KEYS[rand(KEYS.length)]];
+    const pool = activeKanji || POOL_FULL;
+    return [ pool[rand(pool.length)], pool[rand(pool.length)] ];
   }
 
   const OFF = [[0,-1],[1,0],[0,1],[-1,0]];
@@ -376,7 +379,7 @@
       applyGravity(); draw(); await sleep(chain>1?220:120);
     }
   }
-  function updateGravity(){ gravityMs = Math.max(230, 840 - (level-1)*55); }
+  function updateGravity(){ gravityMs = Math.max(230, baseGravity - (level-1)*55); }
 
   // ----- render -----
   function roundRect(ctx,x,y,w,h,r){
@@ -443,7 +446,7 @@
     el('hudWords').textContent=wordsMade; el('hudHigh').textContent=highScore;
   }
   function renderWordList(){
-    el('wlBox').innerHTML = WORDS.map(w=>{
+    el('wlBox').innerHTML = (activeWords||WORDS).map(w=>{
       const done = foundSet.has(w.a+w.b);
       return '<b class="'+(done?'done':'')+'">'+w.a+w.b+'</b>';
     }).join('');
@@ -480,8 +483,11 @@
 
   // ----- flow -----
   function startGame(easy){
-    wordBias = easy ? 0.85 : 0.6;
-    el('modeTag').textContent = easy ? 'やさしい' : 'ふつう';
+    isEasy = easy;
+    activeKanji = (easy ? POOL_EASY : POOL_FULL).slice();
+    activeWords = WORDS.filter(w=>activeKanji.includes(w.a) && activeKanji.includes(w.b));
+    baseGravity = easy ? 900 : 820;
+    el('modeTag').textContent = easy ? 'やさしい（4もじ）' : 'ふつう（9もじ）';
     grid=makeGrid(); score=0; wordsMade=0; maxChain=0; level=1; totalWords=0;
     dropAcc=0; overed=false; paused=false; running=true; busy=false;
     foundSet.clear();
@@ -521,8 +527,8 @@
 
   el('startEasy').addEventListener('click', ()=>startGame(true));
   el('startHard').addEventListener('click', ()=>startGame(false));
-  el('retryBtn').addEventListener('click', ()=>startGame(wordBias>=0.85));
-  el('restartBtn').addEventListener('click', ()=>startGame(wordBias>=0.85));
+  el('retryBtn').addEventListener('click', ()=>startGame(isEasy));
+  el('restartBtn').addEventListener('click', ()=>startGame(isEasy));
   el('resumeBtn').addEventListener('click', resume);
   el('pauseBtn').addEventListener('click', ()=>{ paused?resume():pause(); });
   el('helpBackBtn').addEventListener('click', ()=>{ el('helpScreen').classList.add('hidden'); });

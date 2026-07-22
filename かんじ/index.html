@@ -245,32 +245,32 @@
 
   // ----- kanji (with reading + soft colour) -----
   const KANJI = {
-    '火':{read:'ひ',   bg:'#ffb0a0'},
-    '山':{read:'やま', bg:'#ecd6a6'},
-    '花':{read:'はな', bg:'#ffc0e0'},
-    '川':{read:'かわ', bg:'#a8f0e8'},
-    '林':{read:'はやし',bg:'#a5e8a5'},
-    '森':{read:'もり', bg:'#7fd49a'},
-    '竹':{read:'たけ', bg:'#c8f0a0'},
-    '水':{read:'みず', bg:'#a8d4ff'},
-    '田':{read:'た',   bg:'#e0d0a0'}
+    '学':{read:'がく', bg:'#a8d4ff'},
+    '校':{read:'こう', bg:'#a5e8a5'},
+    '生':{read:'せい', bg:'#ffc0e0'},
+    '先':{read:'せん', bg:'#ffd89a'},
+    '大':{read:'おお', bg:'#ffb0a0'},
+    '人':{read:'ひと', bg:'#c8b0ff'},
+    '本':{read:'ほん', bg:'#a8f0e8'},
+    '日':{read:'ひ',   bg:'#ffe08a'},
+    '名':{read:'な',   bg:'#d8e8a0'}
   };
-  // ----- 2-kanji words: read left->right (yoko) or top->bottom (tate) -----
+  // ----- 2-kanji words (小1〜3の配当漢字・定番の熟語): read L->R (yoko) or T->B (tate) -----
   const WORDS = [
-    {a:'火',b:'山',read:'かざん'},
-    {a:'花',b:'火',read:'はなび'},
-    {a:'火',b:'花',read:'ひばな'},
-    {a:'山',b:'川',read:'やまかわ'},
-    {a:'山',b:'林',read:'さんりん'},
-    {a:'森',b:'林',read:'しんりん'},
-    {a:'竹',b:'林',read:'ちくりん'},
-    {a:'水',b:'田',read:'すいでん'}
+    {a:'学',b:'校',read:'がっこう'},
+    {a:'学',b:'生',read:'がくせい'},
+    {a:'先',b:'生',read:'せんせい'},
+    {a:'大',b:'学',read:'だいがく'},
+    {a:'大',b:'人',read:'おとな'},
+    {a:'本',b:'人',read:'ほんにん'},
+    {a:'日',b:'本',read:'にほん'},
+    {a:'名',b:'人',read:'めいじん'}
   ];
   const WORDMAP = {}; WORDS.forEach(w=>{ WORDMAP[w.a+w.b]=w; });
   const KEYS = Object.keys(KANJI);
   // kanji pools per difficulty (every kanji here can form at least one word)
-  const POOL_EASY = ['火','山','花','川'];   // 火山・花火・火花・山川
-  const POOL_FULL = Object.keys(KANJI);     // all 8 words
+  const POOL_EASY = ['学','校','生','先','大'];  // 学校・学生・先生・大学
+  const POOL_FULL = Object.keys(KANJI);         // 全8ことば
   const KANJI_FONT = '"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif';
   const rand = n => (Math.random()*n)|0;
   const sleep = ms => new Promise(r=>setTimeout(r,ms));
@@ -487,7 +487,7 @@
     activeKanji = (easy ? POOL_EASY : POOL_FULL).slice();
     activeWords = WORDS.filter(w=>activeKanji.includes(w.a) && activeKanji.includes(w.b));
     baseGravity = easy ? 900 : 820;
-    el('modeTag').textContent = easy ? 'やさしい（4もじ）' : 'ふつう（9もじ）';
+    el('modeTag').textContent = (easy?'やさしい':'ふつう')+'（漢字'+activeKanji.length+'・ことば'+activeWords.length+'）';
     grid=makeGrid(); score=0; wordsMade=0; maxChain=0; level=1; totalWords=0;
     dropAcc=0; overed=false; paused=false; running=true; busy=false;
     foundSet.clear();
@@ -552,9 +552,9 @@
     const wrap=el('demoRow');
     const mk=ch=>{ const d=document.createElement('span'); d.className='kanjiChip';
       d.style.background=KANJI[ch].bg; d.textContent=ch; return d; };
-    wrap.appendChild(mk('火')); wrap.appendChild(mk('山'));
+    wrap.appendChild(mk('先')); wrap.appendChild(mk('生'));
     const eq=document.createElement('span'); eq.className='eq'; eq.textContent='→'; wrap.appendChild(eq);
-    const boom=document.createElement('span'); boom.className='boom'; boom.textContent='火山（かざん）✨'; wrap.appendChild(boom);
+    const boom=document.createElement('span'); boom.className='boom'; boom.textContent='先生（せんせい）✨'; wrap.appendChild(boom);
     el('titleWords').innerHTML = WORDS.map(w=>'<span>'+w.a+w.b+'<i>'+w.read+'</i></span>').join('');
   })();
 

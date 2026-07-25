@@ -235,7 +235,7 @@
           <div class="day-mini" id="dayMini"></div>
         </div>
 
-        <div class="rcpt-label">🧾 レシート写真</div>
+        <div class="rcpt-label">📷 レシート・料理の写真</div>
         <div class="receipts" id="dayReceipts"></div>
         <input type="file" id="rcptInput" accept="image/*" multiple hidden>
 
@@ -301,11 +301,13 @@
       <div class="food-grid" id="refGrid"></div>
     </div>
     <div class="card">
-      <div class="section-title">📷 レシート読み取りについて</div>
-      <p class="muted" style="margin-bottom:12px;">レシート写真を開いて「写真から読み取る」を押すと、<b>ブラウザ内で無料</b>で文字を読み取り、食材の候補を出します（初回だけOCRの読み込みに少し時間がかかります）。日本のレシートは読み取り精度に限界があるので、確認画面で手直ししてください。</p>
+      <div class="section-title">📷 写真読み取りについて</div>
+      <p class="muted" style="margin-bottom:12px;">写真を開いて「写真から読み取る」を押すと候補を出します。<br>
+        ・<b>未設定（無料）</b>：ブラウザ内OCRで<b>文字</b>を読みます（レシートやメニュー向け。料理そのものの写真は判別できません）。<br>
+        ・<b>AI設定あり</b>：<b>料理そのものの写真</b>も見て中身を判別できます（下で設定）。</p>
       <details>
-        <summary class="muted" style="cursor:pointer;font-weight:700;">精度を上げたい方へ（任意・上級者向け）</summary>
-        <p class="muted" style="margin:10px 0;"><code>reshi-eiyou/proxy</code> の手順でAI中継サーバーを立てると、より正確に読み取れます。そのURLをここに保存すると、OCRの代わりにAIを使います（未設定なら無料OCRのまま）。</p>
+        <summary class="muted" style="cursor:pointer;font-weight:700;">AIで「料理写真」も読み取れるようにする</summary>
+        <p class="muted" style="margin:10px 0;"><code>reshi-eiyou/proxy-gemini</code>（無料のGemini）または <code>reshi-eiyou/proxy</code>（有料のClaude）の手順で中継サーバーを立て、出てきたURLをここに保存してください。保存すると、レシートも料理写真もAIで読み取ります（未設定なら無料OCRのまま）。</p>
         <input class="set-input" id="endpointInput" placeholder="https://....workers.dev（任意）">
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary" id="endpointSave" style="flex:1;">保存</button>

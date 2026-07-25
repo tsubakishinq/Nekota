@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ネコタゲーム">
+<title>NEKOTA ゲームランド — こどもゲームあつめ</title>
+<style>
+  :root{ --neon:#57f6ff; --neon2:#ff5ec9; --gold:#ffd85e; --bg0:#04030f; --bg1:#0b0a24; }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{min-height:100%;}
+  body{
+    background:radial-gradient(circle at 50% -8%, #17123f 0%, var(--bg1) 42%, var(--bg0) 100%);
+    color:#eaf6ff; font-family:"Trebuchet MS","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+    min-height:100vh; display:flex; justify-content:center; -webkit-user-select:none; user-select:none;
+  }
+  #wrap{width:100%; max-width:520px; padding:28px 20px 40px; display:flex; flex-direction:column; align-items:center; gap:22px;}
+  .logo{font-size:clamp(34px,11vw,60px); font-weight:900; letter-spacing:2px; line-height:.98; text-align:center;
+    background:linear-gradient(180deg,#fff,var(--neon) 55%,var(--neon2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 0 18px rgba(87,246,255,.5));}
+  .logo small{display:block; font-size:clamp(10px,3vw,14px); letter-spacing:7px; margin-top:8px;
+    color:var(--gold); -webkit-text-fill-color:var(--gold);}
+  .cat{font-size:clamp(46px,16vw,84px); filter:drop-shadow(0 0 20px rgba(255,94,201,.6)); animation:bob 2.6s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+  .sub{font-size:clamp(12px,3.6vw,15px); color:#9fb4de; text-align:center; letter-spacing:1px;}
+  .grid{width:100%; display:flex; flex-direction:column; gap:14px;}
+  a.card{
+    display:flex; align-items:center; gap:16px; text-decoration:none; color:inherit;
+    background:rgba(9,12,34,.62); border:2px solid var(--edge,rgba(87,246,255,.25)); border-radius:18px;
+    padding:16px 18px; box-shadow:0 4px 0 rgba(0,0,0,.4), 0 0 18px var(--glow,rgba(87,246,255,.12));
+    transition:transform .08s, box-shadow .15s, border-color .15s;
+  }
+  a.card:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.4), 0 0 18px var(--glow,rgba(87,246,255,.12));}
+  .ico{flex:0 0 60px; width:60px; height:60px; border-radius:16px; display:flex; align-items:center; justify-content:center;
+    font-size:34px; background:rgba(4,6,18,.85); border:2px solid var(--edge,rgba(87,246,255,.35));}
+  .txt{flex:1; min-width:0;}
+  .name{font-size:clamp(17px,5.2vw,22px); font-weight:900; letter-spacing:1px;}
+  .desc{font-size:clamp(11px,3.3vw,13px); color:#9fb4de; margin-top:3px; line-height:1.5;}
+  .go{flex:0 0 auto; font-size:24px; color:var(--edge2,var(--neon)); font-weight:900;}
+  .foot{font-size:11px; color:#5f74a8; text-align:center; letter-spacing:1px; margin-top:6px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="cat">🐱</div>
+  <div class="logo">ネコタ<br>ゲームランド<small>N E K O T A　G A M E S</small></div>
+  <div class="sub">すきな ゲームを えらんでね</div>
+
+  <div class="grid">
+    <a class="card" href="../keisan/" style="--edge:rgba(138,182,255,.5);--glow:rgba(138,182,255,.18);--edge2:#8ab6ff">
+      <div class="ico">🔢</div>
+      <div class="txt"><div class="name">けいさん</div>
+        <div class="desc">すうじと きごうを ならべて けいさんしきを つくろう</div></div>
+      <div class="go">▶</div>
+    </a>
+    <a class="card" href="../kanji/" style="--edge:rgba(125,255,176,.5);--glow:rgba(125,255,176,.18);--edge2:#7dffb0">
+      <div class="ico">📖</div>
+      <div class="txt"><div class="name">ことばづくり</div>
+        <div class="desc">かんじを ならべて ことば（じゅくご）を つくろう</div></div>
+      <div class="go">▶</div>
+    </a>
+    <a class="card" href="../shokudou/" style="--edge:rgba(255,159,67,.5);--glow:rgba(255,159,67,.18);--edge2:#ff9f43">
+      <div class="ico">🍚</div>
+      <div class="txt"><div class="name">こども しょくどう</div>
+        <div class="desc">ごはんと カレーで カレーライス！りょうりを つくろう</div></div>
+      <div class="go">▶</div>
+    </a>
+    <a class="card" href="../puyo/" style="--edge:rgba(255,94,201,.5);--glow:rgba(255,94,201,.18);--edge2:#ff5ec9">
+      <div class="ico">🌈</div>
+      <div class="txt"><div class="name">ぷよぷよ</div>
+        <div class="desc">おなじ いろを 4つ くっつけて けそう＋れんさ</div></div>
+      <div class="go">▶</div>
+    </a>
+    <a class="card" href="../ochi/" style="--edge:rgba(87,246,255,.5);--glow:rgba(87,246,255,.18);--edge2:#57f6ff">
+      <div class="ico">🧱</div>
+      <div class="txt"><div class="name">おとし（テトリスふう）</div>
+        <div class="desc">よこ1れつ そろえて けそう</div></div>
+      <div class="go">▶</div>
+    </a>
+  </div>
+
+  <div class="foot">NEKOTA こどもゲーム ・ スマホをたてにしてね</div>
+</div>
+</body>
+</html>

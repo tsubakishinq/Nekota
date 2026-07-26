@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="さんすうモグラ">
+<title>NEKOTA さんすうモグラ — 式をたたく たし・ひき・かけ算</title>
+<style>
+  :root{ --ink:#2f3550; }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:linear-gradient(180deg,#cbe6ff 0%,#dbeaff 34%,#a9c8ff 62%,#7fa8f0 100%);
+    color:var(--ink); font-family:"Rounded Mplus 1c","Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN",system-ui,sans-serif;
+    overflow:hidden; display:flex; align-items:center; justify-content:center; touch-action:manipulation;
+    user-select:none; -webkit-user-select:none;
+  }
+  #wrap{position:relative; width:100vw; height:100vh; max-width:520px; max-height:920px; margin:auto;
+    display:flex; flex-direction:column; overflow:hidden;}
+
+  #hud{flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:12px 16px 4px;}
+  .brand{font-weight:900; font-size:clamp(16px,5vw,22px); color:#3a5cc0; text-shadow:0 2px 0 #fff;}
+  .brand span{color:#ff8a3c;}
+  .stars{font-size:clamp(15px,4.6vw,20px); font-weight:900; color:#ff9f2e;}
+  #target{flex:0 0 auto; display:flex; align-items:center; justify-content:center; gap:12px; padding:6px 16px 8px;}
+  #target .lab{font-size:clamp(15px,4.6vw,20px); font-weight:900; color:#4a5680;}
+  #targetNum{font-size:clamp(38px,12vw,56px); font-weight:900; color:#fff; background:linear-gradient(180deg,#ffd45e,#ff9f2e);
+    min-width:1.6em; text-align:center; border-radius:16px; padding:2px 14px; box-shadow:0 5px 0 #c9821a, 0 7px 12px rgba(0,0,0,.15);}
+  #remain{font-size:clamp(12px,3.6vw,15px); font-weight:900; color:#3a5cc0;}
+  #remain b{color:#ff7a2e; font-size:1.3em;}
+
+  #field{flex:1 1 auto; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr);
+    gap:6px; padding:4px 16px 16px; min-height:0;}
+  .hole{position:relative; overflow:hidden; display:flex; align-items:flex-end; justify-content:center;}
+  .hole::after{content:""; position:absolute; left:8%; right:8%; bottom:6%; height:32%;
+    background:radial-gradient(ellipse at 50% 40%, #4a2f16 0%, #6b4423 70%, #7a5230 100%);
+    border-radius:50%; box-shadow:inset 0 6px 10px rgba(0,0,0,.5);}
+  .mole{position:relative; z-index:2; width:80%; max-width:110px; aspect-ratio:1/1; border-radius:50% 50% 46% 46%;
+    background:radial-gradient(circle at 50% 35%, #d59a5f, #b07a3e); border:3px solid #8a5a2c;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transform:translateY(115%); transition:transform .16s cubic-bezier(.34,1.4,.6,1); box-shadow:0 4px 8px rgba(0,0,0,.25);}
+  .mole.up{transform:translateY(12%);}
+  .mole.bonk{animation:bonk .28s;}
+  @keyframes bonk{0%{transform:translateY(12%) scale(1)}40%{transform:translateY(18%) scale(1.12,.86)}100%{transform:translateY(115%)}}
+  .mole.miss{animation:missShake .3s;}
+  @keyframes missShake{0%,100%{transform:translateY(12%)}25%{transform:translateY(12%) rotate(-9deg)}75%{transform:translateY(12%) rotate(9deg)}}
+  .mole .ear{position:absolute; top:-6px; width:20px; height:20px; border-radius:50%; background:#b07a3e; border:3px solid #8a5a2c;}
+  .mole .ear.l{left:9px;} .mole .ear.r{right:9px;}
+  .mole .expr{position:relative; z-index:3; font-size:clamp(19px,6vw,28px); font-weight:900; color:#26324f;
+    background:#eef4ff; border-radius:11px; padding:2px 8px; box-shadow:0 2px 0 rgba(0,0,0,.12); white-space:nowrap;}
+
+  #fb{position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:15; pointer-events:none;}
+  #fb .mark{font-size:clamp(80px,30vw,170px); animation:fbpop .5s ease;}
+  @keyframes fbpop{0%{transform:scale(0) rotate(-16deg);opacity:0}50%{transform:scale(1.2);opacity:1}100%{transform:scale(1)}}
+  .overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; gap:16px; padding:26px; z-index:20;
+    background:radial-gradient(circle at 50% 25%, rgba(219,234,255,.94), rgba(127,168,240,.96));}
+  .overlay.hidden{display:none;}
+  .cat{font-size:clamp(60px,20vw,110px); animation:bob 2.4s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-12px) rotate(4deg)}}
+  .logo{font-size:clamp(30px,9.5vw,50px); font-weight:900; color:#3a5cc0; line-height:1.06; text-shadow:0 3px 0 #fff;}
+  .logo span{color:#ff8a3c;}
+  .lead{font-size:clamp(14px,4.4vw,18px); font-weight:800; color:#3a4a78;}
+  .grpLabel{font-size:12px; font-weight:900; color:#3a5cc0; letter-spacing:2px;}
+  .pickRow{display:flex; gap:12px; flex-wrap:wrap; justify-content:center;}
+  .pick,.bigbtn{font-family:inherit; border:none; cursor:pointer; font-weight:900; color:#fff;
+    border-radius:22px; box-shadow:0 6px 0 var(--sh,#3a5cc0), 0 8px 16px rgba(0,0,0,.15); transition:transform .08s, box-shadow .12s;}
+  .pick{padding:15px 22px; font-size:clamp(17px,5.2vw,22px); line-height:1.1;}
+  .pick small{display:block; font-size:.6em; opacity:.95; margin-top:3px;}
+  .pick.add{background:linear-gradient(180deg,#a6f0b8,#4fca75); --sh:#2f8f4f;}
+  .pick.sub{background:linear-gradient(180deg,#ffb0c4,#ff7a9c); --sh:#c14f70;}
+  .pick.mul{background:linear-gradient(180deg,#c8b0ff,#9a6cff); --sh:#6b3fc9;}
+  .pick.mix{background:linear-gradient(180deg,#ffd27a,#ff9f2e); --sh:#c9821a;}
+  .pick:active,.bigbtn:active{transform:translateY(4px); box-shadow:0 2px 0 var(--sh,#3a5cc0);}
+  .bigbtn{padding:16px 40px; font-size:clamp(18px,5.5vw,24px); background:linear-gradient(180deg,#ffd45e,#ff9f2e); --sh:#c9821a;}
+  .resultStars{font-size:clamp(30px,10vw,50px); letter-spacing:4px;}
+  .homeBtn{position:absolute; top:12px; right:14px; z-index:16; width:40px; height:40px; border-radius:50%;
+    border:none; background:#fff; color:#3a5cc0; font-size:19px; font-weight:900; cursor:pointer; box-shadow:0 3px 8px rgba(0,0,0,.15);}
+  .hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div id="wrap">
+
+  <div id="hud">
+    <div class="brand">さんすう<span>モグラ</span></div>
+    <div class="stars">⭐ <span id="starCount">0</span></div>
+  </div>
+  <div id="target">
+    <span class="lab">こたえ</span>
+    <span id="targetNum">8</span>
+    <span id="remain">あと <b id="remainN">3</b></span>
+  </div>
+
+  <div id="field"></div>
+
+  <button class="homeBtn hidden" id="homeBtn" title="さいしょへ">🏠</button>
+  <div id="fb"><div class="mark" id="fbMark">⭕</div></div>
+
+  <!-- Title -->
+  <div class="overlay" id="titleScreen">
+    <div class="cat">🐹</div>
+    <div class="logo">さんすう<br><span>モグラ</span></div>
+    <div class="lead">「こたえ」に あう しきの モグラを<br>たたこう！（れい：こたえ8 → 3＋5）</div>
+    <div class="grpLabel">どれで あそぶ？</div>
+    <div class="pickRow">
+      <button class="pick add" data-mode="add">たしざん<small>＋</small></button>
+      <button class="pick sub" data-mode="sub">ひきざん<small>−</small></button>
+    </div>
+    <div class="pickRow">
+      <button class="pick mul" data-mode="mul">かけざん<small>× 九九</small></button>
+      <button class="pick mix" data-mode="mix">ミックス<small>＋−×</small></button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="overlay hidden" id="resultScreen">
+    <div class="cat" id="resultCat">🐹</div>
+    <div class="logo" id="resultTitle">よくできました！</div>
+    <div class="resultStars" id="resultStars"></div>
+    <div class="lead"><span id="resultNum">0</span>／<span id="resultTotal">18</span> せいかい！</div>
+    <button class="bigbtn" id="againBtn">もういちど ▶</button>
+    <button class="pick add" id="backHomeBtn">ほかの あそび</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const el=id=>document.getElementById(id);
+  const rand=n=>(Math.random()*n)|0;
+  const pick=a=>a[rand(a.length)];
+
+  const HOLES=9, TARGETS=6, NEED=3;   // targets per round, correct hits per target
+  const OPS={ add:['＋'], sub:['−'], mul:['×'], mix:['＋','−','×'] };
+  let mode, ops, target, holes, spawnTimer, running, done, targetIdx, hitsThis, stars, correctTotal, misses;
+
+  // ----- sound -----
+  let actx;
+  function tone(f,d,t,when){ try{ actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const t0=actx.currentTime+(when||0); const o=actx.createOscillator(),g=actx.createGain();
+    o.type=t||'sine'; o.frequency.value=f; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.25,t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+d); o.start(t0); o.stop(t0+d+0.02);}catch(e){} }
+  const sHit=()=>{tone(700,0.1,'sine',0);tone(950,0.12,'sine',0.08);};
+  const sMiss=()=>tone(180,0.16,'triangle',0);
+  const sWin=()=>{tone(660,0.12,'sine',0);tone(880,0.12,'sine',0.12);tone(1050,0.18,'sine',0.24);};
+
+  // ----- math -----
+  function evalOp(a,op,b){ return op==='＋'?a+b : op==='−'?a-b : a*b; }
+  // a random expression for a given op within kid ranges
+  function makeExpr(op){
+    if(op==='＋'){ const a=rand(10), b=rand(10); return {a,op,b,val:a+b}; }
+    if(op==='−'){ const a=1+rand(9), b=rand(a+1); return {a,op,b,val:a-b}; }
+    const a=1+rand(9), b=1+rand(9); return {a,op:'×',b,val:a*b};
+  }
+  // an expression (using allowed ops) equal to target, or null
+  function makeCorrect(t){
+    const order = ops.slice(); for(let i=order.length-1;i>0;i--){const j=rand(i+1);[order[i],order[j]]=[order[j],order[i]];}
+    for(const op of order){
+      if(op==='＋' && t<=18){ const lo=Math.max(0,t-9), hi=Math.min(9,t); const a=lo+rand(hi-lo+1); const b=t-a; if(a>=0&&a<=9&&b>=0&&b<=9) return {a,op,b,val:t}; }
+      if(op==='−' && t<=9){ const a=t+rand(10-t); const b=a-t; if(a>=0&&a<=9&&b>=0) return {a,op,b,val:t}; }
+      if(op==='×'){ const fs=[]; for(let a=1;a<=9;a++){ if(t%a===0 && t/a>=1 && t/a<=9) fs.push([a,t/a]); } if(fs.length){ const [a,b]=pick(fs); return {a,op:'×',b,val:t}; } }
+    }
+    return null;
+  }
+  function makeDistractor(t){
+    for(let tries=0;tries<20;tries++){ const e=makeExpr(pick(ops)); if(e.val!==t) return e; }
+    return makeExpr(pick(ops));
+  }
+  function chooseTarget(){
+    // pick an op we allow, then a target reachable by it
+    for(let tries=0;tries<30;tries++){
+      const op=pick(ops); let t;
+      if(op==='＋') t=2+rand(11);          // 2..12
+      else if(op==='−') t=1+rand(9);       // 1..9
+      else { t=(1+rand(9))*(1+rand(9)); }  // product 1..81
+      if(makeCorrect(t)) return t;
+    }
+    return 8;
+  }
+  function exprText(e){ return e.a+e.op+e.b; }
+
+  // ----- field -----
+  function buildField(){
+    const f=el('field'); f.innerHTML=''; holes=[];
+    for(let i=0;i<HOLES;i++){
+      const hole=document.createElement('div'); hole.className='hole';
+      const mole=document.createElement('div'); mole.className='mole';
+      mole.innerHTML='<div class="ear l"></div><div class="ear r"></div><div class="expr"></div>';
+      hole.appendChild(mole); f.appendChild(hole);
+      const obj={mole, exprEl:mole.querySelector('.expr'), up:false, val:null, retract:null};
+      mole.addEventListener('click', ()=>hit(obj));
+      holes.push(obj);
+    }
+  }
+
+  function popOne(forceCorrect){
+    const down=holes.filter(h=>!h.up); if(!down.length) return;
+    const h=down[rand(down.length)];
+    let e;
+    if(forceCorrect) e=makeCorrect(target)||makeDistractor(target);
+    else e = Math.random()<0.42 ? (makeCorrect(target)||makeDistractor(target)) : makeDistractor(target);
+    h.val=e.val; h.exprEl.textContent=exprText(e); h.mole.dataset.val=e.val;
+    h.up=true; h.mole.classList.remove('bonk','miss'); h.mole.classList.add('up');
+    const upMs=1500+rand(800);
+    h.retract=setTimeout(()=>{ if(h.up){ h.up=false; h.mole.classList.remove('up'); } }, upMs);
+  }
+  function spawnTick(){
+    if(!running) return;
+    const hasCorrect=holes.some(h=>h.up && h.val===target);
+    popOne(!hasCorrect && Math.random()<0.92);
+    if(Math.random()<0.45) popOne(false);
+  }
+
+  function hit(h){
+    if(!running || !h.up) return;
+    if(h.val===target){
+      sHit(); h.up=false; if(h.retract)clearTimeout(h.retract);
+      h.mole.classList.remove('up'); h.mole.classList.add('bonk');
+      hitsThis++; stars++; correctTotal++;
+      el('starCount').textContent=stars;
+      el('remainN').textContent=Math.max(0,NEED-hitsThis);
+      if(hitsThis>=NEED) targetClear();
+    } else {
+      misses++; sMiss(); flash(false);
+      h.mole.classList.remove('miss'); void h.mole.offsetWidth; h.mole.classList.add('miss');
+    }
+  }
+
+  function flash(ok){
+    const fb=el('fb'); el('fbMark').textContent=ok?'⭕':'✖️'; fb.style.display='flex';
+    el('fbMark').style.animation='none'; void el('fbMark').offsetWidth; el('fbMark').style.animation='';
+    clearTimeout(flash._t); flash._t=setTimeout(()=>{ fb.style.display='none'; }, ok?750:420);
+  }
+
+  function newTarget(){
+    target=chooseTarget(); hitsThis=0;
+    el('targetNum').textContent=target; el('remainN').textContent=NEED;
+    el('field').dataset.target=target;   // test hook
+    holes.forEach(h=>{ h.up=false; h.mole.classList.remove('up'); if(h.retract)clearTimeout(h.retract); });
+  }
+
+  function targetClear(){
+    sWin(); flash(true); running=false;
+    holes.forEach(h=>{ h.up=false; h.mole.classList.remove('up'); if(h.retract)clearTimeout(h.retract); });
+    targetIdx++;
+    setTimeout(()=>{ if(targetIdx>=TARGETS){ endRound(); return; } running=true; newTarget(); }, 900);
+  }
+
+  function startGame(m){
+    mode=m; ops=OPS[m]; targetIdx=0; stars=0; correctTotal=0; misses=0;
+    el('starCount').textContent='0';
+    el('titleScreen').classList.add('hidden'); el('resultScreen').classList.add('hidden');
+    el('homeBtn').classList.remove('hidden');
+    buildField(); newTarget(); running=true;
+    tone(520,0.1,'sine',0); tone(700,0.12,'sine',0.09);
+    clearInterval(spawnTimer); spawnTimer=setInterval(spawnTick, 640);
+  }
+
+  function endRound(){
+    running=false; clearInterval(spawnTimer); el('homeBtn').classList.add('hidden');
+    const total=TARGETS*NEED;
+    el('resultNum').textContent=correctTotal; el('resultTotal').textContent=total;
+    const s = misses===0?'⭐⭐⭐' : misses<=5?'⭐⭐':'⭐';
+    el('resultStars').textContent=s;
+    el('resultTitle').innerHTML = misses===0?'かんぺき！<span> てんさい！</span>':'よくできました！';
+    el('resultCat').textContent = misses<=5?'😸':'🐹';
+    try{ const k='nekota_sanmogura_best'; const prev=+(localStorage.getItem(k)||0); if(stars>prev) localStorage.setItem(k,String(stars)); }catch(e){}
+    el('resultScreen').classList.remove('hidden'); sWin();
+  }
+
+  function goHome(){ running=false; clearInterval(spawnTimer);
+    el('resultScreen').classList.add('hidden'); el('homeBtn').classList.add('hidden'); el('titleScreen').classList.remove('hidden'); }
+
+  document.querySelectorAll('.pick[data-mode]').forEach(b=>b.addEventListener('click',()=>startGame(b.dataset.mode)));
+  el('againBtn').addEventListener('click',()=>startGame(mode));
+  el('backHomeBtn').addEventListener('click',goHome);
+  el('homeBtn').addEventListener('click',goHome);
+
+  buildField();
+})();
+</script>
+</body>
+</html>

@@ -786,12 +786,7 @@ function drawMinion(e,flash){ const r=e.r, k=e.ing; ctx.lineJoin='round'; ctx.sh
     ctx.fillStyle='rgba(180,180,160,.5)'; for(const oy of [-0.32,0,0.32]){ ctx.beginPath(); ctx.ellipse(r*0.18,oy*r,r*0.1,r*0.26,0.5,0,TAU); ctx.fill(); } return true; }
   if(k==='chicken'){ drawChick(r,(e.legT=(e.legT||0)+0.02)); return true; }
   if(k==='bee'){ drawWorkerBee(0,0,r,false,flash); return true; }
-  if(k==='pig'){ // 子豚（小）
-    ctx.fillStyle=flash?'#fff':'#f4b6c2'; ctx.strokeStyle='#d98aa0'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.ellipse(r*0.1,r*0.05,r*0.9,r*0.8,0,0,TAU); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(-r*0.6,-r*0.05,r*0.5,0,TAU); ctx.fill(); ctx.stroke();
-    for(const s of [-1,1]){ ctx.beginPath(); ctx.moveTo(-r*0.75,-r*0.4+s*r*0.05); ctx.lineTo(-r*0.95,-r*0.8); ctx.lineTo(-r*0.55,-r*0.5); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-    ctx.fillStyle=flash?'#fff':'#f7a8bb'; ctx.beginPath(); ctx.ellipse(-r*1.02,0,r*0.22,r*0.26,0,0,TAU); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=flash?'#fff':'#3a2028'; ctx.beginPath(); ctx.arc(-r*0.62,-r*0.22,r*0.08,0,TAU); ctx.arc(-r*0.24,-r*0.24,r*0.08,0,TAU); ctx.fill(); return true; }
+  if(k==='pig'){ drawPiglet(r,flash); return true; } // 子豚（小）
   return false; }
 function drawEnemy(e){ ctx.save(); ctx.translate(e.x,e.y); if(e.knocked) ctx.rotate(e.spin||0); if(e.t==='boss'){ drawBoss(e); ctx.restore(); return; }
   const flash=e.hitFlash>0, col=flash?'#fff':e.color; ctx.shadowColor=e.color; ctx.shadowBlur=12; ctx.fillStyle=col;
@@ -1557,16 +1552,30 @@ function updateChickenBoss(e,dt){
   e.phaseTimer+=dt; e.y+=e.sweepDir*72*dt; if(e.y<120){e.y=120;e.sweepDir=1;} if(e.y>H-120){e.y=H-120;e.sweepDir=-1;}
   e.fireCd-=dt; if(e.fireCd<=0){ e.fireCd=1.1; const a=Math.atan2(player.y-e.y,player.x-e.x), n=easyMode?1:3;
     for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.18; eBullets.push({x:e.x-e.r,y:e.y,vx:Math.cos(aa)*260,vy:Math.sin(aa)*260,r:7,color:'#ffd85e',boss:true}); } Audio2.sfx.hit(); }
-  e.spCd-=dt; if(e.spCd<=0){ e.spCd=easyMode?3.0:2.1; const n=easyMode?1:2; for(let k=0;k<n;k++) layEggBomb(e); } }
+  e.spCd-=dt; if(e.spCd<=0){ e.spCd=easyMode?3.0:2.1; const n=easyMode?1:2; for(let k=0;k<n;k++) layEggBomb(e); }
+  if(e.chickCd===undefined) e.chickCd=rnd(2.6,3.6); e.chickCd-=dt; if(e.chickCd<=0){ e.chickCd=easyMode?7.5:5.5; spawnChicks(true); Audio2.sfx.warn(); spawnText(e.x,e.y-e.r-6,'ひよこ とっしん！','#ffd85e',13); } } // 特殊：ひよこが走ってくる
 function layEggBomb(e){ const tx=rnd(70,W-40), ty=rnd(60,H-60), a=Math.atan2(ty-e.y,tx-e.x), sp=rnd(300,380);
   eBullets.push({x:e.x-e.r*0.4,y:e.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:12,color:'#f6ecd2',boss:true,kind:'eggbomb',tx,ty,spin:rnd(-6,6)}); Audio2.sfx.hit(); spawnText(e.x,e.y-e.r-6,'たまごばくだん！','#f6ecd2',12); }
 function eggExplode(x,y){ Audio2.sfx.explode(); shake(6,0.25); flash('#ffb04a',0.12); spawnParticles(x,y,'#ff7a2e',18,260,0.6); spawnParticles(x,y,'#ffd85e',8,180,0.4);
   eBullets.push({x,y,vx:0,vy:0,r:46,color:'#ff7a2e',boss:true,kind:'eggflame',life:0.5,t:0}); } // 0.5秒 その場で爆炎
 let chicks=[];
-function spawnChicks(){ const n=easyMode?5:9; for(let i=0;i<n;i++) chicks.push({x:W+rnd(20,170),y:rnd(70,H-70),vx:-rnd(190,300),t:rnd(0,TAU),s:15,legT:0,delay:i*0.16,wob:rnd(70,140)}); }
+function spawnChicks(hurt){ const n=easyMode?5:9; for(let i=0;i<n;i++) chicks.push({x:W+rnd(20,170),y:rnd(70,H-70),vx:-rnd(190,300),t:rnd(0,TAU),s:15,legT:0,delay:i*0.16,wob:rnd(70,140),hurt:!!hurt}); }
+function spawnPigletCharge(){ for(let i=0;i<3;i++) chicks.push({x:W+40+i*70,y:rnd(90,H-90),vx:-rnd(240,320),t:rnd(0,TAU),s:20,legT:0,delay:i*0.28,wob:rnd(50,100),hurt:true,pig:true}); } // 3匹の子豚が走ってくる
 function updateChicks(dt){ for(let i=chicks.length-1;i>=0;i--){ const c=chicks[i]; if(c.delay>0){c.delay-=dt;continue;} c.t+=dt; c.legT+=dt;
-  c.x+=c.vx*dt; c.y+=Math.sin(c.t*7+c.x*0.03)*c.wob*dt + rnd(-50,50)*dt; c.y=clamp(c.y,34,H-34); if(c.x<-40) chicks.splice(i,1); } }
-function drawChicks(){ for(const c of chicks){ if(c.delay>0)continue; ctx.save(); ctx.translate(c.x,c.y); drawChick(c.s,c.legT); ctx.restore(); } }
+  c.x+=c.vx*dt; c.y+=Math.sin(c.t*7+c.x*0.03)*c.wob*dt + rnd(-50,50)*dt; c.y=clamp(c.y,34,H-34);
+  if(c.hurt && player.alive && player.invuln<=0){ const rr=c.s*0.62+player.r*0.7; if(dist2(c.x,c.y,player.x,player.y)<rr*rr) damagePlayer(); } // 攻撃版は当たるとダメージ
+  if(c.x<-40) chicks.splice(i,1); } }
+function drawChicks(){ for(const c of chicks){ if(c.delay>0)continue; ctx.save(); ctx.translate(c.x,c.y);
+  if(c.pig){ const hop=Math.abs(Math.sin(c.legT*11))*c.s*0.16; ctx.translate(0,-hop); drawPiglet(c.s,false); } else drawChick(c.s,c.legT);
+  ctx.restore(); } }
+function drawPiglet(r,flash){ ctx.lineJoin='round'; ctx.shadowColor='rgba(0,0,0,.3)'; ctx.shadowBlur=6; // 子豚（左向き＝進行方向）
+  ctx.fillStyle=flash?'#fff':'#f4b6c2'; ctx.strokeStyle='#d98aa0'; ctx.lineWidth=1.8; ctx.beginPath(); ctx.ellipse(r*0.12,r*0.06,r*0.92,r*0.8,0,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.85,r*0.55); ctx.quadraticCurveTo(r*1.3,r*0.35,r*1.15,r*0.05); ctx.stroke(); // しっぽ
+  ctx.beginPath(); ctx.arc(-r*0.62,-r*0.04,r*0.52,0,TAU); ctx.fill(); ctx.stroke(); // 頭
+  for(const s of [-1,1]){ ctx.beginPath(); ctx.moveTo(-r*0.78,-r*0.4+s*r*0.05); ctx.lineTo(-r*0.98,-r*0.82); ctx.lineTo(-r*0.55,-r*0.52); ctx.closePath(); ctx.fill(); ctx.stroke(); } // 耳
+  ctx.fillStyle=flash?'#fff':'#f7a8bb'; ctx.beginPath(); ctx.ellipse(-r*1.05,r*0.02,r*0.24,r*0.28,0,0,TAU); ctx.fill(); ctx.stroke(); // 鼻
+  ctx.fillStyle='#c76e86'; ctx.beginPath(); ctx.arc(-r*1.1,-r*0.02,r*0.05,0,TAU); ctx.arc(-r*1.02,r*0.06,r*0.05,0,TAU); ctx.fill(); // 鼻の穴
+  ctx.fillStyle=flash?'#fff':'#3a2028'; ctx.beginPath(); ctx.arc(-r*0.62,-r*0.24,r*0.08,0,TAU); ctx.arc(-r*0.24,-r*0.26,r*0.08,0,TAU); ctx.fill(); ctx.shadowBlur=0; } // 目
 function drawChick(s,t){ const hop=Math.abs(Math.sin(t*10))*s*0.22; // ひよこスプライト
   const Hs=s*2.7, Wd=Hs*(chickImg.naturalWidth?chickImg.naturalWidth/chickImg.naturalHeight:0.73);
   if(chickImg.complete&&chickImg.naturalWidth) ctx.drawImage(chickImg,-Wd/2,-Hs/2-hop,Wd,Hs);
@@ -1641,7 +1650,8 @@ function updatePigBoss(e,dt){ e.phaseTimer+=dt; e.y+=e.sweepDir*66*dt; if(e.y<12
   e.spCd-=dt; if(e.spCd<=0){ e.spCd=easyMode?3.0:2.1; const a=Math.atan2(player.y-e.y,player.x-e.x), n=easyMode?2:4; // カツ投げ
     for(let k=0;k<n;k++){ const aa=a+(k-(n-1)/2)*0.15, sp=rnd(300,380);
       eBullets.push({x:e.x-e.r*0.4,y:e.y+rnd(-16,16),vx:Math.cos(aa)*sp,vy:Math.sin(aa)*sp,r:14,color:'#c8832e',boss:true,kind:'katsu',ang:aa,spin:rnd(-5,5)}); }
-    Audio2.sfx.big(); spawnText(e.x,e.y-e.r-6,'とんかつ！','#e0a850',13); } }
+    Audio2.sfx.big(); spawnText(e.x,e.y-e.r-6,'とんかつ！','#e0a850',13); }
+  if(e.pigletCd===undefined) e.pigletCd=rnd(3.0,4.2); e.pigletCd-=dt; if(e.pigletCd<=0){ e.pigletCd=easyMode?8:6; spawnPigletCharge(); Audio2.sfx.warn(); spawnText(e.x,e.y-e.r-6,'子ぶた とっしん！','#f4b6c2',13); } } // 特殊：3匹の子豚が走ってくる
 function drawKatsu(b){ ctx.rotate((b.rollA=(b.rollA||0)+(b.spin||3)*0.02)); const r=b.r; // 揚げたてのカツ
   ctx.shadowColor='#e0a850'; ctx.shadowBlur=9; ctx.fillStyle='#c8832e'; ctx.strokeStyle='#8a5416'; ctx.lineWidth=2; ctx.lineJoin='round';
   roundRect(-r*1.15,-r*0.62,r*2.3,r*1.24,r*0.3); ctx.fill(); ctx.stroke();

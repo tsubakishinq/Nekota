@@ -1710,10 +1710,12 @@ function renderInsuranceTable(y, m, sch){
   const order = Object.keys(INSURANCE_COLORS);
   const usedOrder = order.filter(function(k){ return groups[k] && groups[k].length; });
 
-  // 凡例
+  // 凡例（通院のある患者のみカウント）
   legendEl.innerHTML = usedOrder.map(function(ins){
     var c = getInsuranceColor(ins);
-    return '<div class="sch-table-legend-item"><span class="sch-table-legend-dot" style="background:'+c.bg+';border:1.5px solid '+c.border+'"></span>'+ins+'（'+groups[ins].length+'名）</div>';
+    var visitingCount = groups[ins].filter(function(p){ return (sch[p.id]||[]).length > 0; }).length;
+    if(visitingCount === 0) return '';
+    return '<div class="sch-table-legend-item"><span class="sch-table-legend-dot" style="background:'+c.bg+';border:1.5px solid '+c.border+'"></span>'+ins+'（'+visitingCount+'名）</div>';
   }).join('');
 
   // テーブル本体
@@ -1728,8 +1730,11 @@ function renderInsuranceTable(y, m, sch){
 
   usedOrder.forEach(function(ins){
     const c = getInsuranceColor(ins);
-    html += '<tr class="sch-table-group-row"><td colspan="'+(dim+1)+'" style="background:'+c.bg+';color:'+c.text+';border-left:4px solid '+c.border+'">'+ins+'　('+groups[ins].length+'名)</td></tr>';
-    groups[ins].sort(function(a,b){ return Number(a.num)-Number(b.num); }).forEach(function(p){
+    // その月に通院のある患者のみ表示
+    const visitingPatients = groups[ins].filter(function(p){ return (sch[p.id]||[]).length > 0; });
+    if(visitingPatients.length === 0) return;
+    html += '<tr class="sch-table-group-row"><td colspan="'+(dim+1)+'" style="background:'+c.bg+';color:'+c.text+';border-left:4px solid '+c.border+'">'+ins+'　('+visitingPatients.length+'名)</td></tr>';
+    visitingPatients.sort(function(a,b){ return Number(a.num)-Number(b.num); }).forEach(function(p){
       const dates = (sch[p.id]||[]).slice().sort(function(a,b){ return a-b; });
       html += '<tr class="sch-table-row">';
       html += '<td class="sch-td-name" style="background:'+c.bg+'33;color:'+c.text+'">No.'+p.num+' '+p.name+' <span style="font-weight:700;opacity:.85">('+dates.length+'日)</span></td>';

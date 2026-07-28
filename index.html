@@ -135,9 +135,11 @@
   .parts-badge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--border);font-size:13px;font-weight:700;color:var(--ink-light);}
   .parts-badge.filled{background:var(--accent);border-color:var(--accent);color:white;}
   .patient-card-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-  .patient-card-actions .btn-edit,.patient-card-actions .btn-reset{flex:1;min-width:90px;}
+  .patient-card-actions .btn-edit,.patient-card-actions .btn-reset,.patient-card-actions .btn-delete{flex:1;min-width:90px;}
   .btn-edit{flex:1;background:var(--bg);color:var(--ink);border:1.5px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
   .btn-reset{background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+  .btn-delete{background:#fdecec;color:#c0392b;border:1.5px solid #e88;border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+  .btn-delete:active{opacity:.8;}
   .month-attend-row{margin:10px 0;}
   .month-attend-label{font-size:11px;color:var(--ink-light);margin-bottom:6px;}
   .month-attend-buttons{display:flex;flex-wrap:wrap;gap:5px;}
@@ -1273,6 +1275,7 @@ function renderPatients(){
         <button class="btn-edit" onclick="openPatientModal(${p.id})">編集</button>
         <button class="btn-edit" onclick="openPartLogModal(${p.id})">📍 部位を記録</button>
         <button class="btn-reset" onclick="openResetModal(${p.id},'${p.name}')">部位リセット</button>
+        <button class="btn-delete" onclick="deletePatient(${p.id})">🗑️ 削除</button>
       </div>
     </div>`;
   }).join('');
@@ -1311,6 +1314,28 @@ function savePatient(){
     patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value});
   }
   savePat();closePatientModal();renderPatients();showToast('✓ 保存しました');
+}
+
+function deletePatient(id){
+  const p=patients.find(function(x){return x.id===id;});
+  if(!p)return;
+  if(!confirm('No.'+p.num+'　'+p.name+' さんを削除しますか？\n\n・患者情報\n・通院対象月の設定\n・スケジュールの割り振り\nを削除します。\n（過去の来院記録・売上履歴は残ります）\n\nこの操作は取り消せません。')) return;
+  // 患者本体を削除
+  patients=patients.filter(function(x){return x.id!==id;});
+  savePat();
+  // 通院対象月フラグを削除
+  if(attendFlags[String(id)]!==undefined){delete attendFlags[String(id)];saveAttendFlags();}
+  // 部位リセット日を削除
+  if(resets[id]!==undefined){delete resets[id];saveRst();}
+  // 各月のスケジュール割り振りから削除
+  var schChanged=false;
+  Object.keys(schedules).forEach(function(k){
+    if(schedules[k]&&schedules[k][id]!==undefined){delete schedules[k][id];schChanged=true;}
+  });
+  if(schChanged)saveSchedules();
+  renderPatients();
+  if(typeof renderSchedule==='function')renderSchedule();
+  showToast('✓ 削除しました');
 }
 
 function openResetModal(id,name){
@@ -1699,9 +1724,11 @@ function renderInsuranceTable(y, m, sch){
   const dim = new Date(y, m+1, 0).getDate();
   const todayStr = now.toISOString().slice(0,10);
 
-  // 保険区分ごとにグループ化（その区分の患者がいるものだけ）
+  // 保険区分ごとにグループ化（今月の割り振りがある患者だけ）
   const groups = {};
   patients.forEach(function(p){
+    // 今月の通院割り振りが無い患者は割り振り表から除外
+    if(!(sch[p.id] && sch[p.id].length)) return;
     const ins = p.insurance || 'その他';
     if(!groups[ins]) groups[ins] = [];
     groups[ins].push(p);
@@ -1709,6 +1736,11 @@ function renderInsuranceTable(y, m, sch){
   // 区分の表示順（INSURANCE_COLORSのキー順）
   const order = Object.keys(INSURANCE_COLORS);
   const usedOrder = order.filter(function(k){ return groups[k] && groups[k].length; });
+  if(!usedOrder.length){
+    legendEl.innerHTML = '';
+    wrapEl.innerHTML = '<div class="empty-state">今月 割り振りされた患者がいません</div>';
+    return;
+  }
 
   // 凡例
   legendEl.innerHTML = usedOrder.map(function(ins){
@@ -1963,7 +1995,10 @@ function renderSchPatient() {
   var el = document.getElementById('schPatientList');
   if(!patients.length){el.innerHTML='<div class="empty-state">患者が登録されていません</div>';return;}
   if(!Object.keys(sch).length){el.innerHTML='<div class="empty-state">「生成」ボタンを押してください</div>';return;}
-  el.innerHTML = patients.slice().sort(function(a,b){return Number(a.num)-Number(b.num);}).map(function(p){
+  // 今月の通院割り振りがある患者のみ表示
+  var visiblePats = patients.filter(function(p){ return (sch[p.id]||[]).length>0; }).sort(function(a,b){return Number(a.num)-Number(b.num);});
+  if(!visiblePats.length){el.innerHTML='<div class="empty-state">今月 割り振りされた患者がいません</div>';return;}
+  el.innerHTML = visiblePats.map(function(p){
     var dates=sch[p.id]||[], cnt=dates.length, dkp=isDaikyo(p), over=dkp&&cnt>=10;
     return '<div class="sch-pat-row">'+
       '<div class="sch-pat-top">'+

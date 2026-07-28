@@ -1559,15 +1559,7 @@ function generateAll(){
   const y=schYear,m=schMonth,key=schMonthKey(y,m);
   const result={};
   const workDays=getWorkDays(y,m);
-  const MIN_PER_DAY=25, MAX_PER_DAY=40;
-  const dim=workDays.length;
-  // 月初・中旬・下旬の境界（workDaysのインデックス基準で3分割）
-  const third=Math.max(1,Math.floor(dim/3));
-  const periodRanges={
-    early: [0, third-1],
-    mid:   [third, third*2-1],
-    late:  [third*2, dim-1]
-  };
+  const TARGET_PER_DAY=35; // だいたい1日あたりの目標来院人数（この付近にそろえる）
 
   // 日ごとのカウンター初期化
   const dayCount={};
@@ -1581,22 +1573,54 @@ function generateAll(){
   const ot=attendPatients.filter(function(p){return !isDaikyo(p);});
   const allowOver=Math.min(Math.ceil(dk.length*0.30)-1, 10);
 
-  // 各患者に開始パターン（早/中/後）をランダム割当（保険区分関係なく均等にばらつかせる）
-  const periodKeys=['early','mid','late'];
-  const patientPeriod={};
-  patients.forEach(function(p){
-    patientPeriod[p.id]=periodKeys[Math.floor(Math.random()*3)];
-  });
-
   // 全患者をシャッフルして処理
   const allPats=schShuffle(dk).concat(schShuffle(ot));
   const isDkMap={};
   dk.forEach(function(p,i){isDkMap[p.id]={isOver:i>=allowOver};});
 
+  // ===== 1日あたりの目標人数（TARGET_PER_DAY）に合わせて各患者の通院日数を調整 =====
+  // 日ごとの人数 ＝ 全患者の通院日数の合計 ÷ 営業日数。
+  // そこで通院日数の合計が「目標人数×営業日数」に近づくよう各患者の日数を増減する。
+  // ただし大協10日制限などの基準を守るため、患者ごとに上限を設ける。
+  const MIN_TARGET=3;
+  function capForPatient(p){
+    const isDk=isDaikyo(p);
+    const forceUnder=isDk&&isDkMap[p.id]&&isDkMap[p.id].isOver;
+    if(forceUnder) return Math.min(9, workDays.length);  // 大協・10日未満に抑える枠
+    if(isDk)       return Math.min(14, workDays.length); // 大協・10日以上OK枠
+    return Math.min(18, workDays.length);                // その他
+  }
+  const perPatientTarget={};
+  let curSum=0, capSum=0;
   allPats.forEach(function(p){
     const isDk=isDaikyo(p);
     const forceUnder=isDk&&isDkMap[p.id]&&isDkMap[p.id].isOver;
-    const targetDays=getTargetDays(p,forceUnder);
+    const cap=capForPatient(p);
+    perPatientTarget[p.id]=Math.max(MIN_TARGET, Math.min(getTargetDays(p,forceUnder), cap));
+    curSum+=perPatientTarget[p.id];
+    capSum+=cap;
+  });
+  // 目標合計（実現可能な範囲にクランプ）
+  const desiredTotal=Math.max(MIN_TARGET*allPats.length, Math.min(TARGET_PER_DAY*workDays.length, capSum));
+  let guard=0;
+  while(curSum<desiredTotal && guard++<300000){
+    const cands=allPats.filter(function(p){return perPatientTarget[p.id]<capForPatient(p);});
+    if(!cands.length) break;
+    const p=cands[Math.floor(Math.random()*cands.length)];
+    perPatientTarget[p.id]++; curSum++;
+  }
+  guard=0;
+  while(curSum>desiredTotal && guard++<300000){
+    const cands=allPats.filter(function(p){return perPatientTarget[p.id]>MIN_TARGET;});
+    if(!cands.length) break;
+    const p=cands[Math.floor(Math.random()*cands.length)];
+    perPatientTarget[p.id]--; curSum--;
+  }
+  // 平準化の最低ライン（達成できる平均のやや下）
+  const minFloor=Math.max(0, Math.floor(desiredTotal/workDays.length)-2);
+
+  allPats.forEach(function(p){
+    const targetDays=perPatientTarget[p.id];
 
     // 候補日は当月の全営業日。開始時期による偏り（前半の日が埋まりにくい）を
     // なくし、日ごとの人数を平均値付近にそろえるため全日を対象にする。
@@ -1635,10 +1659,10 @@ function generateAll(){
     result[p.id]=sel.sort(function(a,b){return a-b;});
   });
 
-  // 最低人数チェック：25人未満の日に患者を追加
+  // 最低人数チェック：最低ライン未満の日に患者を追加
   workDays.forEach(function(day, dayIdx){
-    if(dayCount[day]<MIN_PER_DAY){
-      const shortage=MIN_PER_DAY-dayCount[day];
+    if(dayCount[day]<minFloor){
+      const shortage=minFloor-dayCount[day];
       // その日に来ていない患者からランダムに追加
       const candidates=schShuffle(allPats).filter(function(p){
         return result[p.id].indexOf(day)===-1;

@@ -1598,48 +1598,50 @@ function generateAll(){
     const forceUnder=isDk&&isDkMap[p.id]&&isDkMap[p.id].isOver;
     const targetDays=getTargetDays(p,forceUnder);
 
-    // この患者の開始パターンに応じた候補日リスト（開始期間〜月末までの営業日）
-    const period=patientPeriod[p.id];
-    const startIdx=periodRanges[period][0];
-    const candidatePool=workDays.slice(startIdx); // 開始期間以降の営業日のみ
-    const poolForTarget=candidatePool.length>0?candidatePool:workDays;
+    // 候補日は当月の全営業日。開始時期による偏り（前半の日が埋まりにくい）を
+    // なくし、日ごとの人数を平均値付近にそろえるため全日を対象にする。
+    const poolForTarget=workDays;
 
     const sel=[];
-    let last=-2;
-    // まず間隔を空けながら選ぶ（開始期間以降の日付からランダム選定し、日付順に並べる）
-    const candidate=schShuffle(poolForTarget).sort(function(a,b){return a-b;});
-    for(let i=0;i<candidate.length;i++){
-      const d=candidate[i];
-      if(d-last>=2 && dayCount[d]<MAX_PER_DAY){
-        sel.push(d);
-        last=d;
-        if(sel.length>=targetDays) break;
-      }
-    }
-    // 足りない場合は制約を緩めて追加（同じ開始期間プール内、MAX_PER_DAYが上限）
-    if(sel.length<targetDays){
+    const target=Math.min(targetDays, poolForTarget.length);
+    // 「現在の来院人数がいちばん少ない日」を優先して割り当て、日ごとの人数を
+    // 平準化する（＝各日を平均値付近にそろえる）。同時に同じ患者は原則
+    // 2日以上あけて来院させる。間隔が確保できない場合のみ緩める。
+    function pickLeastLoaded(enforceSpacing){
+      let best=-1, bestCount=Infinity;
       for(let i=0;i<poolForTarget.length;i++){
         const d=poolForTarget[i];
-        if(sel.indexOf(d)===-1 && dayCount[d]<MAX_PER_DAY){
-          sel.push(d);
-          if(sel.length>=targetDays) break;
+        if(sel.indexOf(d)!==-1) continue;
+        if(enforceSpacing){
+          let ok=true;
+          for(let j=0;j<sel.length;j++){ if(Math.abs(sel[j]-d)<2){ ok=false; break; } }
+          if(!ok) continue;
+        }
+        const c=dayCount[d];
+        // 人数が少ない日を優先。同数のときはランダムに選び、偏りを防ぐ
+        if(c<bestCount || (c===bestCount && Math.random()<0.5)){
+          bestCount=c; best=d;
         }
       }
+      return best;
     }
-    sel.forEach(function(d){dayCount[d]++;});
+    while(sel.length<target){
+      let d=pickLeastLoaded(true);
+      if(d===-1) d=pickLeastLoaded(false); // 間隔が確保できなければ緩める
+      if(d===-1) break;
+      sel.push(d);
+      dayCount[d]++;
+    }
     result[p.id]=sel.sort(function(a,b){return a-b;});
   });
 
-  // 最低人数チェック：25人未満の日に患者を追加（その日が開始期間以降の患者のみ対象）
+  // 最低人数チェック：25人未満の日に患者を追加
   workDays.forEach(function(day, dayIdx){
     if(dayCount[day]<MIN_PER_DAY){
       const shortage=MIN_PER_DAY-dayCount[day];
-      // その日に来ていない患者からランダムに追加（開始期間が当日以前の患者のみ）
+      // その日に来ていない患者からランダムに追加
       const candidates=schShuffle(allPats).filter(function(p){
-        if(result[p.id].indexOf(day)!==-1) return false;
-        const period=patientPeriod[p.id];
-        const startIdx=periodRanges[period][0];
-        return dayIdx>=startIdx;
+        return result[p.id].indexOf(day)===-1;
       });
       let added=0;
       for(let i=0;i<candidates.length&&added<shortage;i++){

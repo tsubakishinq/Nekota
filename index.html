@@ -446,9 +446,9 @@
       </div>
     </div>
     <div class="sch-legend">
-      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--blue-light);border:1px solid #2980b9"></div>大協</div>
+      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--blue-light);border:1px solid #2980b9"></div>協会1</div>
       <div class="sch-legend-item"><div class="sch-dot" style="background:#eafaf1;border:1px solid #27ae60"></div>その他</div>
-      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></div>大協10日超</div>
+      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></div>協会1・10日超</div>
     <div class="sch-legend-item"><div class="sch-dot" style="background:#f0f0f0;border:1px solid #ccc"></div>休診日（長押しで設定）</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">
@@ -503,7 +503,7 @@
 <!-- 大協10日以上一覧モーダル -->
 <div class="modal-overlay" id="dkOverModal">
   <div class="modal">
-    <h3>大協 10日以上の患者一覧</h3>
+    <h3>協会1 10日以上の患者一覧</h3>
     <div id="dkOverList" style="max-height:60vh;overflow-y:auto;margin-bottom:16px;"></div>
     <button class="btn-secondary" onclick="document.getElementById('dkOverModal').classList.remove('open')" style="width:100%">閉じる</button>
   </div>
@@ -1825,13 +1825,13 @@ function renderSchedule(){
     var dkOverList=dk.filter(function(p){return(sch[p.id]||[]).length>=10;});
   var dkLimitOk=dkOver<=10 && pct<30;
   document.getElementById('schStatRow').innerHTML=
-    '<div class="stat-card"><div class="sl">大協患者数</div><div class="sv" style="color:var(--blue)">'+dk.length+'名</div></div>'+
-    '<div class="stat-card" onclick="showDkOverList()" style="cursor:pointer;border-color:var(--accent)"><div class="sl">大協10日以上 👆タップ</div><div class="sv" style="color:'+(dkLimitOk?'var(--success)':'var(--accent)')+'">'+dkOver+'名（'+pct+'%）</div></div>';
+    '<div class="stat-card"><div class="sl">協会1患者数</div><div class="sv" style="color:var(--blue)">'+dk.length+'名</div></div>'+
+    '<div class="stat-card" onclick="showDkOverList()" style="cursor:pointer;border-color:var(--accent)"><div class="sl">協会1・10日以上 👆タップ</div><div class="sv" style="color:'+(dkLimitOk?'var(--success)':'var(--accent)')+'">'+dkOver+'名（'+pct+'%）</div></div>';
   const barOk=dkLimitOk;
   document.getElementById('daikyoBar').className='daikyo-bar '+(barOk?'ok':'warn');
   document.getElementById('daikyoBar').innerHTML=barOk
-    ?'✅ 大協10日以上は <strong>'+dkOver+'名（'+pct+'%）</strong>　基準30%未満・10名以下 ✓'
-    :'⚠️ 大協10日以上が <strong>'+dkOver+'名（'+pct+'%）</strong> — 基準（30%未満かつ10名以下）超！再生成してください';
+    ?'✅ 協会1・10日以上は <strong>'+dkOver+'名（'+pct+'%）</strong>　基準30%未満・10名以下 ✓'
+    :'⚠️ 協会1・10日以上が <strong>'+dkOver+'名（'+pct+'%）</strong> — 基準（30%未満かつ10名以下）超！再生成してください';
 
   const dayMap={};
   patients.forEach(function(p){
@@ -2011,7 +2011,7 @@ function renderSchDay() {
       html += '<div class="sch-day-card">';
       html += '<span class="sch-day-card-num">No.'+p.num+'</span>';
       html += '<span class="sch-day-card-name">'+p.name+'</span>';
-      html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'大協':'その他')+'</span>';
+      html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'協会1':'その他')+'</span>';
       if(over) html += '<span style="font-size:10px;color:var(--accent)">⚠️</span>';
       html += '<input type="number" class="sch-day-amount-input" inputmode="numeric" placeholder="¥0" value="'+amountVal+'" data-pid="'+p.id+'" data-date="'+ds+'" data-num="'+p.num+'" data-name="'+p.name+'" onchange="updateDayAmount(this)">';
       html += '</div>';
@@ -2034,7 +2034,7 @@ function renderSchPatient() {
     var dates=sch[p.id]||[], cnt=dates.length, dkp=isDaikyo(p), over=dkp&&cnt>=10;
     return '<div class="sch-pat-row">'+
       '<div class="sch-pat-top">'+
-      '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'大協':'その他')+'</span>'+
+      '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'協会1':'その他')+'</span>'+
       '<span class="sch-pat-name">No.'+p.num+'　'+p.name+'</span>'+
       '<span class="sch-badge cnt '+(!over?'ok':'')+'">'+(cnt)+'日</span>'+
       (over?'<span style="font-size:10px;color:var(--accent)">⚠️</span>':'')+
@@ -2269,7 +2269,7 @@ function showDkOverList(){
     .sort(function(a,b){return(sch[b.id]||[]).length-(sch[a.id]||[]).length;});
   
   if(!overList.length){
-    document.getElementById('dkOverList').innerHTML='<div class="empty-state">10日以上の大協患者はいません</div>';
+    document.getElementById('dkOverList').innerHTML='<div class="empty-state">10日以上の協会1患者はいません</div>';
   } else {
     document.getElementById('dkOverList').innerHTML=overList.map(function(p){
       var days=(sch[p.id]||[]).length;

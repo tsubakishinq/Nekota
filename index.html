@@ -730,13 +730,17 @@ const INITIAL_PATIENTS=[
   {id:84,num:'1045',name:'片山',insurance:'後期',memo:'',freq:''},
   {id:85,num:'1054',name:'喜納（母）',insurance:'後期',memo:'',freq:''},
 ];
+const DELETED_KEY='sekkotsu_deleted_nums';
+let deletedNums=JSON.parse(localStorage.getItem(DELETED_KEY)||'[]');
+function saveDeletedNums(){localStorage.setItem(DELETED_KEY,JSON.stringify(deletedNums));}
 let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');
 (function(){
   var existingNums=new Set(patients.map(function(p){return String(p.num);}));
+  var blocked=new Set(deletedNums.map(String)); // 手動削除された番号は初期名簿から復活させない
   var maxId=patients.reduce(function(m,p){return Math.max(m,Number(p.id)||0);},100);
   var changed=false;
   INITIAL_PATIENTS.forEach(function(ip){
-    if(!existingNums.has(String(ip.num))){
+    if(!existingNums.has(String(ip.num)) && !blocked.has(String(ip.num))){
       patients.push({id:++maxId,num:ip.num,name:ip.name,insurance:ip.insurance,memo:'',freq:''});
       changed=true;
     }
@@ -1323,6 +1327,8 @@ function deletePatient(id){
   // 患者本体を削除
   patients=patients.filter(function(x){return x.id!==id;});
   savePat();
+  // 初期名簿からの自動復活を防ぐため、削除番号を記録
+  if(deletedNums.map(String).indexOf(String(p.num))===-1){deletedNums.push(String(p.num));saveDeletedNums();}
   // 通院対象月フラグを削除
   if(attendFlags[String(id)]!==undefined){delete attendFlags[String(id)];saveAttendFlags();}
   // 部位リセット日を削除

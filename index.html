@@ -135,9 +135,11 @@
   .parts-badge{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--border);font-size:13px;font-weight:700;color:var(--ink-light);}
   .parts-badge.filled{background:var(--accent);border-color:var(--accent);color:white;}
   .patient-card-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-  .patient-card-actions .btn-edit,.patient-card-actions .btn-reset{flex:1;min-width:90px;}
+  .patient-card-actions .btn-edit,.patient-card-actions .btn-reset,.patient-card-actions .btn-delete{flex:1;min-width:90px;}
   .btn-edit{flex:1;background:var(--bg);color:var(--ink);border:1.5px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
   .btn-reset{background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+  .btn-delete{background:#fdecec;color:#c0392b;border:1.5px solid #e88;border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
+  .btn-delete:active{opacity:.8;}
   .month-attend-row{margin:10px 0;}
   .month-attend-label{font-size:11px;color:var(--ink-light);margin-bottom:6px;}
   .month-attend-buttons{display:flex;flex-wrap:wrap;gap:5px;}
@@ -444,9 +446,9 @@
       </div>
     </div>
     <div class="sch-legend">
-      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--blue-light);border:1px solid #2980b9"></div>大協</div>
+      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--blue-light);border:1px solid #2980b9"></div>大阪協会</div>
       <div class="sch-legend-item"><div class="sch-dot" style="background:#eafaf1;border:1px solid #27ae60"></div>その他</div>
-      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></div>大協10日超</div>
+      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></div>大阪協会10日超</div>
     <div class="sch-legend-item"><div class="sch-dot" style="background:#f0f0f0;border:1px solid #ccc"></div>休診日（長押しで設定）</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">
@@ -501,7 +503,7 @@
 <!-- 大協10日以上一覧モーダル -->
 <div class="modal-overlay" id="dkOverModal">
   <div class="modal">
-    <h3>大協 10日以上の患者一覧</h3>
+    <h3>大阪協会 10日以上の患者一覧</h3>
     <div id="dkOverList" style="max-height:60vh;overflow-y:auto;margin-bottom:16px;"></div>
     <button class="btn-secondary" onclick="document.getElementById('dkOverModal').classList.remove('open')" style="width:100%">閉じる</button>
   </div>
@@ -728,13 +730,17 @@ const INITIAL_PATIENTS=[
   {id:84,num:'1045',name:'片山',insurance:'後期',memo:'',freq:''},
   {id:85,num:'1054',name:'喜納（母）',insurance:'後期',memo:'',freq:''},
 ];
+const DELETED_KEY='sekkotsu_deleted_nums';
+let deletedNums=JSON.parse(localStorage.getItem(DELETED_KEY)||'[]');
+function saveDeletedNums(){localStorage.setItem(DELETED_KEY,JSON.stringify(deletedNums));}
 let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');
 (function(){
   var existingNums=new Set(patients.map(function(p){return String(p.num);}));
+  var blocked=new Set(deletedNums.map(String)); // 手動削除された番号は初期名簿から復活させない
   var maxId=patients.reduce(function(m,p){return Math.max(m,Number(p.id)||0);},100);
   var changed=false;
   INITIAL_PATIENTS.forEach(function(ip){
-    if(!existingNums.has(String(ip.num))){
+    if(!existingNums.has(String(ip.num)) && !blocked.has(String(ip.num))){
       patients.push({id:++maxId,num:ip.num,name:ip.name,insurance:ip.insurance,memo:'',freq:''});
       changed=true;
     }
@@ -1273,6 +1279,7 @@ function renderPatients(){
         <button class="btn-edit" onclick="openPatientModal(${p.id})">編集</button>
         <button class="btn-edit" onclick="openPartLogModal(${p.id})">📍 部位を記録</button>
         <button class="btn-reset" onclick="openResetModal(${p.id},'${p.name}')">部位リセット</button>
+        <button class="btn-delete" onclick="deletePatient(${p.id})">🗑️ 削除</button>
       </div>
     </div>`;
   }).join('');
@@ -1311,6 +1318,30 @@ function savePatient(){
     patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value});
   }
   savePat();closePatientModal();renderPatients();showToast('✓ 保存しました');
+}
+
+function deletePatient(id){
+  const p=patients.find(function(x){return x.id===id;});
+  if(!p)return;
+  if(!confirm('No.'+p.num+'　'+p.name+' さんを削除しますか？\n\n・患者情報\n・通院対象月の設定\n・スケジュールの割り振り\nを削除します。\n（過去の来院記録・売上履歴は残ります）\n\nこの操作は取り消せません。')) return;
+  // 患者本体を削除
+  patients=patients.filter(function(x){return x.id!==id;});
+  savePat();
+  // 初期名簿からの自動復活を防ぐため、削除番号を記録
+  if(deletedNums.map(String).indexOf(String(p.num))===-1){deletedNums.push(String(p.num));saveDeletedNums();}
+  // 通院対象月フラグを削除
+  if(attendFlags[String(id)]!==undefined){delete attendFlags[String(id)];saveAttendFlags();}
+  // 部位リセット日を削除
+  if(resets[id]!==undefined){delete resets[id];saveRst();}
+  // 各月のスケジュール割り振りから削除
+  var schChanged=false;
+  Object.keys(schedules).forEach(function(k){
+    if(schedules[k]&&schedules[k][id]!==undefined){delete schedules[k][id];schChanged=true;}
+  });
+  if(schChanged)saveSchedules();
+  renderPatients();
+  if(typeof renderSchedule==='function')renderSchedule();
+  showToast('✓ 削除しました');
 }
 
 function openResetModal(id,name){
@@ -1528,15 +1559,7 @@ function generateAll(){
   const y=schYear,m=schMonth,key=schMonthKey(y,m);
   const result={};
   const workDays=getWorkDays(y,m);
-  const MIN_PER_DAY=25, MAX_PER_DAY=40;
-  const dim=workDays.length;
-  // 月初・中旬・下旬の境界（workDaysのインデックス基準で3分割）
-  const third=Math.max(1,Math.floor(dim/3));
-  const periodRanges={
-    early: [0, third-1],
-    mid:   [third, third*2-1],
-    late:  [third*2, dim-1]
-  };
+  const TARGET_PER_DAY=35; // だいたい1日あたりの目標来院人数（この付近にそろえる）
 
   // 日ごとのカウンター初期化
   const dayCount={};
@@ -1550,65 +1573,99 @@ function generateAll(){
   const ot=attendPatients.filter(function(p){return !isDaikyo(p);});
   const allowOver=Math.min(Math.ceil(dk.length*0.30)-1, 10);
 
-  // 各患者に開始パターン（早/中/後）をランダム割当（保険区分関係なく均等にばらつかせる）
-  const periodKeys=['early','mid','late'];
-  const patientPeriod={};
-  patients.forEach(function(p){
-    patientPeriod[p.id]=periodKeys[Math.floor(Math.random()*3)];
-  });
-
   // 全患者をシャッフルして処理
   const allPats=schShuffle(dk).concat(schShuffle(ot));
   const isDkMap={};
   dk.forEach(function(p,i){isDkMap[p.id]={isOver:i>=allowOver};});
 
+  // ===== 1日あたりの目標人数（TARGET_PER_DAY）に合わせて各患者の通院日数を調整 =====
+  // 日ごとの人数 ＝ 全患者の通院日数の合計 ÷ 営業日数。
+  // そこで通院日数の合計が「目標人数×営業日数」に近づくよう各患者の日数を増減する。
+  // ただし大協10日制限などの基準を守るため、患者ごとに上限を設ける。
+  const MIN_TARGET=3;
+  function capForPatient(p){
+    const isDk=isDaikyo(p);
+    const forceUnder=isDk&&isDkMap[p.id]&&isDkMap[p.id].isOver;
+    if(forceUnder) return Math.min(9, workDays.length);  // 大協・10日未満に抑える枠
+    if(isDk)       return Math.min(14, workDays.length); // 大協・10日以上OK枠
+    return Math.min(18, workDays.length);                // その他
+  }
+  const perPatientTarget={};
+  let curSum=0, capSum=0;
   allPats.forEach(function(p){
     const isDk=isDaikyo(p);
     const forceUnder=isDk&&isDkMap[p.id]&&isDkMap[p.id].isOver;
-    const targetDays=getTargetDays(p,forceUnder);
+    const cap=capForPatient(p);
+    perPatientTarget[p.id]=Math.max(MIN_TARGET, Math.min(getTargetDays(p,forceUnder), cap));
+    curSum+=perPatientTarget[p.id];
+    capSum+=cap;
+  });
+  // 目標合計（実現可能な範囲にクランプ）
+  const desiredTotal=Math.max(MIN_TARGET*allPats.length, Math.min(TARGET_PER_DAY*workDays.length, capSum));
+  let guard=0;
+  while(curSum<desiredTotal && guard++<300000){
+    const cands=allPats.filter(function(p){return perPatientTarget[p.id]<capForPatient(p);});
+    if(!cands.length) break;
+    const p=cands[Math.floor(Math.random()*cands.length)];
+    perPatientTarget[p.id]++; curSum++;
+  }
+  guard=0;
+  while(curSum>desiredTotal && guard++<300000){
+    const cands=allPats.filter(function(p){return perPatientTarget[p.id]>MIN_TARGET;});
+    if(!cands.length) break;
+    const p=cands[Math.floor(Math.random()*cands.length)];
+    perPatientTarget[p.id]--; curSum--;
+  }
+  // 平準化の最低ライン（達成できる平均のやや下）
+  const minFloor=Math.max(0, Math.floor(desiredTotal/workDays.length)-2);
 
-    // この患者の開始パターンに応じた候補日リスト（開始期間〜月末までの営業日）
-    const period=patientPeriod[p.id];
-    const startIdx=periodRanges[period][0];
-    const candidatePool=workDays.slice(startIdx); // 開始期間以降の営業日のみ
-    const poolForTarget=candidatePool.length>0?candidatePool:workDays;
+  allPats.forEach(function(p){
+    const targetDays=perPatientTarget[p.id];
+
+    // 候補日は当月の全営業日。開始時期による偏り（前半の日が埋まりにくい）を
+    // なくし、日ごとの人数を平均値付近にそろえるため全日を対象にする。
+    const poolForTarget=workDays;
 
     const sel=[];
-    let last=-2;
-    // まず間隔を空けながら選ぶ（開始期間以降の日付からランダム選定し、日付順に並べる）
-    const candidate=schShuffle(poolForTarget).sort(function(a,b){return a-b;});
-    for(let i=0;i<candidate.length;i++){
-      const d=candidate[i];
-      if(d-last>=2 && dayCount[d]<MAX_PER_DAY){
-        sel.push(d);
-        last=d;
-        if(sel.length>=targetDays) break;
-      }
-    }
-    // 足りない場合は制約を緩めて追加（同じ開始期間プール内、MAX_PER_DAYが上限）
-    if(sel.length<targetDays){
+    const target=Math.min(targetDays, poolForTarget.length);
+    // 「現在の来院人数がいちばん少ない日」を優先して割り当て、日ごとの人数を
+    // 平準化する（＝各日を平均値付近にそろえる）。同時に同じ患者は原則
+    // 2日以上あけて来院させる。間隔が確保できない場合のみ緩める。
+    function pickLeastLoaded(enforceSpacing){
+      let best=-1, bestCount=Infinity;
       for(let i=0;i<poolForTarget.length;i++){
         const d=poolForTarget[i];
-        if(sel.indexOf(d)===-1 && dayCount[d]<MAX_PER_DAY){
-          sel.push(d);
-          if(sel.length>=targetDays) break;
+        if(sel.indexOf(d)!==-1) continue;
+        if(enforceSpacing){
+          let ok=true;
+          for(let j=0;j<sel.length;j++){ if(Math.abs(sel[j]-d)<2){ ok=false; break; } }
+          if(!ok) continue;
+        }
+        const c=dayCount[d];
+        // 人数が少ない日を優先。同数のときはランダムに選び、偏りを防ぐ
+        if(c<bestCount || (c===bestCount && Math.random()<0.5)){
+          bestCount=c; best=d;
         }
       }
+      return best;
     }
-    sel.forEach(function(d){dayCount[d]++;});
+    while(sel.length<target){
+      let d=pickLeastLoaded(true);
+      if(d===-1) d=pickLeastLoaded(false); // 間隔が確保できなければ緩める
+      if(d===-1) break;
+      sel.push(d);
+      dayCount[d]++;
+    }
     result[p.id]=sel.sort(function(a,b){return a-b;});
   });
 
-  // 最低人数チェック：25人未満の日に患者を追加（その日が開始期間以降の患者のみ対象）
+  // 最低人数チェック：最低ライン未満の日に患者を追加
   workDays.forEach(function(day, dayIdx){
-    if(dayCount[day]<MIN_PER_DAY){
-      const shortage=MIN_PER_DAY-dayCount[day];
-      // その日に来ていない患者からランダムに追加（開始期間が当日以前の患者のみ）
+    if(dayCount[day]<minFloor){
+      const shortage=minFloor-dayCount[day];
+      // その日に来ていない患者からランダムに追加
       const candidates=schShuffle(allPats).filter(function(p){
-        if(result[p.id].indexOf(day)!==-1) return false;
-        const period=patientPeriod[p.id];
-        const startIdx=periodRanges[period][0];
-        return dayIdx>=startIdx;
+        return result[p.id].indexOf(day)===-1;
       });
       let added=0;
       for(let i=0;i<candidates.length&&added<shortage;i++){
@@ -1635,7 +1692,7 @@ function regenOne(pid){
   if(!schedules[key])schedules[key]={};
   let forceUnder=false;
   if(isDaikyo(p)){
-    const dk=patients.filter(x=>isDaikyo(x));
+    const dk=patients.filter(x=>isDaikyo(x) && isAttending(x,schYear,schMonth));
     const allow=Math.min(Math.ceil(dk.length*0.30)-1, 10);
     const cur=dk.filter(x=>x.id!==pid&&((schedules[key][x.id]||[]).length>=10)).length;
     forceUnder=cur>=allow;
@@ -1665,6 +1722,10 @@ const INSURANCE_COLORS = {
 };
 function getInsuranceColor(ins){
   return INSURANCE_COLORS[ins] || INSURANCE_COLORS['その他'];
+}
+// 保険区分の表示名（保存データの区分値はそのまま。表示だけ置き換える）
+function insuranceLabel(ins){
+  return ins==='協会1' ? '大阪協会' : ins;
 }
 
 function toggleVisitCell(el){
@@ -1699,9 +1760,11 @@ function renderInsuranceTable(y, m, sch){
   const dim = new Date(y, m+1, 0).getDate();
   const todayStr = now.toISOString().slice(0,10);
 
-  // 保険区分ごとにグループ化（その区分の患者がいるものだけ）
+  // 保険区分ごとにグループ化（今月の割り振りがある患者だけ）
   const groups = {};
   patients.forEach(function(p){
+    // 今月の通院割り振りが無い患者は割り振り表から除外
+    if(!(sch[p.id] && sch[p.id].length)) return;
     const ins = p.insurance || 'その他';
     if(!groups[ins]) groups[ins] = [];
     groups[ins].push(p);
@@ -1709,13 +1772,16 @@ function renderInsuranceTable(y, m, sch){
   // 区分の表示順（INSURANCE_COLORSのキー順）
   const order = Object.keys(INSURANCE_COLORS);
   const usedOrder = order.filter(function(k){ return groups[k] && groups[k].length; });
+  if(!usedOrder.length){
+    legendEl.innerHTML = '';
+    wrapEl.innerHTML = '<div class="empty-state">今月 割り振りされた患者がいません</div>';
+    return;
+  }
 
-  // 凡例（通院のある患者のみカウント）
+  // 凡例
   legendEl.innerHTML = usedOrder.map(function(ins){
     var c = getInsuranceColor(ins);
-    var visitingCount = groups[ins].filter(function(p){ return (sch[p.id]||[]).length > 0; }).length;
-    if(visitingCount === 0) return '';
-    return '<div class="sch-table-legend-item"><span class="sch-table-legend-dot" style="background:'+c.bg+';border:1.5px solid '+c.border+'"></span>'+ins+'（'+visitingCount+'名）</div>';
+    return '<div class="sch-table-legend-item"><span class="sch-table-legend-dot" style="background:'+c.bg+';border:1.5px solid '+c.border+'"></span>'+insuranceLabel(ins)+'（'+groups[ins].length+'名）</div>';
   }).join('');
 
   // テーブル本体
@@ -1730,11 +1796,8 @@ function renderInsuranceTable(y, m, sch){
 
   usedOrder.forEach(function(ins){
     const c = getInsuranceColor(ins);
-    // その月に通院のある患者のみ表示
-    const visitingPatients = groups[ins].filter(function(p){ return (sch[p.id]||[]).length > 0; });
-    if(visitingPatients.length === 0) return;
-    html += '<tr class="sch-table-group-row"><td colspan="'+(dim+1)+'" style="background:'+c.bg+';color:'+c.text+';border-left:4px solid '+c.border+'">'+ins+'　('+visitingPatients.length+'名)</td></tr>';
-    visitingPatients.sort(function(a,b){ return Number(a.num)-Number(b.num); }).forEach(function(p){
+    html += '<tr class="sch-table-group-row"><td colspan="'+(dim+1)+'" style="background:'+c.bg+';color:'+c.text+';border-left:4px solid '+c.border+'">'+insuranceLabel(ins)+'　('+groups[ins].length+'名)</td></tr>';
+    groups[ins].sort(function(a,b){ return Number(a.num)-Number(b.num); }).forEach(function(p){
       const dates = (sch[p.id]||[]).slice().sort(function(a,b){ return a-b; });
       html += '<tr class="sch-table-row">';
       html += '<td class="sch-td-name" style="background:'+c.bg+'33;color:'+c.text+'">No.'+p.num+' '+p.name+' <span style="font-weight:700;opacity:.85">('+dates.length+'日)</span></td>';
@@ -1760,19 +1823,21 @@ function renderSchedule(){
   const y=schYear,m=schMonth,key=schMonthKey(y,m);
   document.getElementById('schLabel').textContent=y+'年'+(m+1)+'月';
   const sch=schedules[key]||{};
-  const dk=patients.filter(p=>isDaikyo(p));
+  // 今月の通院対象（通院対象月ON）の大阪協会患者だけを母数にする。
+  // スケジュール生成の30%計算と分母をそろえるため。
+  const dk=patients.filter(p=>isDaikyo(p) && isAttending(p,y,m));
   const dkOver=dk.filter(p=>(sch[p.id]||[]).length>=10).length;
   const pct=dk.length>0?Math.round(dkOver/dk.length*100):0;
     var dkOverList=dk.filter(function(p){return(sch[p.id]||[]).length>=10;});
   var dkLimitOk=dkOver<=10 && pct<30;
   document.getElementById('schStatRow').innerHTML=
-    '<div class="stat-card"><div class="sl">大協患者数</div><div class="sv" style="color:var(--blue)">'+dk.length+'名</div></div>'+
-    '<div class="stat-card" onclick="showDkOverList()" style="cursor:pointer;border-color:var(--accent)"><div class="sl">大協10日以上 👆タップ</div><div class="sv" style="color:'+(dkLimitOk?'var(--success)':'var(--accent)')+'">'+dkOver+'名（'+pct+'%）</div></div>';
+    '<div class="stat-card"><div class="sl">大阪協会患者数</div><div class="sv" style="color:var(--blue)">'+dk.length+'名</div></div>'+
+    '<div class="stat-card" onclick="showDkOverList()" style="cursor:pointer;border-color:var(--accent)"><div class="sl">大阪協会・10日以上 👆タップ</div><div class="sv" style="color:'+(dkLimitOk?'var(--success)':'var(--accent)')+'">'+dkOver+'名（'+pct+'%）</div></div>';
   const barOk=dkLimitOk;
   document.getElementById('daikyoBar').className='daikyo-bar '+(barOk?'ok':'warn');
   document.getElementById('daikyoBar').innerHTML=barOk
-    ?'✅ 大協10日以上は <strong>'+dkOver+'名（'+pct+'%）</strong>　基準30%未満・10名以下 ✓'
-    :'⚠️ 大協10日以上が <strong>'+dkOver+'名（'+pct+'%）</strong> — 基準（30%未満かつ10名以下）超！再生成してください';
+    ?'✅ 大阪協会・10日以上は <strong>'+dkOver+'名（'+pct+'%）</strong>　基準30%未満・10名以下 ✓'
+    :'⚠️ 大阪協会・10日以上が <strong>'+dkOver+'名（'+pct+'%）</strong> — 基準（30%未満かつ10名以下）超！再生成してください';
 
   const dayMap={};
   patients.forEach(function(p){
@@ -1952,7 +2017,7 @@ function renderSchDay() {
       html += '<div class="sch-day-card">';
       html += '<span class="sch-day-card-num">No.'+p.num+'</span>';
       html += '<span class="sch-day-card-name">'+p.name+'</span>';
-      html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'大協':'その他')+'</span>';
+      html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'大阪協会':'その他')+'</span>';
       if(over) html += '<span style="font-size:10px;color:var(--accent)">⚠️</span>';
       html += '<input type="number" class="sch-day-amount-input" inputmode="numeric" placeholder="¥0" value="'+amountVal+'" data-pid="'+p.id+'" data-date="'+ds+'" data-num="'+p.num+'" data-name="'+p.name+'" onchange="updateDayAmount(this)">';
       html += '</div>';
@@ -1968,11 +2033,14 @@ function renderSchPatient() {
   var el = document.getElementById('schPatientList');
   if(!patients.length){el.innerHTML='<div class="empty-state">患者が登録されていません</div>';return;}
   if(!Object.keys(sch).length){el.innerHTML='<div class="empty-state">「生成」ボタンを押してください</div>';return;}
-  el.innerHTML = patients.slice().sort(function(a,b){return Number(a.num)-Number(b.num);}).map(function(p){
+  // 今月の通院割り振りがある患者のみ表示
+  var visiblePats = patients.filter(function(p){ return (sch[p.id]||[]).length>0; }).sort(function(a,b){return Number(a.num)-Number(b.num);});
+  if(!visiblePats.length){el.innerHTML='<div class="empty-state">今月 割り振りされた患者がいません</div>';return;}
+  el.innerHTML = visiblePats.map(function(p){
     var dates=sch[p.id]||[], cnt=dates.length, dkp=isDaikyo(p), over=dkp&&cnt>=10;
     return '<div class="sch-pat-row">'+
       '<div class="sch-pat-top">'+
-      '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'大協':'その他')+'</span>'+
+      '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'大阪協会':'その他')+'</span>'+
       '<span class="sch-pat-name">No.'+p.num+'　'+p.name+'</span>'+
       '<span class="sch-badge cnt '+(!over?'ok':'')+'">'+(cnt)+'日</span>'+
       (over?'<span style="font-size:10px;color:var(--accent)">⚠️</span>':'')+
@@ -2202,12 +2270,12 @@ function restoreData(event){
 function showDkOverList(){
   var y=schYear,m=schMonth,key=schMonthKey(y,m);
   var sch=schedules[key]||{};
-  var dk=patients.filter(function(p){return isDaikyo(p);});
+  var dk=patients.filter(function(p){return isDaikyo(p) && isAttending(p,y,m);});
   var overList=dk.filter(function(p){return(sch[p.id]||[]).length>=10;})
     .sort(function(a,b){return(sch[b.id]||[]).length-(sch[a.id]||[]).length;});
   
   if(!overList.length){
-    document.getElementById('dkOverList').innerHTML='<div class="empty-state">10日以上の大協患者はいません</div>';
+    document.getElementById('dkOverList').innerHTML='<div class="empty-state">10日以上の大阪協会患者はいません</div>';
   } else {
     document.getElementById('dkOverList').innerHTML=overList.map(function(p){
       var days=(sch[p.id]||[]).length;

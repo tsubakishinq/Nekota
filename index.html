@@ -446,9 +446,9 @@
       </div>
     </div>
     <div class="sch-legend">
-      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--blue-light);border:1px solid #2980b9"></div>協会1</div>
+      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--blue-light);border:1px solid #2980b9"></div>大阪協会</div>
       <div class="sch-legend-item"><div class="sch-dot" style="background:#eafaf1;border:1px solid #27ae60"></div>その他</div>
-      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></div>協会1・10日超</div>
+      <div class="sch-legend-item"><div class="sch-dot" style="background:var(--accent-light);border:1px solid var(--accent)"></div>大阪協会10日超</div>
     <div class="sch-legend-item"><div class="sch-dot" style="background:#f0f0f0;border:1px solid #ccc"></div>休診日（長押しで設定）</div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;">
@@ -503,7 +503,7 @@
 <!-- 大協10日以上一覧モーダル -->
 <div class="modal-overlay" id="dkOverModal">
   <div class="modal">
-    <h3>協会1 10日以上の患者一覧</h3>
+    <h3>大阪協会 10日以上の患者一覧</h3>
     <div id="dkOverList" style="max-height:60vh;overflow-y:auto;margin-bottom:16px;"></div>
     <button class="btn-secondary" onclick="document.getElementById('dkOverModal').classList.remove('open')" style="width:100%">閉じる</button>
   </div>
@@ -1692,7 +1692,7 @@ function regenOne(pid){
   if(!schedules[key])schedules[key]={};
   let forceUnder=false;
   if(isDaikyo(p)){
-    const dk=patients.filter(x=>isDaikyo(x));
+    const dk=patients.filter(x=>isDaikyo(x) && isAttending(x,schYear,schMonth));
     const allow=Math.min(Math.ceil(dk.length*0.30)-1, 10);
     const cur=dk.filter(x=>x.id!==pid&&((schedules[key][x.id]||[]).length>=10)).length;
     forceUnder=cur>=allow;
@@ -1722,6 +1722,10 @@ const INSURANCE_COLORS = {
 };
 function getInsuranceColor(ins){
   return INSURANCE_COLORS[ins] || INSURANCE_COLORS['その他'];
+}
+// 保険区分の表示名（保存データの区分値はそのまま。表示だけ置き換える）
+function insuranceLabel(ins){
+  return ins==='協会1' ? '大阪協会' : ins;
 }
 
 function toggleVisitCell(el){
@@ -1777,7 +1781,7 @@ function renderInsuranceTable(y, m, sch){
   // 凡例
   legendEl.innerHTML = usedOrder.map(function(ins){
     var c = getInsuranceColor(ins);
-    return '<div class="sch-table-legend-item"><span class="sch-table-legend-dot" style="background:'+c.bg+';border:1.5px solid '+c.border+'"></span>'+ins+'（'+groups[ins].length+'名）</div>';
+    return '<div class="sch-table-legend-item"><span class="sch-table-legend-dot" style="background:'+c.bg+';border:1.5px solid '+c.border+'"></span>'+insuranceLabel(ins)+'（'+groups[ins].length+'名）</div>';
   }).join('');
 
   // テーブル本体
@@ -1792,7 +1796,7 @@ function renderInsuranceTable(y, m, sch){
 
   usedOrder.forEach(function(ins){
     const c = getInsuranceColor(ins);
-    html += '<tr class="sch-table-group-row"><td colspan="'+(dim+1)+'" style="background:'+c.bg+';color:'+c.text+';border-left:4px solid '+c.border+'">'+ins+'　('+groups[ins].length+'名)</td></tr>';
+    html += '<tr class="sch-table-group-row"><td colspan="'+(dim+1)+'" style="background:'+c.bg+';color:'+c.text+';border-left:4px solid '+c.border+'">'+insuranceLabel(ins)+'　('+groups[ins].length+'名)</td></tr>';
     groups[ins].sort(function(a,b){ return Number(a.num)-Number(b.num); }).forEach(function(p){
       const dates = (sch[p.id]||[]).slice().sort(function(a,b){ return a-b; });
       html += '<tr class="sch-table-row">';
@@ -1819,19 +1823,21 @@ function renderSchedule(){
   const y=schYear,m=schMonth,key=schMonthKey(y,m);
   document.getElementById('schLabel').textContent=y+'年'+(m+1)+'月';
   const sch=schedules[key]||{};
-  const dk=patients.filter(p=>isDaikyo(p));
+  // 今月の通院対象（通院対象月ON）の大阪協会患者だけを母数にする。
+  // スケジュール生成の30%計算と分母をそろえるため。
+  const dk=patients.filter(p=>isDaikyo(p) && isAttending(p,y,m));
   const dkOver=dk.filter(p=>(sch[p.id]||[]).length>=10).length;
   const pct=dk.length>0?Math.round(dkOver/dk.length*100):0;
     var dkOverList=dk.filter(function(p){return(sch[p.id]||[]).length>=10;});
   var dkLimitOk=dkOver<=10 && pct<30;
   document.getElementById('schStatRow').innerHTML=
-    '<div class="stat-card"><div class="sl">協会1患者数</div><div class="sv" style="color:var(--blue)">'+dk.length+'名</div></div>'+
-    '<div class="stat-card" onclick="showDkOverList()" style="cursor:pointer;border-color:var(--accent)"><div class="sl">協会1・10日以上 👆タップ</div><div class="sv" style="color:'+(dkLimitOk?'var(--success)':'var(--accent)')+'">'+dkOver+'名（'+pct+'%）</div></div>';
+    '<div class="stat-card"><div class="sl">大阪協会患者数</div><div class="sv" style="color:var(--blue)">'+dk.length+'名</div></div>'+
+    '<div class="stat-card" onclick="showDkOverList()" style="cursor:pointer;border-color:var(--accent)"><div class="sl">大阪協会・10日以上 👆タップ</div><div class="sv" style="color:'+(dkLimitOk?'var(--success)':'var(--accent)')+'">'+dkOver+'名（'+pct+'%）</div></div>';
   const barOk=dkLimitOk;
   document.getElementById('daikyoBar').className='daikyo-bar '+(barOk?'ok':'warn');
   document.getElementById('daikyoBar').innerHTML=barOk
-    ?'✅ 協会1・10日以上は <strong>'+dkOver+'名（'+pct+'%）</strong>　基準30%未満・10名以下 ✓'
-    :'⚠️ 協会1・10日以上が <strong>'+dkOver+'名（'+pct+'%）</strong> — 基準（30%未満かつ10名以下）超！再生成してください';
+    ?'✅ 大阪協会・10日以上は <strong>'+dkOver+'名（'+pct+'%）</strong>　基準30%未満・10名以下 ✓'
+    :'⚠️ 大阪協会・10日以上が <strong>'+dkOver+'名（'+pct+'%）</strong> — 基準（30%未満かつ10名以下）超！再生成してください';
 
   const dayMap={};
   patients.forEach(function(p){
@@ -2011,7 +2017,7 @@ function renderSchDay() {
       html += '<div class="sch-day-card">';
       html += '<span class="sch-day-card-num">No.'+p.num+'</span>';
       html += '<span class="sch-day-card-name">'+p.name+'</span>';
-      html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'協会1':'その他')+'</span>';
+      html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'大阪協会':'その他')+'</span>';
       if(over) html += '<span style="font-size:10px;color:var(--accent)">⚠️</span>';
       html += '<input type="number" class="sch-day-amount-input" inputmode="numeric" placeholder="¥0" value="'+amountVal+'" data-pid="'+p.id+'" data-date="'+ds+'" data-num="'+p.num+'" data-name="'+p.name+'" onchange="updateDayAmount(this)">';
       html += '</div>';
@@ -2034,7 +2040,7 @@ function renderSchPatient() {
     var dates=sch[p.id]||[], cnt=dates.length, dkp=isDaikyo(p), over=dkp&&cnt>=10;
     return '<div class="sch-pat-row">'+
       '<div class="sch-pat-top">'+
-      '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'協会1':'その他')+'</span>'+
+      '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'大阪協会':'その他')+'</span>'+
       '<span class="sch-pat-name">No.'+p.num+'　'+p.name+'</span>'+
       '<span class="sch-badge cnt '+(!over?'ok':'')+'">'+(cnt)+'日</span>'+
       (over?'<span style="font-size:10px;color:var(--accent)">⚠️</span>':'')+
@@ -2264,12 +2270,12 @@ function restoreData(event){
 function showDkOverList(){
   var y=schYear,m=schMonth,key=schMonthKey(y,m);
   var sch=schedules[key]||{};
-  var dk=patients.filter(function(p){return isDaikyo(p);});
+  var dk=patients.filter(function(p){return isDaikyo(p) && isAttending(p,y,m);});
   var overList=dk.filter(function(p){return(sch[p.id]||[]).length>=10;})
     .sort(function(a,b){return(sch[b.id]||[]).length-(sch[a.id]||[]).length;});
   
   if(!overList.length){
-    document.getElementById('dkOverList').innerHTML='<div class="empty-state">10日以上の協会1患者はいません</div>';
+    document.getElementById('dkOverList').innerHTML='<div class="empty-state">10日以上の大阪協会患者はいません</div>';
   } else {
     document.getElementById('dkOverList').innerHTML=overList.map(function(p){
       var days=(sch[p.id]||[]).length;

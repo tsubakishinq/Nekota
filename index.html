@@ -509,6 +509,15 @@
   </div>
 </div>
 
+<!-- 割振表：患者別の通院日モーダル（名前タップで表示・割り振りは変更しない） -->
+<div class="modal-overlay" id="schPatDaysModal">
+  <div class="modal">
+    <h3 id="schPatDaysTitle">通院日</h3>
+    <div id="schPatDaysBody" style="max-height:60vh;overflow-y:auto;margin-bottom:16px;"></div>
+    <button class="btn-secondary" onclick="document.getElementById('schPatDaysModal').classList.remove('open')" style="width:100%">閉じる</button>
+  </div>
+</div>
+
 <!-- リセット確認モーダル -->
 <div class="modal-overlay" id="resetModal">
   <div class="modal">
@@ -1800,7 +1809,7 @@ function renderInsuranceTable(y, m, sch){
     groups[ins].sort(function(a,b){ return Number(a.num)-Number(b.num); }).forEach(function(p){
       const dates = (sch[p.id]||[]).slice().sort(function(a,b){ return a-b; });
       html += '<tr class="sch-table-row">';
-      html += '<td class="sch-td-name" style="background:'+c.bg+'33;color:'+c.text+'">No.'+p.num+' '+p.name+' <span style="font-weight:700;opacity:.85">('+dates.length+'日)</span></td>';
+      html += '<td class="sch-td-name" style="background:'+c.bg+'33;color:'+c.text+';cursor:pointer" onclick="showSchPatientDays('+p.id+')" title="タップで通院日を表示">No.'+p.num+' '+p.name+' <span style="font-weight:700;opacity:.85">('+dates.length+'日)</span></td>';
       for(let d=1; d<=dim; d++){
         const ds = y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
         const isToday = ds===todayStr;
@@ -2049,6 +2058,29 @@ function renderSchPatient() {
       '<div class="sch-dates">'+(dates.map(function(d){return d+'日';}).join('　')||'未設定')+'</div>'+
       '</div>';
   }).join('');
+}
+
+// 割振表で患者名をタップしたとき、その患者の通院日（患者別と同じ表示）を
+// モーダルで確認する。割り振り自体は変更しない（読み取り専用）。
+function showSchPatientDays(pid){
+  var p=patients.find(function(x){return x.id===pid;});
+  if(!p)return;
+  var key=schMonthKey(schYear,schMonth);
+  var sch=schedules[key]||{};
+  var dates=(sch[pid]||[]).slice().sort(function(a,b){return a-b;});
+  var dkp=isDaikyo(p), over=dkp&&dates.length>=10;
+  document.getElementById('schPatDaysTitle').textContent=(schMonth+1)+'月の通院日';
+  var html='<div class="sch-pat-top" style="margin-bottom:12px">'+
+    '<span class="sch-badge '+(dkp?'dk':'ot')+'">'+(dkp?'大阪協会':'その他')+'</span>'+
+    '<span class="sch-pat-name">No.'+p.num+'　'+p.name+'</span>'+
+    '<span class="sch-badge cnt '+(!over?'ok':'')+'">'+dates.length+'日</span>'+
+    (over?'<span style="font-size:10px;color:var(--accent)">⚠️</span>':'')+
+    '</div>'+
+    '<div class="sch-dates" style="font-size:16px;line-height:2.1">'+
+      (dates.map(function(d){return d+'日';}).join('　')||'この月の割り振りはありません')+
+    '</div>';
+  document.getElementById('schPatDaysBody').innerHTML=html;
+  document.getElementById('schPatDaysModal').classList.add('open');
 }
 
 

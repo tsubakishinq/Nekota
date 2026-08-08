@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="領収証フォーム">
+<title>神経整体講師 領収証（入力→PDF）</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --bg:#eceae6; --paper:#fff; --ink:#1a1714; --sub:#6b6560;
+    --line:#c9c4bd; --line-strong:#8a857e; --red:#c0392b;
+    --head:#ececec; --btn:#2c3e50; --field:#f4f2ee; --focus:#fff7e0;
+  }
+  body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo',sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;padding-bottom:40px;}
+
+  /* ===== ツールバー ===== */
+  .toolbar{position:sticky;top:0;z-index:50;background:var(--btn);color:#fff;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;}
+  .toolbar h1{font-size:15px;font-weight:700;margin-right:auto;letter-spacing:.03em;}
+  .toolbar button{font:inherit;font-size:13px;font-weight:700;border:0;border-radius:8px;padding:9px 16px;cursor:pointer;background:#fff;color:var(--btn);}
+  .toolbar button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
+  .toolbar .saved{font-size:12px;color:#bfe3c2;min-width:64px;}
+
+  /* ===== レイアウト ===== */
+  .wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:400px 1fr;gap:20px;padding:18px;}
+  @media(max-width:900px){ .wrap{grid-template-columns:1fr;} }
+
+  /* ===== 入力フォーム ===== */
+  .form-panel{background:var(--paper);border-radius:12px;padding:16px 16px 22px;box-shadow:0 2px 10px rgba(0,0,0,.08);align-self:start;}
+  .form-panel h2{font-size:13px;font-weight:700;color:var(--sub);letter-spacing:.05em;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line);}
+  .form-panel h2:first-child{margin-top:2px;}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--sub);margin-bottom:3px;}
+  .field input,.field textarea,.field select{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--field);color:var(--ink);}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--btn);background:#fff;}
+  .row2{display:flex;gap:8px;}
+  .row2>*{flex:1;}
+  .hint{font-size:11px;color:var(--sub);margin-top:2px;}
+
+  /* 明細入力 */
+  .item-row{display:grid;grid-template-columns:1fr 52px 84px 26px;gap:6px;align-items:center;margin-bottom:6px;}
+  .item-row input{font-size:13px;padding:7px 8px;}
+  .item-row .num{text-align:right;}
+  .item-row .del{border:0;background:transparent;color:var(--red);font-size:16px;cursor:pointer;}
+  .item-head{display:grid;grid-template-columns:1fr 52px 84px 26px;gap:6px;font-size:11px;font-weight:700;color:var(--sub);margin-bottom:4px;padding:0 2px;}
+  .addbtn{margin-top:6px;font:inherit;font-size:13px;font-weight:700;border:1px dashed var(--line-strong);background:transparent;color:var(--btn);border-radius:8px;padding:8px;width:100%;cursor:pointer;}
+
+  /* ===== プレビュー（領収証本体） ===== */
+  .preview{align-self:start;}
+  .sheet{background:var(--paper);padding:38px 44px 30px;box-shadow:0 2px 14px rgba(0,0,0,.14);}
+  .issue-date{text-align:right;font-size:14px;margin-bottom:6px;}
+  .title{text-align:center;font-size:34px;font-weight:700;letter-spacing:.9em;padding-left:.9em;margin:6px 0 26px;}
+  .top{display:flex;justify-content:space-between;gap:24px;margin-bottom:18px;}
+  .party{font-size:13.5px;}
+  .party .line{margin-bottom:2px;min-height:1.2em;}
+  .to-name{font-size:20px;font-weight:700;border-bottom:1px solid var(--ink);padding-bottom:3px;margin:8px 0;display:inline-block;min-width:240px;}
+  .to-name .honor{font-size:15px;font-weight:400;margin-left:12px;}
+  .from{min-width:270px;}
+  .from .name{font-size:16px;font-weight:700;margin-bottom:4px;}
+  .stamp{float:right;width:58px;height:58px;border:2px solid var(--red);border-radius:50%;color:var(--red);font-size:10px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;margin-left:8px;opacity:.85;}
+  .lead{font-size:13.5px;margin:14px 0 12px;}
+  .amount-box{display:flex;align-items:stretch;border:2px solid var(--ink);margin-bottom:22px;}
+  .amount-box .lbl{background:var(--head);font-size:17px;font-weight:700;padding:14px 22px;display:flex;align-items:center;white-space:nowrap;border-right:2px solid var(--ink);}
+  .amount-box .val{flex:1;font-size:28px;font-weight:700;text-align:center;display:flex;align-items:center;justify-content:center;letter-spacing:.04em;}
+  .but{font-size:13.5px;margin-bottom:6px;}
+  .but .u{border-bottom:1px solid var(--line-strong);padding:0 6px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px;}
+  th,td{border:1px solid var(--line);padding:6px 8px;}
+  thead th{background:var(--head);font-weight:700;text-align:center;}
+  .c-no{width:44px;text-align:center;}
+  .c-qty{width:56px;text-align:center;}
+  .c-price,.c-amt{width:110px;text-align:right;}
+  td.c-name{text-align:left;}
+  .sum-lbl{background:var(--head);text-align:center;font-weight:700;}
+  .sum-val{text-align:right;}
+  .discount{color:var(--red);}
+  .foot-stamp{margin-top:16px;display:flex;align-items:flex-end;gap:14px;}
+  .inshi{width:88px;height:96px;border:1px dashed var(--line-strong);color:var(--sub);font-size:11px;display:flex;align-items:center;justify-content:center;text-align:center;}
+  .note{font-size:12.5px;color:var(--sub);}
+
+  @media(max-width:640px){
+    .sheet{padding:22px 16px;}
+    .title{font-size:26px;letter-spacing:.5em;padding-left:.5em;}
+    .top{flex-direction:column;gap:12px;}
+    .amount-box .val{font-size:22px;}
+  }
+
+  /* ===== 印刷（PDF出力） ===== */
+  @media print{
+    @page{size:A4 portrait;margin:14mm;}
+    body{background:#fff;padding:0;}
+    .toolbar,.form-panel{display:none !important;}
+    .wrap{display:block;max-width:none;margin:0;padding:0;}
+    .sheet{box-shadow:none;padding:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <h1>神経整体講師 領収証</h1>
+  <span class="saved" id="saved"></span>
+  <button class="ghost" onclick="resetAll()">初期化</button>
+  <button onclick="outputPDF()">PDFで出力</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ 入力フォーム ============ -->
+  <div class="form-panel">
+    <h2>対象月</h2>
+    <div class="field">
+      <label>対象月を選ぶと発行日・各項目の「〇月分」が自動で入ります</label>
+      <input type="month" id="monthPick" onchange="applyMonth(this.value)">
+    </div>
+    <div class="field">
+      <label>発行日</label>
+      <input id="issueDate" placeholder="2026/08/01">
+    </div>
+
+    <h2>宛先</h2>
+    <div class="field"><label>郵便番号</label><input id="toZip" placeholder="〒662-0918"></div>
+    <div class="field"><label>住所1</label><input id="toAddr1" placeholder="兵庫県西宮市六湛寺町9番25号"></div>
+    <div class="field"><label>住所2（建物名など）</label><input id="toAddr2" placeholder="デルファーレ西宮1F"></div>
+    <div class="row2">
+      <div class="field"><label>会社名・氏名</label><input id="toName" placeholder="株式会社RUSTAR"></div>
+      <div class="field" style="flex:0 0 90px"><label>敬称</label><input id="toHonor" placeholder="御中"></div>
+    </div>
+
+    <h2>但し書き</h2>
+    <div class="field"><input id="but" placeholder="神経整体 技術セミナー 講師料として"></div>
+
+    <h2>明細</h2>
+    <div class="item-head"><span>品名</span><span style="text-align:center">数量</span><span style="text-align:right">単価</span><span></span></div>
+    <div id="itemRows"></div>
+    <button class="addbtn" onclick="addItem()">＋ 明細を追加</button>
+    <div class="field" style="margin-top:12px">
+      <label>消費税率（％）</label>
+      <input id="taxRate" class="num" value="10" style="width:90px" oninput="render()">
+      <span class="hint">消費税は切り上げで計算します</span>
+    </div>
+
+    <h2>発行者</h2>
+    <div class="field"><label>院名・氏名</label><input id="fromName" placeholder="つばき鍼灸整骨院"></div>
+    <div class="field"><label>郵便番号</label><input id="fromZip" placeholder="〒557-0044"></div>
+    <div class="field"><label>住所</label><input id="fromAddr" placeholder="大阪府大阪市西成区玉出中2-14-9"></div>
+    <div class="row2">
+      <div class="field"><label>電話</label><input id="fromTel" placeholder="06-7174-2209"></div>
+      <div class="field"><label>担当</label><input id="fromStaff" placeholder="松尾潤一"></div>
+    </div>
+    <div class="field"><label>登録番号</label><input id="fromReg" placeholder="（任意）"></div>
+  </div>
+
+  <!-- ============ プレビュー（PDF出力対象） ============ -->
+  <div class="preview">
+    <div class="sheet" id="sheet">
+      <div class="issue-date">発行日：<span id="pv-issueDate"></span></div>
+      <div class="title">領　収　証</div>
+      <div class="top">
+        <div class="party to">
+          <div class="line" id="pv-toZip"></div>
+          <div class="line" id="pv-toAddr1"></div>
+          <div class="line" id="pv-toAddr2"></div>
+          <div class="to-name"><span id="pv-toName"></span><span class="honor" id="pv-toHonor"></span></div>
+        </div>
+        <div class="party from">
+          <div class="stamp">印</div>
+          <div class="name" id="pv-fromName"></div>
+          <div class="line" id="pv-fromZip"></div>
+          <div class="line">住所：<span id="pv-fromAddr"></span></div>
+          <div class="line">電話：<span id="pv-fromTel"></span></div>
+          <div class="line">担当：<span id="pv-fromStaff"></span></div>
+          <div class="line">登録番号：<span id="pv-fromReg"></span></div>
+        </div>
+      </div>
+      <div class="lead">下記の通り正に領収いたしました。</div>
+      <div class="amount-box">
+        <div class="lbl">領収金額</div>
+        <div class="val" id="pv-grandTop">¥0</div>
+      </div>
+      <div class="but">但し　<span class="u" id="pv-but"></span></div>
+      <table>
+        <thead>
+          <tr><th class="c-no">NO</th><th>品　名</th><th class="c-qty">数量</th><th class="c-price">単価</th><th class="c-amt">合計(税別)</th></tr>
+        </thead>
+        <tbody id="pv-rows"></tbody>
+        <tfoot>
+          <tr><td colspan="4" class="sum-lbl">小　計</td><td class="sum-val" id="pv-sub">¥0</td></tr>
+          <tr><td colspan="4" class="sum-lbl">消費税（<span id="pv-taxRate">10</span>%）</td><td class="sum-val" id="pv-tax">¥0</td></tr>
+          <tr><td colspan="4" class="sum-lbl">合　計</td><td class="sum-val" id="pv-grand">¥0</td></tr>
+        </tfoot>
+      </table>
+      <div class="foot-stamp">
+        <div class="inshi">収入印紙</div>
+        <div class="note">
+          ※上記金額を領収いたしました。<br>
+          内訳：課税対象額 <span id="pv-net">¥0</span> ／ 消費税 <span id="pv-taxNote">¥0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const LS_KEY = 'shinkei_ryoshusho_form_v1';
+
+const TEXT_FIELDS = ['issueDate','toZip','toAddr1','toAddr2','toName','toHonor','but',
+  'fromName','fromZip','fromAddr','fromTel','fromStaff','fromReg','taxRate'];
+
+const DEFAULTS = {
+  issueDate:'2026/08/01',
+  toZip:'〒662-0918', toAddr1:'兵庫県西宮市六湛寺町9番25号', toAddr2:'デルファーレ西宮1F',
+  toName:'株式会社RUSTAR', toHonor:'御中',
+  but:'神経整体 技術セミナー 講師料として',
+  fromName:'つばき鍼灸整骨院', fromZip:'〒557-0044', fromAddr:'大阪府大阪市西成区玉出中2-14-9',
+  fromTel:'06-7174-2209', fromStaff:'松尾潤一', fromReg:'', taxRate:'10'
+};
+
+const DEFAULT_ITEMS = [
+  {name:'業務委託費　技術セミナー（徳島 第2日曜）令和8年6月分', qty:1, price:54927},
+  {name:'業務委託費　技術セミナー（岡山.広島 第3水曜）令和8年6月分', qty:1, price:72505},
+  {name:'業務委託費　技術セミナー（岡山.広島 7期生）令和8年6月分', qty:1, price:7200},
+  {name:'会場費、交通費', qty:1, price:15893},
+  {name:'値引き', qty:1, price:-4474},
+];
+
+let items = [];
+
+const yen = n => '¥' + Math.round(n).toLocaleString('ja-JP');
+const esc = s => String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ---------- 明細フォームの描画 ---------- */
+function renderItemForm(){
+  const box = document.getElementById('itemRows');
+  box.innerHTML = '';
+  items.forEach((it,i)=>{
+    const div = document.createElement('div');
+    div.className = 'item-row';
+    div.innerHTML = `
+      <input value="${esc(it.name).replace(/"/g,'&quot;')}" placeholder="品名" oninput="upd(${i},'name',this.value)">
+      <input class="num" value="${it.qty}" placeholder="数量" oninput="upd(${i},'qty',this.value)">
+      <input class="num" value="${it.price}" placeholder="単価" oninput="upd(${i},'price',this.value)">
+      <button class="del" title="削除" onclick="delItem(${i})">✕</button>`;
+    box.appendChild(div);
+  });
+}
+
+function upd(i,key,val){
+  if(key==='name') items[i].name = val;
+  else items[i][key] = (val==='' ? '' : Number(val));
+  render();
+}
+function addItem(){ items.push({name:'',qty:1,price:0}); renderItemForm(); render(); }
+function delItem(i){ items.splice(i,1); renderItemForm(); render(); }
+
+/* ---------- プレビュー描画＋保存 ---------- */
+function render(){
+  // テキスト項目
+  TEXT_FIELDS.forEach(k=>{
+    const v = document.getElementById(k).value;
+    const pv = document.getElementById('pv-'+k);
+    if(pv) pv.textContent = v;
+  });
+  document.getElementById('pv-taxRate').textContent =
+    (document.getElementById('taxRate').value||'0').replace(/[^\d.]/g,'');
+
+  // 明細
+  const tb = document.getElementById('pv-rows');
+  tb.innerHTML = '';
+  let sub = 0;
+  items.forEach((it,i)=>{
+    const amt = (Number(it.qty)||0)*(Number(it.price)||0);
+    sub += amt;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="c-no">${i+1}</td>
+      <td class="c-name">${esc(it.name)}</td>
+      <td class="c-qty">${it.qty!=='' ? it.qty : ''}</td>
+      <td class="c-price">${it.price!=='' ? yen(it.price) : ''}</td>
+      <td class="c-amt ${amt<0?'discount':''}">${amt<0 ? '('+Math.abs(amt).toLocaleString('ja-JP')+')' : yen(amt)}</td>`;
+    tb.appendChild(tr);
+  });
+
+  const rate = Number((document.getElementById('taxRate').value||'0').replace(/[^\d.]/g,''))/100;
+  const tax = Math.ceil(sub*rate);
+  const grand = sub + tax;
+  document.getElementById('pv-sub').textContent = yen(sub);
+  document.getElementById('pv-tax').textContent = yen(tax);
+  document.getElementById('pv-grand').textContent = yen(grand);
+  document.getElementById('pv-grandTop').textContent = yen(grand);
+  document.getElementById('pv-net').textContent = yen(sub);
+  document.getElementById('pv-taxNote').textContent = yen(tax);
+
+  save();
+}
+
+/* ---------- 対象月の一括反映 ---------- */
+function applyMonth(ym){
+  if(!ym) return;
+  const [y,m] = ym.split('-').map(Number);
+  const reg = /令和\s*\d+\s*年\s*\d+\s*月分/g;
+  const reg2 = /(?:令和\s*\d+\s*年\s*)?\d+\s*月分/g;
+  const repl = `令和${y-2018}年${m}月分`;
+  document.getElementById('issueDate').value = `${y}/${String(m).padStart(2,'0')}/01`;
+  items.forEach(it=>{
+    if(typeof it.name==='string' && /月分/.test(it.name)){
+      it.name = it.name.match(reg) ? it.name.replace(reg,repl) : it.name.replace(reg2,repl);
+    }
+  });
+  localStorage.setItem(LS_KEY+'_month', ym);
+  renderItemForm();
+  render();
+}
+
+/* ---------- PDF出力 ---------- */
+function outputPDF(){
+  // 印刷ダイアログで「PDFに保存 / PDF」を選ぶと領収証がPDF化されます
+  window.print();
+}
+
+/* ---------- 保存・読込 ---------- */
+function save(){
+  const data = { items, fld:{} };
+  TEXT_FIELDS.forEach(k=> data.fld[k] = document.getElementById(k).value);
+  localStorage.setItem(LS_KEY, JSON.stringify(data));
+  const s = document.getElementById('saved');
+  s.textContent = '保存済み';
+  clearTimeout(save._t);
+  save._t = setTimeout(()=> s.textContent='', 1500);
+}
+
+function load(){
+  let data = null;
+  try{ data = JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){}
+  if(data){
+    items = data.items || JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    TEXT_FIELDS.forEach(k=> document.getElementById(k).value = (data.fld&&data.fld[k]!==undefined)?data.fld[k]:(DEFAULTS[k]||''));
+  }else{
+    items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+    TEXT_FIELDS.forEach(k=> document.getElementById(k).value = DEFAULTS[k]||'');
+  }
+  const savedMonth = localStorage.getItem(LS_KEY+'_month');
+  if(savedMonth) document.getElementById('monthPick').value = savedMonth;
+  renderItemForm();
+  render();
+}
+
+function resetAll(){
+  if(!confirm('入力内容を初期状態（見本）に戻します。よろしいですか？')) return;
+  localStorage.removeItem(LS_KEY);
+  localStorage.removeItem(LS_KEY+'_month');
+  items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
+  TEXT_FIELDS.forEach(k=> document.getElementById(k).value = DEFAULTS[k]||'');
+  document.getElementById('monthPick').value = '';
+  renderItemForm();
+  render();
+}
+
+// テキスト項目の入力で即プレビュー更新
+TEXT_FIELDS.forEach(k=>{
+  document.addEventListener('DOMContentLoaded',()=>{
+    const el = document.getElementById(k);
+    if(el) el.addEventListener('input', render);
+  });
+});
+
+document.addEventListener('DOMContentLoaded', load);
+</script>
+</body>
+</html>

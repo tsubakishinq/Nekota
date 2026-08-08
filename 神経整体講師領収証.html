@@ -21,6 +21,8 @@
   .toolbar button{font:inherit;font-size:13px;font-weight:700;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;background:#fff;color:var(--btn);}
   .toolbar button.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);}
   .toolbar .saved{font-size:12px;color:#bfe3c2;min-width:70px;}
+  .toolbar .month-pick{font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;}
+  .toolbar .month-pick input{font:inherit;font-size:13px;border:0;border-radius:8px;padding:6px 8px;}
 
   /* ---- 用紙 ---- */
   .sheet{max-width:820px;margin:18px auto;background:var(--paper);padding:38px 44px 30px;box-shadow:0 2px 14px rgba(0,0,0,.14);}
@@ -101,6 +103,9 @@
 
 <div class="toolbar">
   <h1>神経整体講師 領収証</h1>
+  <label class="month-pick">対象月
+    <input type="month" id="monthPick" onchange="applyMonth(this.value)">
+  </label>
   <span class="saved" id="saved"></span>
   <button class="ghost" id="editBtn" onclick="toggleEdit()">編集</button>
   <button class="ghost" onclick="addRow()">＋行</button>
@@ -188,6 +193,7 @@
 
 <script>
 const LS_KEY = 'shinkei_ryoshusho_v1';
+const LS_MONTH = 'shinkei_ryoshusho_month';
 
 // 既定の明細（画像の請求書を踏襲。品名は神経整体講師向けに調整）
 const DEFAULT_ITEMS = [
@@ -225,6 +231,9 @@ function load(){
   }else{
     items = JSON.parse(JSON.stringify(DEFAULT_ITEMS));
   }
+  // 前回選んだ対象月をピッカーに復元（内容は保存済みのものを尊重し上書きしない）
+  const savedMonth = localStorage.getItem(LS_MONTH);
+  if(savedMonth) document.getElementById('monthPick').value = savedMonth;
   renderRows();
 }
 
@@ -232,6 +241,42 @@ function collectFld(){
   const f = {};
   document.querySelectorAll('.fld').forEach(el=> f[el.dataset.k] = el.textContent.trim());
   return f;
+}
+
+// 対象月を1つ選ぶと「発行日＝その月の1日」「各項目の〇月分＝その月」を一括反映
+function applyMonth(ym){
+  if(!ym) return;
+  const [y, m] = ym.split('-').map(Number);
+  const reg = /令和\s*\d+\s*年\s*\d+\s*月分/g;         // 「令和X年Y月分」
+  const reg2 = /(?:令和\s*\d+\s*年\s*)?\d+\s*月分/g;   // 「Y月分」だけの表記も対象
+  const rw = y - 2018;                                 // 西暦→令和
+  const repl = `令和${rw}年${m}月分`;
+
+  // 発行日 → その月の1日（YYYY/MM/01）
+  const d = document.querySelector('[data-k="issueDate"]');
+  if(d) d.textContent = `${y}/${String(m).padStart(2,'0')}/01`;
+
+  // 各明細の「〇月分」をその月に
+  items.forEach(it=>{
+    if(typeof it.name === 'string' && /月分/.test(it.name)){
+      it.name = it.name.match(reg) ? it.name.replace(reg, repl) : it.name.replace(reg2, repl);
+    }
+  });
+
+  // 但し書き等の項目にも「〇月分」があれば反映
+  document.querySelectorAll('.fld').forEach(el=>{
+    if(el.dataset.k === 'issueDate') return;
+    if(/月分/.test(el.textContent)){
+      el.textContent = el.textContent.match(reg)
+        ? el.textContent.replace(reg, repl)
+        : el.textContent.replace(reg2, repl);
+    }
+  });
+
+  localStorage.setItem(LS_MONTH, ym);
+  document.getElementById('monthPick').value = ym;
+  renderRows();
+  save();
 }
 
 function save(){

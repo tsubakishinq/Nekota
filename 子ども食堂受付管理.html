@@ -223,6 +223,7 @@
       <div class="complete-row"><span class="c-label">9/15（火）</span><span class="c-value" id="tally0915">0票</span></div>
       <div class="complete-row"><span class="c-label">9/29（火）</span><span class="c-value" id="tally0929">0票</span></div>
       <div class="complete-row"><span class="c-label">どちらでも</span><span class="c-value" id="tallyEither">0票</span></div>
+      <button type="button" class="btn-cancel" style="width:100%;margin-top:12px" onclick="resetPoll()">アンケートをリセット</button>
     </div>
     <div class="admin-title">管理画面：受付一覧</div>
     <div id="entryListWrap"></div>
@@ -553,6 +554,18 @@ function renderPollTally(){
   el15.textContent = `${voteTally['2026-09-15']||0}票`;
   el29.textContent = `${voteTally['2026-09-29']||0}票`;
   elEither.textContent = `${voteTally['either']||0}票`;
+}
+
+async function resetPoll(){
+  if(!window.confirm('投票データをすべて削除します。よろしいですか？')) return;
+  try{
+    await apiFetch('date_votes?id=gte.0', { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
+    await refreshData();
+  }catch(e){
+    alert('通信エラーでリセットできませんでした。電波状況を確認してもう一度お試しください。');
+    return;
+  }
+  renderAll();
 }
 
 function showLookup(){

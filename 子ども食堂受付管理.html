@@ -144,6 +144,7 @@
       <div class="btn-row" style="flex-direction:column">
         <button type="button" class="btn-primary" onclick="submitVote('2026-09-15')">9/15（火）</button>
         <button type="button" class="btn-primary" onclick="submitVote('2026-09-29')">9/29（火）</button>
+        <button type="button" class="btn-primary" onclick="submitVote('either')">どちらでも</button>
       </div>
     </div>
     <div class="admin-link-wrap">
@@ -221,6 +222,7 @@
     <div class="input-card" id="pollTallyCard">
       <div class="complete-row"><span class="c-label">9/15（火）</span><span class="c-value" id="tally0915">0票</span></div>
       <div class="complete-row"><span class="c-label">9/29（火）</span><span class="c-value" id="tally0929">0票</span></div>
+      <div class="complete-row"><span class="c-label">どちらでも</span><span class="c-value" id="tallyEither">0票</span></div>
     </div>
     <div class="admin-title">管理画面：受付一覧</div>
     <div id="entryListWrap"></div>
@@ -524,7 +526,7 @@ function pollHasVoted(){
   return !!localStorage.getItem(VOTE_STORAGE_KEY);
 }
 
-const POLL_LABELS = { '2026-09-15': '9/15（火）', '2026-09-29': '9/29（火）' };
+const POLL_LABELS = { '2026-09-15': '9/15（火）', '2026-09-29': '9/29（火）', 'either': 'どちらでも' };
 
 async function submitVote(choice){
   try{
@@ -546,9 +548,11 @@ async function submitVote(choice){
 function renderPollTally(){
   const el15 = document.getElementById('tally0915');
   const el29 = document.getElementById('tally0929');
-  if(!el15 || !el29) return;
+  const elEither = document.getElementById('tallyEither');
+  if(!el15 || !el29 || !elEither) return;
   el15.textContent = `${voteTally['2026-09-15']||0}票`;
   el29.textContent = `${voteTally['2026-09-29']||0}票`;
+  elEither.textContent = `${voteTally['either']||0}票`;
 }
 
 function showLookup(){

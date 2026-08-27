@@ -138,6 +138,30 @@
 
   <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28人）に達したため終了しました</div>
 
+  <div id="screenPoll" style="display:none">
+    <div class="input-card" style="text-align:center">
+      <div class="complete-title">次回開催日はどちらがいいですか？</div>
+      <div class="btn-row" style="flex-direction:column">
+        <button type="button" class="btn-primary" onclick="submitVote('2026-09-15')">9/15（火）</button>
+        <button type="button" class="btn-primary" onclick="submitVote('2026-09-29')">9/29（火）</button>
+      </div>
+    </div>
+    <div class="admin-link-wrap">
+      <button type="button" class="admin-link" onclick="showAdmin()">管理画面</button>
+    </div>
+  </div>
+
+  <div id="screenPollThanks" style="display:none">
+    <div class="input-card" style="text-align:center">
+      <div class="complete-icon">✅</div>
+      <div class="complete-title">回答ありがとうございました</div>
+      <div class="complete-number-note" id="pollVotedNote"></div>
+    </div>
+    <div class="admin-link-wrap">
+      <button type="button" class="admin-link" onclick="showAdmin()">管理画面</button>
+    </div>
+  </div>
+
   <div id="screenLocation">
     <button type="button" class="lookup-entry-btn" onclick="showLookup()">📦 受け取り確認（予約番号をお持ちの方はこちら）</button>
 
@@ -193,6 +217,11 @@
 
   <div id="screenAdmin" style="display:none">
     <button type="button" class="back-btn" onclick="hideAdmin()">‹ 受付画面に戻る</button>
+    <div class="admin-title">管理画面：日程アンケート結果</div>
+    <div class="input-card" id="pollTallyCard">
+      <div class="complete-row"><span class="c-label">9/15（火）</span><span class="c-value" id="tally0915">0票</span></div>
+      <div class="complete-row"><span class="c-label">9/29（火）</span><span class="c-value" id="tally0929">0票</span></div>
+    </div>
     <div class="admin-title">管理画面：受付一覧</div>
     <div id="entryListWrap"></div>
   </div>
@@ -218,7 +247,9 @@
 </main>
 
 <script>
-const DATES = ['2026-08-05','2026-08-07','2026-08-17','2026-08-21','2026-08-24','2026-09-15','2026-09-29'];
+const DATES = ['2026-09-15','2026-09-29'];
+const POLL_MODE = true;
+const VOTE_STORAGE_KEY = 'nekota_date_vote';
 const DOW = ['日','月','火','水','木','金','土'];
 const DISPLAY_CAP = 30;
 const ACTUAL_CAP = 28;
@@ -298,6 +329,7 @@ const LOCATIONS = [
 ];
 
 let data = {};
+let voteTally = {};
 let selectedDate = DATES[0];
 let selectedLocationId = null;
 let selectedTime = null;
@@ -338,6 +370,12 @@ function rebuildDataFromRows(rows){
 async function refreshData(){
   const res = await apiFetch('reservations?select=*');
   rebuildDataFromRows(await res.json());
+  if(POLL_MODE){
+    const voteRes = await apiFetch('date_votes?select=choice');
+    const rows = await voteRes.json();
+    voteTally = {};
+    for(const row of rows){ voteTally[row.choice] = (voteTally[row.choice]||0) + 1; }
+  }
 }
 
 function entriesFor(date, locId){
@@ -459,6 +497,7 @@ function renderSummary(){
 
 function currentScreen(){
   if(adminMode) return 'admin';
+  if(POLL_MODE) return pollHasVoted() ? 'pollThanks' : 'poll';
   if(showComplete) return 'complete';
   if(lookupMode) return 'lookup';
   if(!selectedLocationId) return 'location';
@@ -474,6 +513,42 @@ function renderScreens(){
   document.getElementById('screenAdmin').style.display = screen==='admin' ? 'block' : 'none';
   document.getElementById('screenComplete').style.display = screen==='complete' ? 'block' : 'none';
   document.getElementById('screenLookup').style.display = screen==='lookup' ? 'block' : 'none';
+  document.getElementById('screenPoll').style.display = screen==='poll' ? 'block' : 'none';
+  document.getElementById('screenPollThanks').style.display = screen==='pollThanks' ? 'block' : 'none';
+  document.getElementById('dateTabs').style.display = POLL_MODE ? 'none' : 'flex';
+  document.getElementById('daySummary').style.display = POLL_MODE ? 'none' : 'flex';
+  if(POLL_MODE) document.getElementById('fullBanner').style.display = 'none';
+}
+
+function pollHasVoted(){
+  return !!localStorage.getItem(VOTE_STORAGE_KEY);
+}
+
+const POLL_LABELS = { '2026-09-15': '9/15（火）', '2026-09-29': '9/29（火）' };
+
+async function submitVote(choice){
+  try{
+    await apiFetch('date_votes', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ choice })
+    });
+  }catch(e){
+    alert('通信エラーで送信できませんでした。電波状況を確認してもう一度お試しください。');
+    return;
+  }
+  localStorage.setItem(VOTE_STORAGE_KEY, choice);
+  try{ await refreshData(); }catch(e){ /* ignore */ }
+  renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderPollTally(){
+  const el15 = document.getElementById('tally0915');
+  const el29 = document.getElementById('tally0929');
+  if(!el15 || !el29) return;
+  el15.textContent = `${voteTally['2026-09-15']||0}票`;
+  el29.textContent = `${voteTally['2026-09-29']||0}票`;
 }
 
 function showLookup(){
@@ -664,7 +739,16 @@ function renderAll(){
   renderForm();
   renderEntryList();
   renderComplete();
+  renderPollThanksNote();
+  renderPollTally();
   renderScreens();
+}
+
+function renderPollThanksNote(){
+  const el = document.getElementById('pollVotedNote');
+  if(!el) return;
+  const choice = localStorage.getItem(VOTE_STORAGE_KEY);
+  el.textContent = choice ? `あなたは「${POLL_LABELS[choice]||choice}」に投票しました` : '';
 }
 
 function returnFromEdit(){

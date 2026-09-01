@@ -140,6 +140,9 @@
   .btn-reset{background:var(--accent-light);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
   .btn-delete{background:#fdecec;color:#c0392b;border:1.5px solid #e88;border-radius:8px;padding:10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
   .btn-delete:active{opacity:.8;}
+  .pfilter-row{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .pfilter-btn{flex:1;min-width:100px;background:var(--bg);color:var(--ink);border:1.5px solid var(--border);border-radius:8px;padding:11px 8px;font-size:13px;font-family:'Noto Sans JP',sans-serif;font-weight:700;cursor:pointer;}
+  .pfilter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
   .month-attend-row{margin:10px 0;}
   .month-attend-label{font-size:11px;color:var(--ink-light);margin-bottom:6px;}
   .month-attend-buttons{display:flex;flex-wrap:wrap;gap:5px;}
@@ -361,6 +364,12 @@
     <span>🔍</span>
     <input type="text" id="patientSearch" placeholder="番号・名前で検索" oninput="renderPatients()">
   </div>
+  <div class="pfilter-row">
+    <button class="pfilter-btn active" id="pf-all" onclick="setPatientFilter('all')">すべて</button>
+    <button class="pfilter-btn" id="pf-discontinued" onclick="setPatientFilter('discontinued')">継続通院なし</button>
+    <button class="pfilter-btn" id="pf-new" onclick="setPatientFilter('new')">新規</button>
+  </div>
+  <div id="pfilterNote" style="font-size:11px;color:var(--ink-light);margin-bottom:12px;line-height:1.5"></div>
   <button class="btn-primary" style="margin-bottom:10px" onclick="openPatientModal()">＋ 新規患者を登録</button>
   <button class="btn-secondary" style="width:100%;margin-bottom:16px" onclick="cleanupOldRecords()">🧹 古いデータを整理（1年以上前の来院記録を削除）</button>
 
@@ -1216,11 +1225,62 @@ function renderHistory(){
   }
 }
 
+// ===== 患者フィルター（表示を絞るだけ・データは変更しない） =====
+let patientFilter='all'; // 'all' | 'discontinued' | 'new'
+function setPatientFilter(f){
+  patientFilter=f;
+  ['all','discontinued','new'].forEach(function(k){
+    var b=document.getElementById('pf-'+k);
+    if(b) b.className='pfilter-btn'+(k===f?' active':'');
+  });
+  renderPatients();
+}
+function prevMonthOf(y,m){ var d=new Date(y,m-1,1); return {y:d.getFullYear(), m:d.getMonth()}; }
+// 指定年月(0-based m)に通院があったか＝来院記録 or 割り振り のどちらかがあればtrue
+function hasVisitInMonth(p,y,m){
+  var ym=y+'-'+String(m+1).padStart(2,'0');
+  for(var i=0;i<records.length;i++){
+    var r=records[i];
+    if(String(r.patientId)===String(p.id) && r.date && r.date.slice(0,7)===ym) return true;
+  }
+  var sk=schedules[ym];
+  if(sk && sk[p.id] && sk[p.id].length>0) return true;
+  return false;
+}
+// 指定年月より前に通院があったか（新規判定用）
+function hasVisitBeforeMonth(p,y,m){
+  var curKey=y+'-'+String(m+1).padStart(2,'0');
+  var curFirst=curKey+'-01';
+  for(var i=0;i<records.length;i++){
+    var r=records[i];
+    if(String(r.patientId)===String(p.id) && r.date && r.date<curFirst) return true;
+  }
+  var keys=Object.keys(schedules);
+  for(var j=0;j<keys.length;j++){
+    var k=keys[j];
+    if(k<curKey && schedules[k] && schedules[k][p.id] && schedules[k][p.id].length>0) return true;
+  }
+  return false;
+}
+
 function renderPatients(){
   const q=(document.getElementById('patientSearch').value||'').trim().toLowerCase();
-  const list=patients.filter(p=>!q||String(p.num).includes(q)||p.name.toLowerCase().includes(q)).sort((a,b)=>Number(a.num)-Number(b.num));
+  let list=patients.filter(p=>!q||String(p.num).includes(q)||p.name.toLowerCase().includes(q)).sort((a,b)=>Number(a.num)-Number(b.num));
+  // 継続通院なし／新規フィルター（基準月＝割振で表示中の月）
+  const fy=schYear, fm=schMonth, fpm=prevMonthOf(fy,fm);
+  if(patientFilter==='discontinued'){
+    list=list.filter(p=>hasVisitInMonth(p,fpm.y,fpm.m) && !hasVisitInMonth(p,fy,fm));
+  }else if(patientFilter==='new'){
+    list=list.filter(p=>hasVisitInMonth(p,fy,fm) && !hasVisitBeforeMonth(p,fy,fm));
+  }
+  const noteEl=document.getElementById('pfilterNote');
+  if(noteEl){
+    if(patientFilter==='discontinued') noteEl.textContent='前月('+(fpm.m+1)+'月)通院あり → 当月('+(fm+1)+'月)通院なし：'+list.length+'名';
+    else if(patientFilter==='new') noteEl.textContent='当月('+(fm+1)+'月)からの新規（それ以前の通院なし）：'+list.length+'名';
+    else noteEl.textContent='';
+  }
   const el=document.getElementById('patientList');
-  if(list.length===0){el.innerHTML='<div class="empty-state">患者が登録されていません</div>';return;}
+  if(list.length===0){el.innerHTML='<div class="empty-state">'+(patientFilter==='all'?'患者が登録されていません':'該当する患者がいません')+'</div>';return;}
   const yr=now.getFullYear();
   el.innerHTML=list.map(p=>{
     const parts=getYearParts(p.id,yr),count=parts.length;

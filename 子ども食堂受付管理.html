@@ -16,52 +16,10 @@
   header .today{font-family:'DM Mono',monospace;font-size:12px;color:#aaa;}
   main{max-width:560px;margin:0 auto;padding:16px;}
 
-  .date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;-webkit-overflow-scrolling:touch;}
-  .date-tab{flex:0 0 auto;min-width:78px;text-align:center;padding:10px 6px;border:1.5px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;transition:all .15s;}
-  .date-tab .dt-date{display:block;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--ink);}
-  .date-tab .dt-dow{display:block;font-size:10px;color:var(--ink-light);margin-top:1px;}
-  .date-tab .dt-count{display:block;font-size:10px;color:var(--accent);margin-top:3px;font-family:'DM Mono',monospace;}
-  .date-tab.active{background:var(--accent);border-color:var(--accent);}
-  .date-tab.active .dt-date,.date-tab.active .dt-dow,.date-tab.active .dt-count{color:#fff;}
-  .date-tab.full{border-color:#c0392b;}
-  .date-tab.full .dt-count{color:#c0392b;font-weight:700;}
-  .date-tab.full.active .dt-count{color:#fff;}
-
-  .day-summary{background:var(--ink);color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;transition:background .2s;}
-  .day-summary.full{background:#c0392b;}
-  .day-summary-label{font-size:11px;color:#bbb;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
-  .day-summary.full .day-summary-label{color:#f5d5d0;}
-  .day-summary-value{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;}
-  .day-summary-sub{font-size:11px;color:#bbb;font-family:'DM Mono',monospace;}
-  .day-summary.full .day-summary-sub{color:#f5d5d0;}
-
-  .full-banner{background:#c0392b;color:#fff;font-size:12px;font-weight:700;padding:12px 14px;border-radius:10px;margin-bottom:14px;text-align:center;line-height:1.5;}
-
   .back-btn{display:inline-flex;align-items:center;gap:2px;background:none;border:none;color:var(--accent);font-size:13px;font-weight:700;padding:8px 0;margin-bottom:8px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;}
   .screen-header{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;}
   .screen-loc-name{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:3px;}
   .screen-loc-sub{font-size:12px;color:var(--ink-light);}
-
-  .section-title{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;}
-
-  .loc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
-  .loc-card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .15s;}
-  .loc-card.selected{border-color:var(--accent);background:var(--accent-light);}
-  .loc-card.closed{opacity:.55;cursor:not-allowed;}
-  .loc-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-  .loc-name{font-size:14px;font-weight:700;color:var(--ink);}
-  .loc-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--closed);color:#fff;white-space:nowrap;}
-  .loc-badge.open{background:var(--success);}
-  .loc-badge.full{background:#c0392b;}
-  .loc-addr{font-size:11px;color:var(--ink-light);margin-top:3px;}
-  .loc-hours{font-size:11px;color:var(--ink-light);margin-top:2px;}
-  .loc-card-count{font-size:11px;color:var(--accent);font-family:'DM Mono',monospace;margin-top:6px;}
-
-  .slot-window{margin-bottom:10px;}
-  .slot-window-label{font-size:11px;color:var(--ink-light);margin-bottom:6px;}
-  .slot-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
-  .slot-btn{border:1.5px solid var(--border);background:var(--surface);color:var(--ink);border-radius:8px;padding:9px 12px;font-size:13px;font-family:'DM Mono',monospace;cursor:pointer;}
-  .slot-btn.selected{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
 
   .input-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 16px;margin-bottom:16px;}
   .input-card h2{font-size:12px;font-weight:500;color:var(--ink-light);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;}
@@ -76,15 +34,11 @@
   .line-btn{display:block;width:100%;box-sizing:border-box;text-align:center;background:#06c755;color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:700;text-decoration:none;margin-bottom:10px;}
   .btn-cancel{flex:0 0 auto;background:var(--bg);color:var(--ink-light);border:1.5px solid var(--border);border-radius:10px;padding:14px 18px;font-size:14px;font-family:'Noto Sans JP',sans-serif;font-weight:500;cursor:pointer;}
 
-  .loc-group{margin-bottom:14px;}
-  .loc-group-title{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px;}
-  .loc-group-count{font-size:11px;color:var(--ink-light);font-weight:400;font-family:'DM Mono',monospace;}
   .record-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
   .record-item{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid var(--border);gap:12px;}
   .record-item:last-child{border-bottom:none;}
-  .record-time{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-light);min-width:44px;}
   .record-name{font-size:14px;color:var(--ink);flex:1;font-weight:500;}
-  .record-people{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);min-width:36px;text-align:right;}
+  .record-people{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--accent);text-align:right;}
   .record-actions{display:flex;gap:6px;}
   .icon-btn{border:none;background:none;color:var(--ink-light);font-size:15px;cursor:pointer;padding:4px 6px;line-height:1;}
   .icon-btn:active{opacity:.5;}
@@ -126,122 +80,86 @@
 </header>
 
 <main>
-  <div class="date-tabs" id="dateTabs"></div>
-
-  <div class="day-summary" id="daySummary">
-    <div>
-      <div class="day-summary-label" id="summaryLabel">来場者数</div>
-      <div class="day-summary-value"><span id="summaryPeople">0</span>人</div>
-    </div>
-    <div class="day-summary-sub" id="summaryGroups">0組</div>
-  </div>
-
-  <div class="full-banner" id="fullBanner" style="display:none">本日の受付は定員（28人）に達したため終了しました</div>
-
-  <div id="screenPoll" style="display:none">
+  <div id="screenEvent">
     <div class="input-card" style="text-align:center">
-      <div class="complete-title">次回開催日はどちらがいいですか？</div>
-      <div class="btn-row" style="flex-direction:column">
-        <button type="button" class="btn-primary" onclick="submitVote('2026-09-15')">9/15（火）</button>
-        <button type="button" class="btn-primary" onclick="submitVote('2026-09-29')">9/29（火）</button>
-        <button type="button" class="btn-primary" onclick="submitVote('either')">どちらでも</button>
-      </div>
+      <div class="complete-title">9/15（火）17時〜</div>
+      <button type="button" class="btn-primary" style="width:100%" onclick="showRsvpForm()">参加する</button>
     </div>
-    <div class="admin-link-wrap">
-      <button type="button" class="admin-link" onclick="showAdmin()">管理画面</button>
-    </div>
-  </div>
 
-  <div id="screenPollThanks" style="display:none">
-    <div class="input-card" style="text-align:center">
-      <div class="complete-icon">✅</div>
-      <div class="complete-title">回答ありがとうございました</div>
-      <div class="complete-number-note" id="pollVotedNote"></div>
-    </div>
-    <div class="admin-link-wrap">
-      <button type="button" class="admin-link" onclick="showAdmin()">管理画面</button>
-    </div>
-  </div>
-
-  <div id="screenLocation">
-    <button type="button" class="lookup-entry-btn" onclick="showLookup()">📦 受け取り確認（予約番号をお持ちの方はこちら）</button>
-
-    <div class="section-title">受け取り場所を選択</div>
-    <div class="loc-list" id="locList"></div>
+    <button type="button" class="lookup-entry-btn" onclick="showLookup()">📋 参加登録の確認（登録番号をお持ちの方はこちら）</button>
 
     <div class="admin-link-wrap">
       <button type="button" class="admin-link" onclick="showAdmin()">管理画面</button>
     </div>
   </div>
 
-  <div id="screenLookup" style="display:none">
-    <button type="button" class="back-btn" onclick="hideLookup()">‹ 戻る</button>
-    <div class="admin-title">受け取り確認</div>
-    <div class="lookup-card">
-      <h2>予約番号を入力してください</h2>
-      <div class="lookup-row">
-        <input type="text" id="lookupNumber" placeholder="例：0001" inputmode="numeric" maxlength="4">
-        <button type="button" onclick="lookupReservation()">確認する</button>
-      </div>
-      <div id="lookupResult"></div>
+  <div id="screenRsvpForm" style="display:none">
+    <button type="button" class="back-btn" onclick="returnFromRsvpForm()">‹ 戻る</button>
+    <div class="screen-header">
+      <div class="screen-loc-name">9/15（火）17時〜</div>
     </div>
-  </div>
-
-  <div id="screenTime" style="display:none">
-    <button type="button" class="back-btn" onclick="backToLocations()">‹ 場所を選び直す</button>
-    <div class="screen-header" id="timeScreenHeader"></div>
-    <div class="section-title">受け取り時間を選択</div>
-    <div id="slotWrap"></div>
-  </div>
-
-  <div id="screenForm" style="display:none">
-    <button type="button" class="back-btn" onclick="backToTime()">‹ 時間を選び直す</button>
-    <div class="screen-header" id="formScreenHeader"></div>
     <div class="input-card">
-      <h2 id="formTitle">受付情報を入力</h2>
+      <h2 id="formTitle">参加登録</h2>
       <div class="field-row">
         <div class="field">
           <label>お名前</label>
           <input type="text" id="fName" placeholder="例：山田 太郎">
         </div>
-        <div class="field" style="flex:0 0 90px">
-          <label>人数</label>
-          <input type="number" id="fPeople" min="1" value="1" inputmode="numeric">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>大人の人数</label>
+          <input type="number" id="fAdults" min="0" value="1" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label>子供の人数</label>
+          <input type="number" id="fChildren" min="0" value="0" inputmode="numeric">
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn-primary" id="submitBtn" onclick="submitEntry()">追加する</button>
-        <button class="btn-cancel" onclick="cancelEdit()">キャンセル</button>
+        <button class="btn-primary" id="submitBtn" onclick="submitRsvp()">登録する</button>
+        <button class="btn-cancel" onclick="returnFromRsvpForm()">キャンセル</button>
       </div>
+    </div>
+  </div>
+
+  <div id="screenLookup" style="display:none">
+    <button type="button" class="back-btn" onclick="hideLookup()">‹ 戻る</button>
+    <div class="admin-title">参加登録の確認</div>
+    <div class="lookup-card">
+      <h2>登録番号を入力してください</h2>
+      <div class="lookup-row">
+        <input type="text" id="lookupNumber" placeholder="例：0001" inputmode="numeric" maxlength="4">
+        <button type="button" onclick="lookupRsvp()">確認する</button>
+      </div>
+      <div id="lookupResult"></div>
     </div>
   </div>
 
   <div id="screenAdmin" style="display:none">
     <button type="button" class="back-btn" onclick="hideAdmin()">‹ 受付画面に戻る</button>
-    <div class="admin-title">管理画面：日程アンケート結果</div>
-    <div class="input-card" id="pollTallyCard">
-      <div class="complete-row"><span class="c-label">9/15（火）</span><span class="c-value" id="tally0915">0票</span></div>
-      <div class="complete-row"><span class="c-label">9/29（火）</span><span class="c-value" id="tally0929">0票</span></div>
-      <div class="complete-row"><span class="c-label">どちらでも</span><span class="c-value" id="tallyEither">0票</span></div>
-      <button type="button" class="btn-cancel" style="width:100%;margin-top:12px" onclick="resetPoll()">アンケートをリセット</button>
+    <div class="admin-title">管理画面：参加者一覧</div>
+    <div class="input-card">
+      <div class="complete-row"><span class="c-label">合計人数</span><span class="c-value" id="summaryTotal">0人</span></div>
+      <div class="complete-row"><span class="c-label">大人</span><span class="c-value" id="summaryAdults">0人</span></div>
+      <div class="complete-row"><span class="c-label">子供</span><span class="c-value" id="summaryChildren">0人</span></div>
     </div>
-    <div class="admin-title">管理画面：受付一覧</div>
     <div id="entryListWrap"></div>
   </div>
 
   <div id="screenComplete" style="display:none">
     <div class="input-card">
       <div class="complete-icon">✅</div>
-      <div class="complete-title">申し込みが完了しました</div>
-      <div class="complete-number-label">受付番号</div>
+      <div class="complete-title">参加登録が完了しました</div>
+      <div class="complete-number-label">登録番号</div>
       <div class="complete-number" id="completeNumber"></div>
       <div class="complete-screenshot-note">📷 スクショして保存してください</div>
-      <div class="complete-number-note">この番号を控えておくと、後で「予約番号で確認」から日時・場所を確認できます</div>
+      <div class="complete-number-note">この番号を控えておくと、後で「参加登録の確認」から内容を確認できます</div>
       <div class="complete-table">
-        <div class="complete-row"><span class="c-label">日時</span><span class="c-value" id="completeDateTime"></span></div>
-        <div class="complete-row"><span class="c-label">場所</span><span class="c-value" id="completeLocation"></span></div>
+        <div class="complete-row"><span class="c-label">日時</span><span class="c-value">9/15（火）17時〜</span></div>
         <div class="complete-row"><span class="c-label">お名前</span><span class="c-value" id="completeName"></span></div>
-        <div class="complete-row"><span class="c-label">人数</span><span class="c-value" id="completePeople"></span></div>
+        <div class="complete-row"><span class="c-label">大人</span><span class="c-value" id="completeAdults"></span></div>
+        <div class="complete-row"><span class="c-label">子供</span><span class="c-value" id="completeChildren"></span></div>
       </div>
       <a href="https://lin.ee/uaNDeqg" target="_blank" rel="noopener" class="line-btn">🟢 LINEで友だち追加</a>
       <button type="button" class="btn-primary" onclick="backToHomeFromComplete()">戻る</button>
@@ -250,12 +168,7 @@
 </main>
 
 <script>
-const DATES = ['2026-09-15','2026-09-29'];
-const POLL_MODE = true;
-const VOTE_STORAGE_KEY = 'nekota_date_vote';
-const DOW = ['日','月','火','水','木','金','土'];
-const DISPLAY_CAP = 30;
-const ACTUAL_CAP = 28;
+const EVENT_LABEL = '9/15（火）17時〜';
 const ADMIN_PIN = '0945';
 
 const SUPABASE_URL = 'https://terzisgstbqeiqrtiblj.supabase.co';
@@ -263,80 +176,27 @@ const SUPABASE_KEY = 'sb_publishable_boiIMnJ4Qy-DUh4dsiN5Jg_Ji9tJHoJ';
 const SYNC_INTERVAL_MS = 8000;
 const WEB3FORMS_ACCESS_KEY = '4a3c879b-aa6a-4a41-80b4-12124fa0f2c8';
 
-async function notifyByEmail(number, locationName, dateLabel, time, name, people){
+async function notifyByEmail(number, name, adults, children){
   try{
     await fetch('https://api.web3forms.com/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_ACCESS_KEY,
-        subject: `子ども食堂受付 #${number}: ${locationName} ${dateLabel} ${time}`,
-        受付番号: number,
-        日時: `${dateLabel} ${time}`,
-        場所: locationName,
+        subject: `子ども食堂 参加登録 #${number}: ${name}`,
+        登録番号: number,
+        日時: EVENT_LABEL,
         お名前: name,
-        人数: `${people}人`
+        大人の人数: `${adults}人`,
+        子供の人数: `${children}人`
       })
     });
-  }catch(e){ /* 通知メールの失敗は受付処理自体には影響させない */ }
+  }catch(e){ /* 通知メールの失敗は登録処理自体には影響させない */ }
 }
 
-// dow: 0=日 1=月 2=火 3=水 4=木 5=金 6=土
-const LOCATIONS = [
-  {
-    id: 'sannasubi', name: 'さんなすび',
-    addr: '住之江区粉浜１丁目２０−１６',
-    hoursText: '15:00〜21:00（水・木休み）／日曜のみ12:00〜18:00',
-    getWindows(dow){
-      if(dow===3 || dow===4) return null;
-      if(dow===0) return [['12:00','18:00']];
-      return [['15:00','21:00']];
-    }
-  },
-  {
-    id: 'waraiya', name: 'わらい家',
-    addr: '住之江区粉浜西１丁目８−４',
-    hoursText: '14:00〜21:00（火曜休み）',
-    getWindows(dow){
-      if(dow===2) return null;
-      return [['14:00','21:00']];
-    }
-  },
-  {
-    id: 'sakegorilla', name: '酒ゴリラ',
-    addr: '西成区玉出中２丁目１６−６',
-    hoursText: '11:15〜12:00、17:00〜21:00（日曜休み）',
-    getWindows(dow){
-      if(dow===0) return null;
-      return [['11:15','12:00'],['17:00','21:00']];
-    }
-  },
-  {
-    id: 'takuto', name: 'たくと',
-    addr: '西成区玉出中2-14-9',
-    hoursText: '18:00〜21:00（日曜休み）',
-    getWindows(dow){
-      if(dow===0) return null;
-      return [['18:00','21:00']];
-    }
-  },
-  {
-    id: 'tsubaki', name: 'つばき鍼灸整骨院',
-    addr: '西成区玉出中2-14-9',
-    hoursText: '11:00〜11:30、13:00〜20:00（日曜休み）',
-    getWindows(dow){
-      if(dow===0) return null;
-      return [['11:00','11:30'],['13:00','20:00']];
-    }
-  }
-];
-
-let data = {};
-let voteTally = {};
-let selectedDate = DATES[0];
-let selectedLocationId = null;
-let selectedTime = null;
-let editingId = null; // {date, locationId, id}
+let rsvps = [];
+let formMode = false;
+let editingId = null;
 let adminMode = false;
 let cameFromAdmin = false;
 let showComplete = false;
@@ -360,96 +220,13 @@ async function apiFetch(path, options={}){
   return res;
 }
 
-function rebuildDataFromRows(rows){
-  const d = {};
-  for(const row of rows){
-    if(!d[row.date]) d[row.date] = {};
-    if(!d[row.date][row.location_id]) d[row.date][row.location_id] = [];
-    d[row.date][row.location_id].push({ id: row.id, time: row.time, name: row.name, people: row.people });
-  }
-  data = d;
-}
-
 async function refreshData(){
-  const res = await apiFetch('reservations?select=*');
-  rebuildDataFromRows(await res.json());
-  if(POLL_MODE){
-    const voteRes = await apiFetch('date_votes?select=choice');
-    const rows = await voteRes.json();
-    voteTally = {};
-    for(const row of rows){ voteTally[row.choice] = (voteTally[row.choice]||0) + 1; }
-  }
-}
-
-function entriesFor(date, locId){
-  return (data[date] && data[date][locId]) || [];
-}
-function allEntriesFor(date){
-  const d = data[date] || {};
-  return Object.keys(d).flatMap(locId => d[locId]);
-}
-function getLocation(id){
-  return LOCATIONS.find(l=>l.id===id);
-}
-function totalPeople(date){
-  return allEntriesFor(date).reduce((s,e)=>s+Number(e.people||0),0);
-}
-function isDayFull(date){
-  return totalPeople(date) >= ACTUAL_CAP;
-}
-function getDow(dateStr){
-  const [y,m,day] = dateStr.split('-').map(Number);
-  return new Date(y,m-1,day).getDay();
-}
-
-function timeToMin(t){ const [h,m]=t.split(':').map(Number); return h*60+m; }
-function minToTime(m){ const h=Math.floor(m/60), mm=m%60; return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0'); }
-function genSlots(win){
-  const start=timeToMin(win[0]), end=timeToMin(win[1]);
-  const out=[];
-  for(let t=start;t<=end;t+=30) out.push(minToTime(t));
-  return out;
-}
-
-function fmtDate(d){
-  const [y,m,day] = d.split('-').map(Number);
-  return { md: `${m}/${day}`, dow: DOW[getDow(d)] };
+  const res = await apiFetch('rsvps?select=*&order=id.asc');
+  rsvps = await res.json();
 }
 
 function padNum(n){
   return String(n).padStart(4,'0');
-}
-
-function findReservationByNumber(numStr){
-  const id = Number(String(numStr).trim().replace(/^0+(?=\d)/, ''));
-  if(!id) return null;
-  for(const date of Object.keys(data)){
-    for(const locId of Object.keys(data[date])){
-      const entry = data[date][locId].find(e => Number(e.id) === id);
-      if(entry) return { date, locId, entry };
-    }
-  }
-  return null;
-}
-
-function lookupReservation(){
-  const input = document.getElementById('lookupNumber').value;
-  const result = document.getElementById('lookupResult');
-  const found = findReservationByNumber(input);
-  if(!found){
-    result.className = 'lookup-result error';
-    result.textContent = '予約が見つかりませんでした。番号をご確認ください。';
-    return;
-  }
-  const loc = getLocation(found.locId);
-  const {md, dow} = fmtDate(found.date);
-  result.className = 'lookup-result';
-  result.innerHTML = `
-    <div class="complete-row"><span class="c-label">日時</span><span class="c-value">${md}(${dow}) ${found.entry.time}</span></div>
-    <div class="complete-row"><span class="c-label">場所</span><span class="c-value">${escapeHtml(loc.name)}</span></div>
-    <div class="complete-row"><span class="c-label">お名前</span><span class="c-value">${escapeHtml(found.entry.name)}</span></div>
-    <div class="complete-row"><span class="c-label">人数</span><span class="c-value">${found.entry.people}人</span></div>
-  `;
 }
 
 function escapeHtml(s){
@@ -462,110 +239,45 @@ function renderHeader(){
     `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
 }
 
-function renderDateTabs(){
-  const wrap = document.getElementById('dateTabs');
-  wrap.innerHTML = DATES.map(d=>{
-    const {md,dow} = fmtDate(d);
-    const people = totalPeople(d);
-    const active = d===selectedDate ? 'active' : '';
-    const full = isDayFull(d) ? 'full' : '';
-    return `<div class="date-tab ${active} ${full}" onclick="selectDate('${d}')">
-      <span class="dt-date">${md}</span>
-      <span class="dt-dow">(${dow})</span>
-      <span class="dt-count">${people}/${DISPLAY_CAP}人</span>
-    </div>`;
-  }).join('');
-}
-
-function selectDate(d){
-  if(d===selectedDate) return;
-  selectedDate = d;
-  cancelEdit(true);
-  selectedLocationId = null;
-  selectedTime = null;
-  showComplete = false;
-  renderAll();
-}
-
-function renderSummary(){
-  const list = allEntriesFor(selectedDate);
-  const {md,dow} = fmtDate(selectedDate);
-  const full = isDayFull(selectedDate);
-  document.getElementById('summaryLabel').textContent = full ? `${md}(${dow}) 満員` : `${md}(${dow}) 来場者数`;
-  document.getElementById('summaryPeople').textContent = `${totalPeople(selectedDate)}/${DISPLAY_CAP}`;
-  document.getElementById('summaryGroups').textContent = `${list.length}組`;
-  document.getElementById('daySummary').classList.toggle('full', full);
-  document.getElementById('fullBanner').style.display = full ? 'block' : 'none';
-}
-
 function currentScreen(){
   if(adminMode) return 'admin';
-  if(POLL_MODE) return pollHasVoted() ? 'pollThanks' : 'poll';
   if(showComplete) return 'complete';
   if(lookupMode) return 'lookup';
-  if(!selectedLocationId) return 'location';
-  if(!selectedTime) return 'time';
-  return 'form';
+  if(formMode) return 'form';
+  return 'event';
 }
 
 function renderScreens(){
   const screen = currentScreen();
-  document.getElementById('screenLocation').style.display = screen==='location' ? 'block' : 'none';
-  document.getElementById('screenTime').style.display = screen==='time' ? 'block' : 'none';
-  document.getElementById('screenForm').style.display = screen==='form' ? 'block' : 'none';
+  document.getElementById('screenEvent').style.display = screen==='event' ? 'block' : 'none';
+  document.getElementById('screenRsvpForm').style.display = screen==='form' ? 'block' : 'none';
   document.getElementById('screenAdmin').style.display = screen==='admin' ? 'block' : 'none';
   document.getElementById('screenComplete').style.display = screen==='complete' ? 'block' : 'none';
   document.getElementById('screenLookup').style.display = screen==='lookup' ? 'block' : 'none';
-  document.getElementById('screenPoll').style.display = screen==='poll' ? 'block' : 'none';
-  document.getElementById('screenPollThanks').style.display = screen==='pollThanks' ? 'block' : 'none';
-  document.getElementById('dateTabs').style.display = POLL_MODE ? 'none' : 'flex';
-  document.getElementById('daySummary').style.display = POLL_MODE ? 'none' : 'flex';
-  if(POLL_MODE) document.getElementById('fullBanner').style.display = 'none';
 }
 
-function pollHasVoted(){
-  return !!localStorage.getItem(VOTE_STORAGE_KEY);
-}
-
-const POLL_LABELS = { '2026-09-15': '9/15（火）', '2026-09-29': '9/29（火）', 'either': 'どちらでも' };
-
-async function submitVote(choice){
-  try{
-    await apiFetch('date_votes', {
-      method: 'POST',
-      headers: { 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ choice })
-    });
-  }catch(e){
-    alert('通信エラーで送信できませんでした。電波状況を確認してもう一度お試しください。');
-    return;
-  }
-  localStorage.setItem(VOTE_STORAGE_KEY, choice);
-  try{ await refreshData(); }catch(e){ /* ignore */ }
+function showRsvpForm(){
+  formMode = true;
+  editingId = null;
+  document.getElementById('fName').value = '';
+  document.getElementById('fAdults').value = 1;
+  document.getElementById('fChildren').value = 0;
+  document.getElementById('formTitle').textContent = '参加登録';
+  document.getElementById('submitBtn').textContent = '登録する';
   renderAll();
   window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('fName').focus();
 }
 
-function renderPollTally(){
-  const el15 = document.getElementById('tally0915');
-  const el29 = document.getElementById('tally0929');
-  const elEither = document.getElementById('tallyEither');
-  if(!el15 || !el29 || !elEither) return;
-  el15.textContent = `${voteTally['2026-09-15']||0}票`;
-  el29.textContent = `${voteTally['2026-09-29']||0}票`;
-  elEither.textContent = `${voteTally['either']||0}票`;
-}
-
-async function resetPoll(){
-  if(!window.confirm('投票データをすべて削除します。よろしいですか？')) return;
-  try{
-    await apiFetch('date_votes?id=gte.0', { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
-    await refreshData();
-  }catch(e){
-    alert('通信エラーでリセットできませんでした。電波状況を確認してもう一度お試しください。');
-    return;
+function returnFromRsvpForm(){
+  formMode = false;
+  editingId = null;
+  if(cameFromAdmin){
+    adminMode = true;
+    cameFromAdmin = false;
   }
   renderAll();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function showLookup(){
@@ -582,13 +294,36 @@ function hideLookup(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+function findRsvpByNumber(numStr){
+  const id = Number(String(numStr).trim().replace(/^0+(?=\d)/, ''));
+  if(!id) return null;
+  return rsvps.find(e => Number(e.id) === id) || null;
+}
+
+function lookupRsvp(){
+  const input = document.getElementById('lookupNumber').value;
+  const result = document.getElementById('lookupResult');
+  const found = findRsvpByNumber(input);
+  if(!found){
+    result.className = 'lookup-result error';
+    result.textContent = '登録が見つかりませんでした。番号をご確認ください。';
+    return;
+  }
+  result.className = 'lookup-result';
+  result.innerHTML = `
+    <div class="complete-row"><span class="c-label">日時</span><span class="c-value">${EVENT_LABEL}</span></div>
+    <div class="complete-row"><span class="c-label">お名前</span><span class="c-value">${escapeHtml(found.name)}</span></div>
+    <div class="complete-row"><span class="c-label">大人</span><span class="c-value">${found.adults}人</span></div>
+    <div class="complete-row"><span class="c-label">子供</span><span class="c-value">${found.children}人</span></div>
+  `;
+}
+
 function renderComplete(){
   if(!lastSubmission) return;
   document.getElementById('completeNumber').textContent = lastSubmission.number;
-  document.getElementById('completeDateTime').textContent = `${lastSubmission.dateLabel} ${lastSubmission.time}`;
-  document.getElementById('completeLocation').textContent = lastSubmission.locationName;
   document.getElementById('completeName').textContent = lastSubmission.name;
-  document.getElementById('completePeople').textContent = `${lastSubmission.people}人`;
+  document.getElementById('completeAdults').textContent = `${lastSubmission.adults}人`;
+  document.getElementById('completeChildren').textContent = `${lastSubmission.children}人`;
 }
 
 function backToHomeFromComplete(){
@@ -617,201 +352,70 @@ function hideAdmin(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function backToLocations(){
-  cancelEdit(true);
-  selectedLocationId = null;
-  selectedTime = null;
-  renderAll();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function backToTime(){
-  selectedTime = null;
-  renderAll();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function renderLocations(){
-  const dow = getDow(selectedDate);
-  const dayFull = isDayFull(selectedDate) && !editingId;
-  const wrap = document.getElementById('locList');
-  wrap.innerHTML = LOCATIONS.map(loc=>{
-    const windows = loc.getWindows(dow);
-    const closedByHours = !windows;
-    const closed = closedByHours || dayFull;
-    const selected = loc.id===selectedLocationId ? 'selected' : '';
-    const count = entriesFor(selectedDate, loc.id).reduce((s,e)=>s+Number(e.people||0),0);
-    const badgeText = closedByHours ? '定休日' : (dayFull ? '満員' : '営業中');
-    const badgeClass = closedByHours ? '' : (dayFull ? 'full' : 'open');
-    return `<div class="loc-card ${closed?'closed':''} ${selected}" onclick="${closed?'':`selectLocation('${loc.id}')`}">
-      <div class="loc-card-top">
-        <span class="loc-name">${loc.name}</span>
-        <span class="loc-badge ${badgeClass}">${badgeText}</span>
-      </div>
-      <div class="loc-addr">${loc.addr}</div>
-      <div class="loc-hours">${loc.hoursText}</div>
-      ${count>0 ? `<div class="loc-card-count">受付済み ${count}人</div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function selectLocation(locId){
-  if(isDayFull(selectedDate) && !editingId) return;
-  selectedLocationId = locId;
-  selectedTime = null;
-  cancelEdit(true);
-  renderAll();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-function renderSlots(){
-  const header = document.getElementById('timeScreenHeader');
-  const wrap = document.getElementById('slotWrap');
-  if(!selectedLocationId){
-    header.innerHTML = '';
-    wrap.innerHTML = '';
-    return;
-  }
-  const loc = getLocation(selectedLocationId);
-  const dow = getDow(selectedDate);
-  const windows = loc.getWindows(dow);
-  const {md,dow:dowLabel} = fmtDate(selectedDate);
-  header.innerHTML = `<div class="screen-loc-name">📍 ${loc.name}</div><div class="screen-loc-sub">${md}(${dowLabel})・${loc.hoursText}</div>`;
-  if(!windows){
-    wrap.innerHTML = '<div class="empty-state">本日は定休日です</div>';
-    return;
-  }
-  wrap.innerHTML = windows.map(win=>{
-    const slots = genSlots(win);
-    const label = windows.length>1 ? `<div class="slot-window-label">${win[0]}〜${win[1]}</div>` : '';
-    const btns = slots.map(t=>{
-      const sel = t===selectedTime ? 'selected' : '';
-      return `<button type="button" class="slot-btn ${sel}" onclick="selectTime('${t}')">${t}</button>`;
-    }).join('');
-    return `<div class="slot-window">${label}<div class="slot-grid">${btns}</div></div>`;
-  }).join('');
-}
-
-function selectTime(t){
-  selectedTime = t;
-  if(!editingId){
-    document.getElementById('fName').value = '';
-    document.getElementById('fPeople').value = 1;
-    document.getElementById('formTitle').textContent = '受付情報を入力';
-    document.getElementById('submitBtn').textContent = '追加する';
-  }
-  renderAll();
-  window.scrollTo({top:0,behavior:'smooth'});
-  document.getElementById('fName').focus();
-}
-
-function renderForm(){
-  const header = document.getElementById('formScreenHeader');
-  if(!selectedLocationId || !selectedTime){
-    header.innerHTML = '';
-    return;
-  }
-  const loc = getLocation(selectedLocationId);
-  const {md,dow} = fmtDate(selectedDate);
-  header.innerHTML = `<div class="screen-loc-name">📍 ${loc.name}</div><div class="screen-loc-sub">${md}(${dow})・${selectedTime}〜</div>`;
-}
-
 function renderEntryList(){
   const wrap = document.getElementById('entryListWrap');
-  const groups = LOCATIONS.map(loc=>{
-    const list = entriesFor(selectedDate, loc.id).slice().sort((a,b)=>a.time.localeCompare(b.time));
-    return { loc, list };
-  }).filter(g=>g.list.length>0);
-
-  if(groups.length===0){
-    wrap.innerHTML = '<div class="empty-state">まだ受付がありません</div>';
+  if(rsvps.length===0){
+    wrap.innerHTML = '<div class="empty-state">まだ参加登録がありません</div>';
     return;
   }
+  const rows = rsvps.map(e=>`
+    <div class="record-item">
+      <span class="record-name">${escapeHtml(e.name)}</span>
+      <span class="record-people">大人${e.adults}・子供${e.children}</span>
+      <span class="record-actions">
+        <button class="icon-btn" onclick="startEditRsvp('${e.id}')">✏️</button>
+        <button class="icon-btn del" onclick="deleteRsvp('${e.id}')">🗑</button>
+      </span>
+    </div>
+  `).join('');
+  wrap.innerHTML = `<div class="record-list">${rows}</div>`;
+}
 
-  wrap.innerHTML = groups.map(({loc,list})=>{
-    const total = list.reduce((s,e)=>s+Number(e.people||0),0);
-    const rows = list.map(e=>`
-      <div class="record-item">
-        <span class="record-time">${e.time}</span>
-        <span class="record-name">${escapeHtml(e.name)}</span>
-        <span class="record-people">${e.people}人</span>
-        <span class="record-actions">
-          <button class="icon-btn" onclick="startEdit('${loc.id}','${e.id}')">✏️</button>
-          <button class="icon-btn del" onclick="deleteEntry('${loc.id}','${e.id}')">🗑</button>
-        </span>
-      </div>
-    `).join('');
-    return `<div class="loc-group">
-      <div class="loc-group-title"><span>📍 ${loc.name}</span><span class="loc-group-count">${total}人・${list.length}組</span></div>
-      <div class="record-list">${rows}</div>
-    </div>`;
-  }).join('');
+function renderAdminSummary(){
+  const totalAdults = rsvps.reduce((s,e)=>s+Number(e.adults||0),0);
+  const totalChildren = rsvps.reduce((s,e)=>s+Number(e.children||0),0);
+  document.getElementById('summaryAdults').textContent = `${totalAdults}人`;
+  document.getElementById('summaryChildren').textContent = `${totalChildren}人`;
+  document.getElementById('summaryTotal').textContent = `${totalAdults+totalChildren}人`;
 }
 
 function renderAll(){
-  renderDateTabs();
-  renderSummary();
-  renderLocations();
-  renderSlots();
-  renderForm();
   renderEntryList();
+  renderAdminSummary();
   renderComplete();
-  renderPollThanksNote();
-  renderPollTally();
   renderScreens();
 }
 
-function renderPollThanksNote(){
-  const el = document.getElementById('pollVotedNote');
-  if(!el) return;
-  const choice = localStorage.getItem(VOTE_STORAGE_KEY);
-  el.textContent = choice ? `あなたは「${POLL_LABELS[choice]||choice}」に投票しました` : '';
-}
-
-function returnFromEdit(){
-  editingId = null;
-  selectedLocationId = null;
-  selectedTime = null;
-  if(cameFromAdmin){
-    adminMode = true;
-    cameFromAdmin = false;
-  }
-}
-
-async function submitEntry(){
+async function submitRsvp(){
   const name = document.getElementById('fName').value.trim();
-  const people = Number(document.getElementById('fPeople').value) || 1;
+  const adults = Number(document.getElementById('fAdults').value) || 0;
+  const children = Number(document.getElementById('fChildren').value) || 0;
 
   if(!name){
     alert('お名前を入力してください');
     return;
   }
-  if(!selectedLocationId || !selectedTime){
-    alert('受け取り場所と時間を選択してください');
-    return;
-  }
-  const isEdit = !!editingId;
-  if(!isEdit && isDayFull(selectedDate)){
-    alert(`本日の受付は定員（${ACTUAL_CAP}人）に達しました`);
-    renderAll();
+  if(adults + children <= 0){
+    alert('人数を入力してください');
     return;
   }
 
+  const isEdit = !!editingId;
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
   let insertedId = null;
   try{
     if(isEdit){
-      await apiFetch(`reservations?id=eq.${editingId.id}`, {
+      await apiFetch(`rsvps?id=eq.${editingId}`, {
         method: 'PATCH',
         headers: { 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ time: selectedTime, name, people })
+        body: JSON.stringify({ name, adults, children })
       });
     }else{
-      const res = await apiFetch('reservations', {
+      const res = await apiFetch('rsvps', {
         method: 'POST',
         headers: { 'Prefer': 'return=representation' },
-        body: JSON.stringify({ date: selectedDate, location_id: selectedLocationId, time: selectedTime, name, people })
+        body: JSON.stringify({ name, adults, children })
       });
       const [row] = await res.json();
       insertedId = row.id;
@@ -825,67 +429,39 @@ async function submitEntry(){
   submitBtn.disabled = false;
 
   if(isEdit){
-    returnFromEdit();
-    renderAll();
-    window.scrollTo({top:0,behavior:'smooth'});
+    returnFromRsvpForm();
     return;
   }
 
-  const loc = getLocation(selectedLocationId);
-  const {md, dow} = fmtDate(selectedDate);
-  const dateLabel = `${md}(${dow})`;
   const number = padNum(insertedId);
-  lastSubmission = {
-    number,
-    dateLabel,
-    time: selectedTime,
-    locationName: loc.name,
-    name,
-    people
-  };
-  notifyByEmail(number, loc.name, dateLabel, selectedTime, name, people);
+  lastSubmission = { number, name, adults, children };
+  notifyByEmail(number, name, adults, children);
   showComplete = true;
-  selectedLocationId = null;
-  selectedTime = null;
-  document.getElementById('fName').value = '';
-  document.getElementById('fPeople').value = 1;
+  formMode = false;
   renderAll();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function startEdit(locId, id){
-  const entry = entriesFor(selectedDate, locId).find(e=>String(e.id)===String(id));
+function startEditRsvp(id){
+  const entry = rsvps.find(e=>String(e.id)===String(id));
   if(!entry) return;
-  editingId = { date: selectedDate, locationId: locId, id: entry.id };
-  selectedLocationId = locId;
-  selectedTime = entry.time;
+  editingId = entry.id;
   cameFromAdmin = adminMode;
   adminMode = false;
+  formMode = true;
   renderAll();
   document.getElementById('fName').value = entry.name;
-  document.getElementById('fPeople').value = entry.people;
-  document.getElementById('formTitle').textContent = '受付を編集';
+  document.getElementById('fAdults').value = entry.adults;
+  document.getElementById('fChildren').value = entry.children;
+  document.getElementById('formTitle').textContent = '参加登録を編集';
   document.getElementById('submitBtn').textContent = '更新する';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-function cancelEdit(skipRender){
-  if(editingId){
-    returnFromEdit();
-  }else{
-    selectedTime = null;
-  }
-  const fName = document.getElementById('fName');
-  const fPeople = document.getElementById('fPeople');
-  if(fName) fName.value = '';
-  if(fPeople) fPeople.value = 1;
-  if(!skipRender) renderAll();
-}
-
-async function deleteEntry(locId, id){
-  if(!confirm('この受付を削除しますか？')) return;
+async function deleteRsvp(id){
+  if(!confirm('この参加登録を削除しますか？')) return;
   try{
-    await apiFetch(`reservations?id=eq.${id}`, { method: 'DELETE' });
+    await apiFetch(`rsvps?id=eq.${id}`, { method: 'DELETE' });
     await refreshData();
   }catch(e){
     alert('通信エラーで削除できませんでした。電波状況を確認してもう一度お試しください。');

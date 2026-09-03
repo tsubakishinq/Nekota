@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>〇〇整骨院｜つらい痛みに、根本改善のアプローチ</title>
+<meta name="description" content="〇〇整骨院は、腰痛・肩こり・むち打ち・スポーツ外傷に対応。国家資格者による丁寧な施術で、つらい痛みの根本改善をサポートします。">
+<style>
+  :root{
+    --blue-900:#0b3a66;
+    --blue-700:#0f5a9c;
+    --blue-600:#1573c9;
+    --blue-500:#2b8fe6;
+    --blue-100:#e4f1fb;
+    --blue-50:#f2f8fd;
+    --ink:#1c2b36;
+    --ink-soft:#4a5a67;
+    --line:#dbe6ef;
+    --white:#ffffff;
+    --accent:#ff8a3d;
+    --radius:16px;
+    --shadow:0 10px 30px rgba(15,90,156,.12);
+    --shadow-sm:0 4px 14px rgba(15,90,156,.10);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Meiryo",system-ui,sans-serif;
+    color:var(--ink);
+    line-height:1.8;
+    background:var(--white);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  img{max-width:100%;display:block}
+  .wrap{width:min(1080px,92%);margin-inline:auto}
+  section{padding:72px 0}
+  .eyebrow{
+    display:inline-block;color:var(--blue-600);font-weight:700;
+    letter-spacing:.14em;font-size:.82rem;margin-bottom:10px;
+  }
+  h2.title{
+    font-size:clamp(1.5rem,4.5vw,2.2rem);line-height:1.4;
+    color:var(--blue-900);margin-bottom:14px;font-weight:800;
+  }
+  h2.title small{display:block;font-size:.9rem;color:var(--ink-soft);font-weight:600;margin-top:8px}
+  .center{text-align:center}
+  .lead{color:var(--ink-soft);max-width:640px;margin-inline:auto}
+
+  /* ===== Header ===== */
+  header.site{
+    position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--line);
+  }
+  .site .bar{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--blue-900)}
+  .brand .mark{
+    width:34px;height:34px;border-radius:9px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--blue-500),var(--blue-700));
+    display:grid;place-items:center;color:#fff;font-size:1.1rem;
+  }
+  .nav{display:flex;align-items:center;gap:22px}
+  .nav a.link{color:var(--ink-soft);font-weight:600;font-size:.92rem}
+  .nav a.link:hover{color:var(--blue-600)}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:12px 22px;border-radius:999px;font-weight:700;font-size:.95rem;
+    transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+    white-space:nowrap;
+  }
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 18px rgba(255,138,61,.35)}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-tel{background:var(--blue-600);color:#fff}
+  .btn-tel:hover{transform:translateY(-2px)}
+  .btn-ghost{background:#fff;color:var(--blue-700);border:2px solid var(--blue-600)}
+  .btn-ghost:hover{background:var(--blue-50)}
+  .nav .btn{padding:10px 18px}
+  .nav-links{display:flex;gap:22px;align-items:center}
+
+  /* ===== Hero ===== */
+  .hero{
+    background:linear-gradient(160deg,var(--blue-50) 0%,var(--blue-100) 100%);
+    position:relative;overflow:hidden;padding:76px 0 84px;
+  }
+  .hero::after{
+    content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;
+    background:radial-gradient(circle,rgba(43,143,230,.20),transparent 70%);border-radius:50%;
+  }
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center;position:relative;z-index:1}
+  .hero h1{
+    font-size:clamp(1.8rem,5.4vw,3rem);line-height:1.35;color:var(--blue-900);
+    font-weight:900;letter-spacing:.01em;margin-bottom:18px;
+  }
+  .hero h1 .hl{color:var(--blue-600)}
+  .hero p.sub{font-size:1.05rem;color:var(--ink-soft);margin-bottom:26px}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+  .hero-badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
+    padding:8px 14px;border-radius:999px;font-size:.84rem;font-weight:700;color:var(--blue-700);
+    box-shadow:var(--shadow-sm);
+  }
+  .hero-visual{
+    background:linear-gradient(135deg,var(--blue-600),var(--blue-900));
+    border-radius:24px;aspect-ratio:4/3.4;box-shadow:var(--shadow);
+    display:grid;place-items:center;color:#fff;text-align:center;padding:30px;position:relative;overflow:hidden;
+  }
+  .hero-visual .big{font-size:3rem;line-height:1;margin-bottom:14px}
+  .hero-visual .ph-note{font-size:.8rem;opacity:.85;margin-top:16px;border-top:1px solid rgba(255,255,255,.25);padding-top:12px}
+  .hero-visual::before{
+    content:"";position:absolute;left:-60px;bottom:-60px;width:220px;height:220px;
+    background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%);border-radius:50%;
+  }
+
+  /* ===== Worries ===== */
+  .worries{background:var(--white)}
+  .worry-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:34px}
+  .worry-card{
+    background:var(--blue-50);border:1px solid var(--line);border-radius:var(--radius);
+    padding:26px 22px;text-align:center;
+  }
+  .worry-card .ic{font-size:2rem;margin-bottom:10px}
+  .worry-card h3{font-size:1.02rem;color:var(--blue-900);margin-bottom:6px}
+  .worry-card p{font-size:.9rem;color:var(--ink-soft)}
+  .worry-lead{margin-top:34px;text-align:center;font-weight:700;color:var(--blue-700);font-size:1.1rem}
+
+  /* ===== Reasons ===== */
+  .reasons{background:var(--blue-50)}
+  .reason-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:36px}
+  .reason-card{
+    background:#fff;border-radius:var(--radius);padding:30px 24px;box-shadow:var(--shadow-sm);
+    border-top:4px solid var(--blue-500);
+  }
+  .reason-card .num{
+    font-size:.78rem;font-weight:800;color:#fff;background:var(--blue-600);
+    width:40px;height:40px;border-radius:10px;display:grid;place-items:center;margin-bottom:14px;
+  }
+  .reason-card h3{color:var(--blue-900);font-size:1.12rem;margin-bottom:8px}
+  .reason-card p{color:var(--ink-soft);font-size:.92rem}
+
+  /* ===== Flow ===== */
+  .flow{background:#fff}
+  .flow-list{margin-top:36px;display:grid;gap:16px}
+  .flow-item{
+    display:grid;grid-template-columns:64px 1fr;gap:18px;align-items:flex-start;
+    background:var(--blue-50);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;
+  }
+  .flow-item .step{
+    width:52px;height:52px;border-radius:50%;background:var(--blue-600);color:#fff;
+    display:grid;place-items:center;font-weight:800;font-size:1.1rem;
+  }
+  .flow-item h3{color:var(--blue-900);font-size:1.06rem;margin-bottom:4px}
+  .flow-item p{color:var(--ink-soft);font-size:.92rem}
+
+  /* ===== Pricing ===== */
+  .pricing{background:var(--blue-50)}
+  .price-table{
+    margin-top:36px;background:#fff;border-radius:var(--radius);overflow:hidden;
+    box-shadow:var(--shadow-sm);border:1px solid var(--line);
+  }
+  .price-table table{width:100%;border-collapse:collapse}
+  .price-table th,.price-table td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--line)}
+  .price-table thead th{background:var(--blue-700);color:#fff;font-size:.95rem}
+  .price-table tbody tr:last-child td{border-bottom:none}
+  .price-table .menu{font-weight:700;color:var(--blue-900)}
+  .price-table .desc{font-size:.84rem;color:var(--ink-soft)}
+  .price-table .yen{text-align:right;font-weight:800;color:var(--blue-700);white-space:nowrap}
+  .price-note{margin-top:14px;font-size:.82rem;color:var(--ink-soft);text-align:center}
+  .price-highlight td{background:var(--blue-50)}
+
+  /* ===== FAQ ===== */
+  .faq{background:#fff}
+  .faq-list{margin-top:34px;display:grid;gap:12px;max-width:820px;margin-inline:auto}
+  .faq-item{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .faq-q{
+    display:flex;gap:12px;align-items:center;width:100%;background:none;border:none;cursor:pointer;
+    padding:18px 20px;text-align:left;font-weight:700;color:var(--blue-900);font-size:1rem;font-family:inherit;
+  }
+  .faq-q .qmark{
+    flex:0 0 auto;width:26px;height:26px;border-radius:7px;background:var(--blue-100);color:var(--blue-700);
+    display:grid;place-items:center;font-weight:800;font-size:.9rem;
+  }
+  .faq-q .chev{margin-left:auto;transition:transform .2s ease;color:var(--blue-500)}
+  .faq-item.open .faq-q .chev{transform:rotate(180deg)}
+  .faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease}
+  .faq-a .inner{padding:0 20px 18px 58px;color:var(--ink-soft);font-size:.94rem}
+
+  /* ===== Access ===== */
+  .access{background:var(--blue-50)}
+  .access-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:36px;align-items:stretch}
+  .info-card{background:#fff;border-radius:var(--radius);padding:30px 28px;box-shadow:var(--shadow-sm);border:1px solid var(--line)}
+  .info-row{display:flex;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
+  .info-row:last-child{border-bottom:none}
+  .info-row .lbl{flex:0 0 92px;font-weight:800;color:var(--blue-700);font-size:.9rem}
+  .info-row .val{color:var(--ink);font-size:.95rem}
+  .info-row .val a{color:var(--blue-600);font-weight:700}
+  .map-embed{border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);border:1px solid var(--line);min-height:320px}
+  .map-embed iframe{width:100%;height:100%;min-height:320px;border:0;display:block}
+
+  /* ===== CTA band ===== */
+  .cta-band{
+    background:linear-gradient(135deg,var(--blue-700),var(--blue-900));color:#fff;text-align:center;
+  }
+  .cta-band h2{font-size:clamp(1.4rem,4.4vw,2rem);font-weight:900;margin-bottom:12px}
+  .cta-band p{opacity:.92;margin-bottom:26px}
+  .cta-band .hero-cta{justify-content:center}
+  .cta-band .btn-ghost{background:transparent;color:#fff;border-color:#fff}
+  .cta-band .btn-ghost:hover{background:rgba(255,255,255,.12)}
+  .cta-band .tel-big{font-size:1.9rem;font-weight:900;letter-spacing:.02em;margin-top:4px}
+  .cta-band .tel-big a{color:#fff}
+
+  /* ===== Footer ===== */
+  footer.site{background:var(--blue-900);color:#cfe1f2;padding:40px 0 30px;font-size:.9rem}
+  footer .foot-grid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  footer .brand{color:#fff}
+  footer .brand .mark{background:rgba(255,255,255,.15)}
+  footer .foot-nav{display:flex;gap:18px;flex-wrap:wrap}
+  footer .foot-nav a:hover{color:#fff}
+  footer .copy{margin-top:26px;padding-top:18px;border-top:1px solid rgba(255,255,255,.15);opacity:.75;font-size:.82rem}
+
+  /* ===== Mobile sticky call bar ===== */
+  .mobile-cta{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;
+    grid-template-columns:1fr 1fr;gap:0;box-shadow:0 -4px 16px rgba(0,0,0,.12);
+  }
+  .mobile-cta a{padding:14px;text-align:center;font-weight:800;color:#fff;font-size:.98rem}
+  .mobile-cta .m-tel{background:var(--blue-700)}
+  .mobile-cta .m-book{background:var(--accent)}
+
+  /* Placeholder highlight helper (edit these!) */
+  .ph{color:inherit}
+
+  /* ===== Responsive ===== */
+  @media(max-width:860px){
+    section{padding:56px 0}
+    .hero{padding:52px 0 60px}
+    .hero-grid{grid-template-columns:1fr;gap:30px}
+    .hero-visual{aspect-ratio:16/10;order:-1}
+    .worry-grid,.reason-grid{grid-template-columns:1fr}
+    .access-grid{grid-template-columns:1fr}
+    .nav-links{display:none}
+    .nav .btn-tel{display:inline-flex}
+    body{padding-bottom:56px}
+    .mobile-cta{display:grid}
+  }
+  @media(max-width:480px){
+    .worry-grid{grid-template-columns:1fr}
+    .flow-item{grid-template-columns:48px 1fr;gap:14px;padding:18px}
+    .flow-item .step{width:44px;height:44px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HEADER ============ -->
+<header class="site">
+  <div class="wrap bar">
+    <a href="#top" class="brand"><span class="mark">＋</span><span>〇〇整骨院</span></a>
+    <nav class="nav">
+      <div class="nav-links">
+        <a class="link" href="#worries">こんなお悩み</a>
+        <a class="link" href="#reasons">選ばれる理由</a>
+        <a class="link" href="#pricing">料金表</a>
+        <a class="link" href="#faq">よくある質問</a>
+        <a class="link" href="#access">アクセス</a>
+      </div>
+      <a class="btn btn-tel" href="tel:0000000000">📞 [電話番号]</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">腰痛・肩こり・スポーツ外傷</span>
+      <h1>その痛み、<span class="hl">根本から</span>。<br>つらい毎日を、快適な毎日へ。</h1>
+      <p class="sub">国家資格を持つ施術者が、一人ひとりのお身体の状態を丁寧に見極め、<br>痛みの原因にアプローチします。まずはお気軽にご相談ください。</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#access">🗓 ご予約・お問い合わせ</a>
+        <a class="btn btn-ghost" href="tel:0000000000">📞 [電話番号]</a>
+      </div>
+      <div class="hero-badges">
+        <span class="badge">✓ 各種保険取扱い</span>
+        <span class="badge">✓ 完全予約制</span>
+        <span class="badge">✓ 駐車場あり</span>
+        <span class="badge">✓ 土曜も営業</span>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div>
+        <div class="big">🩺</div>
+        <div style="font-weight:800;font-size:1.15rem">安心して通える整骨院</div>
+        <div class="ph-note">※ ここに院内・施術風景の写真を配置できます<br>（画像は img タグに差し替え）</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WORRIES ============ -->
+<section class="worries" id="worries">
+  <div class="wrap center">
+    <span class="eyebrow">SYMPTOMS</span>
+    <h2 class="title">こんなお悩みありませんか？</h2>
+    <p class="lead">一つでも当てはまる方は、我慢せずに一度ご相談ください。</p>
+  </div>
+  <div class="wrap">
+    <div class="worry-grid">
+      <div class="worry-card"><div class="ic">🦴</div><h3>慢性的な腰痛・肩こり</h3><p>デスクワークや立ち仕事で、痛みやだるさが抜けない。</p></div>
+      <div class="worry-card"><div class="ic">🚗</div><h3>交通事故のむち打ち</h3><p>事故後の首・背中の痛みやしびれが気になる。</p></div>
+      <div class="worry-card"><div class="ic">⚽</div><h3>スポーツでのケガ</h3><p>捻挫・打撲・肉離れなど、早く復帰したい。</p></div>
+      <div class="worry-card"><div class="ic">🤕</div><h3>頭痛・眼精疲労</h3><p>肩や首のこりからくる頭の重さに悩んでいる。</p></div>
+      <div class="worry-card"><div class="ic">🦵</div><h3>膝・関節の痛み</h3><p>階段の上り下りや歩行時の痛みがつらい。</p></div>
+      <div class="worry-card"><div class="ic">🧍</div><h3>姿勢・骨盤の歪み</h3><p>猫背や産後の骨盤の開きを整えたい。</p></div>
+    </div>
+    <p class="worry-lead">〇〇整骨院が、その原因にしっかり向き合います。</p>
+  </div>
+</section>
+
+<!-- ============ REASONS ============ -->
+<section class="reasons" id="reasons">
+  <div class="wrap center">
+    <span class="eyebrow">REASON</span>
+    <h2 class="title">〇〇整骨院が選ばれる理由</h2>
+    <p class="lead">初めての方にも安心してお越しいただける、3つの強みがあります。</p>
+  </div>
+  <div class="wrap">
+    <div class="reason-grid">
+      <div class="reason-card">
+        <div class="num">01</div>
+        <h3>国家資格者による施術</h3>
+        <p>柔道整復師の資格を持つ施術者が、お身体の状態を丁寧に検査し、一人ひとりに合わせた施術プランをご提案します。</p>
+      </div>
+      <div class="reason-card">
+        <div class="num">02</div>
+        <h3>痛みの根本にアプローチ</h3>
+        <p>その場しのぎではなく、痛みが出る原因を追究。再発しにくい身体づくりまでをサポートします。</p>
+      </div>
+      <div class="reason-card">
+        <div class="num">03</div>
+        <h3>通いやすい環境</h3>
+        <p>完全予約制で待ち時間を軽減。清潔な院内と丁寧なカウンセリングで、はじめての方も安心です。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FLOW ============ -->
+<section class="flow" id="flow">
+  <div class="wrap center">
+    <span class="eyebrow">FLOW</span>
+    <h2 class="title">ご来院からの流れ</h2>
+    <p class="lead">初めての方も安心。ご来院からお帰りまでの流れをご紹介します。</p>
+  </div>
+  <div class="wrap">
+    <div class="flow-list">
+      <div class="flow-item"><div class="step">1</div><div><h3>ご予約・受付</h3><p>お電話またはWebからご予約ください。当日は問診票にご記入いただきます。</p></div></div>
+      <div class="flow-item"><div class="step">2</div><div><h3>カウンセリング・検査</h3><p>お悩みや痛みの状態を丁寧にお伺いし、身体の状態をチェックします。</p></div></div>
+      <div class="flow-item"><div class="step">3</div><div><h3>施術</h3><p>検査結果をもとに、お一人おひとりに合わせた施術を行います。</p></div></div>
+      <div class="flow-item"><div class="step">4</div><div><h3>アフターケア・次回のご案内</h3><p>日常生活での注意点やセルフケアをアドバイス。今後の通院プランをご提案します。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING ============ -->
+<section class="pricing" id="pricing">
+  <div class="wrap center">
+    <span class="eyebrow">PRICE</span>
+    <h2 class="title">料金表</h2>
+    <p class="lead">明朗会計を心がけています。保険適用の可否はお気軽にお尋ねください。</p>
+  </div>
+  <div class="wrap">
+    <div class="price-table">
+      <table>
+        <thead>
+          <tr><th>メニュー</th><th style="text-align:right">料金（税込）</th></tr>
+        </thead>
+        <tbody>
+          <tr class="price-highlight">
+            <td><div class="menu">初回カウンセリング＋施術</div><div class="desc">問診・検査・初回施術を含みます</div></td>
+            <td class="yen">¥[0,000]</td>
+          </tr>
+          <tr>
+            <td><div class="menu">通常施術</div><div class="desc">2回目以降の基本施術</div></td>
+            <td class="yen">¥[0,000]</td>
+          </tr>
+          <tr>
+            <td><div class="menu">骨盤矯正</div><div class="desc">姿勢・産後の骨盤ケア</div></td>
+            <td class="yen">¥[0,000]</td>
+          </tr>
+          <tr>
+            <td><div class="menu">交通事故治療</div><div class="desc">自賠責保険適用の場合、窓口負担0円</div></td>
+            <td class="yen">窓口 ¥0</td>
+          </tr>
+          <tr>
+            <td><div class="menu">各種保険施術</div><div class="desc">健康保険適用の場合</div></td>
+            <td class="yen">¥[000]〜</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="price-note">※ 料金・メニューは一例です。実際の金額に差し替えてご利用ください。<br>※ 保険適用にはケガの原因など一定の条件があります。詳しくは受付までお問い合わせください。</p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="faq" id="faq">
+  <div class="wrap center">
+    <span class="eyebrow">FAQ</span>
+    <h2 class="title">よくある質問</h2>
+    <p class="lead">ご来院前によくいただくご質問をまとめました。</p>
+  </div>
+  <div class="wrap">
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q"><span class="qmark">Q</span>予約は必要ですか？<span class="chev">▾</span></button>
+        <div class="faq-a"><div class="inner">完全予約制となっております。お電話またはWebからご予約ください。急な痛みなど当日のご予約もできる限り対応いたしますので、まずはお問い合わせください。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span class="qmark">Q</span>保険は使えますか？<span class="chev">▾</span></button>
+        <div class="faq-a"><div class="inner">日常生活やスポーツ中のケガ（捻挫・打撲・肉離れなど）で、原因がはっきりしている場合は健康保険が適用となることがあります。詳しくは受付にてご説明いたします。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span class="qmark">Q</span>交通事故のケガも診てもらえますか？<span class="chev">▾</span></button>
+        <div class="faq-a"><div class="inner">はい、対応しております。自賠責保険が適用される場合、窓口負担0円で施術を受けていただけます。保険会社とのやり取りについてもサポートいたしますのでご安心ください。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span class="qmark">Q</span>どんな服装で行けばいいですか？<span class="chev">▾</span></button>
+        <div class="faq-a"><div class="inner">動きやすい服装がおすすめです。お着替えのご用意もございますので、お仕事帰りなどでもお気軽にお越しください。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span class="qmark">Q</span>子ども連れでも通えますか？<span class="chev">▾</span></button>
+        <div class="faq-a"><div class="inner">お子様連れでのご来院も歓迎しております。ご予約時にお伝えいただければ、できる限り配慮いたします。</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q"><span class="qmark">Q</span>支払い方法は何が使えますか？<span class="chev">▾</span></button>
+        <div class="faq-a"><div class="inner">現金のほか、各種キャッシュレス決済にも対応しております（※実際の対応状況に差し替えてください）。</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ACCESS ============ -->
+<section class="access" id="access">
+  <div class="wrap center">
+    <span class="eyebrow">ACCESS</span>
+    <h2 class="title">アクセス・院情報</h2>
+    <p class="lead">お車でも電車でも通いやすい立地です。お気軽にお越しください。</p>
+  </div>
+  <div class="wrap">
+    <div class="access-grid">
+      <div class="info-card">
+        <div class="info-row"><div class="lbl">院名</div><div class="val">〇〇整骨院</div></div>
+        <div class="info-row"><div class="lbl">住所</div><div class="val">〒000-0000<br>[都道府県市区町村・番地・ビル名]</div></div>
+        <div class="info-row"><div class="lbl">電話</div><div class="val"><a href="tel:0000000000">[電話番号]</a></div></div>
+        <div class="info-row"><div class="lbl">受付時間</div><div class="val">
+          平日　9:00〜12:00 / 15:00〜20:00<br>
+          土曜　9:00〜13:00<br>
+          <span style="color:var(--ink-soft);font-size:.86rem">定休日：日曜・祝日</span>
+        </div></div>
+        <div class="info-row"><div class="lbl">アクセス</div><div class="val">〇〇線「〇〇駅」より徒歩〇分<br>駐車場〇台あり</div></div>
+        <div style="margin-top:18px">
+          <a class="btn btn-primary" href="tel:0000000000" style="width:100%">📞 電話で予約する</a>
+        </div>
+      </div>
+      <div class="map-embed">
+        <!-- Google マップの「共有」→「地図を埋め込む」で取得した iframe をここに貼り付けてください -->
+        <iframe
+          src="https://maps.google.com/maps?q=%E6%9D%B1%E4%BA%AC%E9%A7%85&output=embed"
+          loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          title="〇〇整骨院の地図"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CTA BAND ============ -->
+<section class="cta-band">
+  <div class="wrap">
+    <h2>まずはお気軽にご相談ください</h2>
+    <p>その痛み、一人で我慢しないで。あなたに合った施術をご提案します。</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="#access">🗓 ご予約・お問い合わせ</a>
+    </div>
+    <div class="tel-big"><a href="tel:0000000000">📞 [電話番号]</a></div>
+    <p style="margin-top:6px;font-size:.85rem;opacity:.8">受付時間　平日 9:00〜20:00 / 土曜 9:00〜13:00</p>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="site">
+  <div class="wrap">
+    <div class="foot-grid">
+      <a href="#top" class="brand"><span class="mark">＋</span><span>〇〇整骨院</span></a>
+      <nav class="foot-nav">
+        <a href="#worries">こんなお悩み</a>
+        <a href="#reasons">選ばれる理由</a>
+        <a href="#flow">施術の流れ</a>
+        <a href="#pricing">料金表</a>
+        <a href="#faq">よくある質問</a>
+        <a href="#access">アクセス</a>
+      </nav>
+    </div>
+    <div class="copy">© <span id="yr"></span> 〇〇整骨院 All Rights Reserved.</div>
+  </div>
+</footer>
+
+<!-- ============ MOBILE STICKY CTA ============ -->
+<div class="mobile-cta">
+  <a class="m-tel" href="tel:0000000000">📞 電話する</a>
+  <a class="m-book" href="#access">🗓 予約する</a>
+</div>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var item = btn.closest('.faq-item');
+      var ans = item.querySelector('.faq-a');
+      var isOpen = item.classList.toggle('open');
+      ans.style.maxHeight = isOpen ? ans.scrollHeight + 'px' : null;
+    });
+  });
+  // Current year
+  document.getElementById('yr').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

@@ -306,6 +306,7 @@
   .pr-kbn.dk{color:#1f5fa8;font-weight:700;}
   .pr-name{font-size:16px;font-weight:700;white-space:nowrap;}
   .pr-cnt{text-align:center;white-space:nowrap;}
+  .pr-prev{color:#c0392b;font-weight:700;}
   .pr-days{font-size:15px;font-weight:500;line-height:1.35;}
   .pr-note{text-align:center;font-size:12px;font-weight:700;color:#c0392b;white-space:nowrap;}
   .pr-foot{font-size:11px;color:#555;margin-top:6px;}
@@ -1290,6 +1291,15 @@ function hasVisitInMonth(p,y,m){
   var sk=schedules[ym];
   if(sk && sk[p.id] && sk[p.id].length>0) return true;
   return false;
+}
+// 指定年月の通院日数＝来院記録と割り振りの日付を合わせた日数（重複は1日）
+function visitDaysInMonth(p,y,m){
+  var ym=y+'-'+String(m+1).padStart(2,'0'),set={};
+  records.forEach(function(r){
+    if(String(r.patientId)===String(p.id) && r.date && r.date.slice(0,7)===ym) set[Number(r.date.slice(8,10))]=1;
+  });
+  ((schedules[ym]||{})[p.id]||[]).forEach(function(d){set[Number(d)]=1;});
+  return Object.keys(set).length;
 }
 // 指定年月より前に通院があったか（新規判定用）
 function hasVisitBeforeMonth(p,y,m){
@@ -2441,12 +2451,13 @@ document.getElementById('dkOverModal').addEventListener('click',function(e){
 // 「印刷」と「画像で保存・共有」（共有メニューからプリント可）を選べるようにする。
 function getSchListRows(){
   var sch=schedules[schMonthKey(schYear,schMonth)]||{};
+  var pm=prevMonthOf(schYear,schMonth);
   return patients.filter(function(p){return (sch[p.id]||[]).length>0;})
     .sort(function(a,b){return (Number(a.num)||0)-(Number(b.num)||0);})
     .map(function(p){
       var days=(sch[p.id]||[]).slice().sort(function(a,b){return a-b;});
       var dk=isDaikyo(p);
-      return {num:p.num,name:p.name,dk:dk,days:days,warn:dk&&days.length>=10};
+      return {num:p.num,name:p.name,dk:dk,days:days,warn:dk&&days.length>=10,prev:visitDaysInMonth(p,pm.y,pm.m)};
     });
 }
 function schListToday(){
@@ -2463,11 +2474,12 @@ function printSchList(){
     '<button class="pr-close" onclick="closeSchList()">閉じる</button></div>'+
     '<div class="pr-body"><div class="pr-head"><div class="pr-title">窓口管理 割振一覧表　'+schYear+'年'+(schMonth+1)+'月<small>全'+rows.length+'件</small></div>'+
     '<div class="pr-date">出力日: '+schListToday()+'</div></div>'+
-    '<table class="pr-table"><thead><tr><th>No.</th><th>区分</th><th>氏名</th><th>日数</th><th>対象日</th><th>備考</th></tr></thead><tbody>';
+    '<table class="pr-table"><thead><tr><th>No.</th><th>区分</th><th>氏名</th><th>前月</th><th>日数</th><th>対象日</th><th>備考</th></tr></thead><tbody>';
   rows.forEach(function(r){
     html+='<tr><td class="pr-num">'+esc(r.num)+'</td>'+
       '<td class="pr-kbn'+(r.dk?' dk':'')+'">'+(r.dk?'大阪協会':'その他')+'</td>'+
       '<td class="pr-name">'+esc(r.name)+'</td>'+
+      '<td class="pr-cnt pr-prev">'+r.prev+'日</td>'+
       '<td class="pr-cnt">'+r.days.length+'日</td>'+
       '<td class="pr-days">'+r.days.join(', ')+'</td>'+
       '<td class="pr-note">'+(r.warn?'⚠注意':'')+'</td></tr>';
@@ -2490,8 +2502,8 @@ function makeSchListPages(){
   var W=1240,H=1754,M=60,HEAD=110,TH=46,RH=52,FOOT=50;
   var per=Math.floor((H-M*2-HEAD-TH-FOOT)/RH);
   var pages=Math.max(1,Math.ceil(rows.length/per));
-  var cols=[{t:'No.',w:90},{t:'区分',w:130},{t:'氏名',w:200},{t:'日数',w:90},{t:'対象日',w:0},{t:'備考',w:110}];
-  cols[4].w=W-M*2-cols.reduce(function(s,c){return s+c.w;},0);
+  var cols=[{t:'No.',w:90},{t:'区分',w:120},{t:'氏名',w:190},{t:'前月',w:85},{t:'日数',w:85},{t:'対象日',w:0},{t:'備考',w:110}];
+  cols[5].w=W-M*2-cols.reduce(function(s,c){return s+c.w;},0);
   var font='"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif';
   var out=[];
   for(var pg=0;pg<pages;pg++){
@@ -2521,11 +2533,13 @@ function makeSchListPages(){
       c.fillText(r.dk?'大阪協会':'その他',cx+cols[1].w/2,cy);cx+=cols[1].w;
       c.textAlign='left';c.fillStyle='#000';c.font='bold 30px '+font;
       c.fillText(String(r.name||''),cx+10,cy,cols[2].w-16);cx+=cols[2].w;
-      c.textAlign='center';c.font='28px '+font;
-      c.fillText(r.days.length+'日',cx+cols[3].w/2,cy);cx+=cols[3].w;
+      c.textAlign='center';c.fillStyle='#c0392b';c.font='bold 28px '+font;
+      c.fillText(r.prev+'日',cx+cols[3].w/2,cy);cx+=cols[3].w;
+      c.fillStyle='#000';c.font='28px '+font;
+      c.fillText(r.days.length+'日',cx+cols[4].w/2,cy);cx+=cols[4].w;
       c.textAlign='left';c.font='500 29px '+font;
-      c.fillText(r.days.join(', '),cx+10,cy,cols[4].w-16);cx+=cols[4].w;
-      if(r.warn){c.textAlign='center';c.fillStyle='#c0392b';c.font='bold 24px '+font;c.fillText('⚠注意',cx+cols[5].w/2,cy);}
+      c.fillText(r.days.join(', '),cx+10,cy,cols[5].w-16);cx+=cols[5].w;
+      if(r.warn){c.textAlign='center';c.fillStyle='#c0392b';c.font='bold 24px '+font;c.fillText('⚠注意',cx+cols[6].w/2,cy);}
       y+=RH;
     });
     c.textAlign='left';c.fillStyle='#555';c.font='22px '+font;

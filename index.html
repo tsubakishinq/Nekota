@@ -2477,6 +2477,7 @@ function printSchList(){
   el.innerHTML=html;
   el.classList.add('open');
   el.scrollTop=0;
+  prepareSchListFiles();
 }
 function closeSchList(){
   var el=document.getElementById('printArea');
@@ -2533,21 +2534,39 @@ function makeSchListPages(){
   }
   return out;
 }
-function shareSchListImages(){
+// iPhoneは「タップ直後」でないと共有メニューを開かせないため、
+// 画像ファイルは一覧を開いた時点で先に作っておき、タップ時はすぐ共有する。
+var schListFiles=null;
+function prepareSchListFiles(){
+  schListFiles=null;
   var cvs=makeSchListPages();
   var base='割振一覧表_'+schYear+'-'+String(schMonth+1).padStart(2,'0');
   Promise.all(cvs.map(function(cv,i){
     return new Promise(function(res){cv.toBlob(function(b){res(new File([b],base+'_'+(i+1)+'.png',{type:'image/png'}));},'image/png');});
-  })).then(function(files){
-    if(navigator.canShare&&navigator.canShare({files:files})){
-      navigator.share({files:files,title:base}).catch(function(){});
-    } else {
-      files.forEach(function(f){
-        var a=document.createElement('a');a.href=URL.createObjectURL(f);a.download=f.name;
-        document.body.appendChild(a);a.click();a.remove();
-      });
-    }
+  })).then(function(files){schListFiles=files;});
+}
+function shareSchListImages(){
+  var files=schListFiles;
+  if(!files){showToast('画像を準備中です。もう一度押してください');return;}
+  var ok=false;
+  try{ok=!!(navigator.share&&navigator.canShare&&navigator.canShare({files:files}));}catch(e){}
+  if(!ok){showSchListImages();return;}
+  navigator.share({files:files}).catch(function(e){
+    if(e&&e.name==='AbortError')return; // 自分で閉じた
+    showSchListImages();
   });
+}
+// 共有できない環境用：画像をそのまま画面に出す（長押しで保存・共有できる）
+function showSchListImages(){
+  var body=document.querySelector('#printArea .pr-body');
+  if(!body)return;
+  var html='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:15px;font-weight:700;line-height:1.6">'+
+    '下の画像を<span style="color:#c0392b">長押し</span>して「写真に保存」→ 写真アプリの共有ボタンから「プリント」で印刷できます。</div>';
+  makeSchListPages().forEach(function(cv){
+    html+='<img src="'+cv.toDataURL('image/png')+'" style="width:100%;border:1px solid #ccc;margin-bottom:12px;display:block">';
+  });
+  body.innerHTML=html;
+  document.getElementById('printArea').scrollTop=0;
 }
 </script>
 <div id="printArea"></div>

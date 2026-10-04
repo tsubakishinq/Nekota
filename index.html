@@ -82,11 +82,16 @@
   .month-card.current .month-label,.month-card.current .month-count{color:var(--accent);}
   .month-card.current .month-amount{color:var(--accent);}
   /* 保険請求モーダル */
-  .billing-row{display:grid;grid-template-columns:48px 1fr auto auto;align-items:center;gap:8px;padding:10px 0;}
-  .billing-num{font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-light);}
-  .billing-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .billing-row{display:grid;grid-template-columns:30px 46px 1fr 96px;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .billing-head{display:grid;grid-template-columns:30px 46px 1fr 96px;gap:6px;font-size:11px;font-weight:700;color:var(--ink-light);padding:4px 0;border-bottom:2px solid var(--border);}
+  .billing-order{font-family:'DM Mono',monospace;font-size:16px;font-weight:700;text-align:center;color:var(--accent);}
+  .billing-tag{display:inline-block;font-size:10px;font-weight:700;color:#8e44ad;border:1px solid #8e44ad;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:middle;}
+  .billing-tag.kouki{color:#2874a6;border-color:#5499c7;}
+  .billing-amount-input.manual{border-color:#e67e22;background:#fff7ee;}
+  .billing-num{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--ink);}
+  .billing-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .billing-ins{font-size:11px;color:var(--ink-light);background:var(--bg);border-radius:4px;padding:2px 5px;white-space:nowrap;}
-  .billing-amount-input{width:100px;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:14px;text-align:right;background:var(--surface);color:var(--ink);outline:none;}
+  .billing-amount-input{width:96px;box-sizing:border-box;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:14px;text-align:right;background:var(--surface);color:var(--ink);outline:none;}
   .billing-amount-input:focus{border-color:var(--accent);}
   .billing-total-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;font-weight:700;}
   .billing-total-label{font-size:14px;color:var(--ink-light);}
@@ -448,6 +453,14 @@
         <option>自費</option><option>学生</option><option>その他</option>
       </select>
     </div>
+    <div class="field">
+      <label>窓口区分（集計の金額用）</label>
+      <select id="mFeeKind">
+        <option value="">通常（1回200円）</option>
+        <option value="child">子ども（月初回1000円・以降0円）</option>
+        <option value="single">ひとり親（月初回1000円・以降0円）</option>
+      </select>
+    </div>
     <div class="field"><label>メモ</label><textarea id="mMemo" placeholder="備考など自由に"></textarea></div>
     <div class="field">
       <label>通院頻度（スケジュール割振用）</label>
@@ -614,7 +627,7 @@
     <div id="billingCalView">
       <h3 id="billingModalTitle">保険請求</h3>
       <div class="billing-total-bar">
-        <span class="billing-total-label">💴 月合計</span>
+        <span class="billing-total-label">💴 月合計 <small id="billingMonthCount" style="color:var(--ink-light)"></small></span>
         <span class="billing-total-amount" id="billingTotalAmount">¥0</span>
       </div>
       <div class="billing-mcal-dow">
@@ -636,10 +649,11 @@
         <h3 id="billingDayTitle" style="margin:0;flex:1;font-size:16px"></h3>
       </div>
       <div class="billing-total-bar" style="padding-top:0">
-        <span class="billing-total-label">💴 日計</span>
+        <span class="billing-total-label">👥 合計 <b id="billingDayCount" style="font-size:18px;color:var(--ink)">0名</b></span>
         <span class="billing-total-amount" id="billingDayTotal">¥0</span>
       </div>
-      <div id="billingDayList" style="max-height:50vh;overflow-y:auto;margin-bottom:4px;"></div>
+      <div class="billing-head"><span>順</span><span>No.</span><span>名前</span><span style="text-align:right">金額</span></div>
+      <div id="billingDayList" style="max-height:55vh;overflow-y:auto;margin-bottom:4px;"></div>
       <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="showBillingCalView()">← カレンダーに戻る</button>
     </div>
   </div>
@@ -828,18 +842,80 @@ function saveKarte(){localStorage.setItem(KARTE_KEY,JSON.stringify(karteEntries)
 function saveBilling(){localStorage.setItem(BILLING_KEY,JSON.stringify(billing));}
 function saveDailyBilling(){localStorage.setItem(DAILY_BILLING_KEY,JSON.stringify(dailyBilling));}
 function getDailyBilling(ds){return dailyBilling[ds]||{};}
-function getDailyTotal(ds){return Object.values(dailyBilling[ds]||{}).reduce(function(s,a){return s+(Number(a)||0);},0);}
+// 金額を手で直した時だけ保存する（空欄にすると自動の金額に戻る。0円も保存できる）
 function setDailyBillingAmount(ds,pid,amount){
   if(!dailyBilling[ds])dailyBilling[ds]={};
-  if(!amount||amount<=0){delete dailyBilling[ds][pid];if(!Object.keys(dailyBilling[ds]).length)delete dailyBilling[ds];}
-  else dailyBilling[ds][String(pid)]=amount;
+  if(amount===null||amount===''||isNaN(amount)){delete dailyBilling[ds][String(pid)];if(!Object.keys(dailyBilling[ds]).length)delete dailyBilling[ds];}
+  else dailyBilling[ds][String(pid)]=Number(amount);
   saveDailyBilling();
 }
-function getMonthBillingTotal(ym){
-  return Object.keys(dailyBilling).filter(function(ds){return ds.startsWith(ym);}).reduce(function(s,ds){return s+getDailyTotal(ds);},0);
+// ===== 窓口一覧（来た順番・金額） =====
+// 金額の決まり：
+//   通常 200円
+//   子ども・ひとり親：その月の最初の来院 1000円、以降 0円
+//   初めて来た人：最初の来院 1000円、以降 200円
+// 来た順番：後期高齢者が先、その他は順不同（日付ごとに固定のランダム）
+const FEE_KIND_LABEL={child:'子ども',single:'ひとり親'};
+function feeHash(str){
+  var h=2166136261;
+  for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}
+  h^=h>>>13;h=Math.imul(h,0x5bd1e995);h^=h>>>15;
+  return h>>>0;
 }
+var _feeCache={};
+function clearFeeCache(){_feeCache={};}
+function calcMonthFees(y,m){
+  var ym=y+'-'+String(m+1).padStart(2,'0');
+  if(_feeCache[ym])return _feeCache[ym];
+  var sch=schedules[ym]||{};
+  var visits={};
+  patients.forEach(function(p){
+    var set={};
+    (sch[p.id]||[]).forEach(function(d){set[Number(d)]=1;});
+    visits[p.id]=set;
+  });
+  Object.keys(dailyBilling).forEach(function(ds){
+    if(ds.slice(0,7)!==ym)return;
+    Object.keys(dailyBilling[ds]).forEach(function(pid){
+      if(visits[pid]) visits[pid][Number(ds.slice(8,10))]=1;
+      else { var p=patients.find(function(x){return String(x.id)===String(pid);}); if(p){visits[p.id]=visits[p.id]||{};visits[p.id][Number(ds.slice(8,10))]=1;} }
+    });
+  });
+  var days={},total=0,count=0;
+  patients.forEach(function(p){
+    var list=Object.keys(visits[p.id]||{}).map(Number).sort(function(a,b){return a-b;});
+    if(!list.length)return;
+    var kind=p.feeKind||'';
+    var isNew=!hasVisitBeforeMonth(p,y,m);
+    list.forEach(function(d,i){
+      var def;
+      if(kind==='child'||kind==='single') def=(i===0?1000:0);
+      else def=(isNew&&i===0)?1000:200;
+      var ds=ym+'-'+String(d).padStart(2,'0');
+      var saved=(dailyBilling[ds]||{})[String(p.id)];
+      var manual=saved!==undefined&&saved!==null;
+      var amt=manual?Number(saved)||0:def;
+      var tag=FEE_KIND_LABEL[kind]||((isNew&&i===0)?'初':'');
+      if(!days[d])days[d]=[];
+      days[d].push({p:p,amt:amt,def:def,manual:manual,tag:tag,kouki:p.insurance==='後期',key:feeHash(ds+':'+p.id)});
+      total+=amt;count++;
+    });
+  });
+  Object.keys(days).forEach(function(d){
+    days[d].sort(function(a,b){
+      if(a.kouki!==b.kouki)return a.kouki?-1:1;
+      return a.key-b.key;
+    });
+  });
+  return (_feeCache[ym]={days:days,total:total,count:count});
+}
+function getDailyTotal(ds){
+  var r=calcMonthFees(Number(ds.slice(0,4)),Number(ds.slice(5,7))-1).days[Number(ds.slice(8,10))]||[];
+  return r.reduce(function(s,x){return s+x.amt;},0);
+}
+function getMonthBillingTotal(ym){return calcMonthFees(Number(ym.slice(0,4)),Number(ym.slice(5,7))-1).total;}
 function getYearBillingTotal(year){
-  return Object.keys(dailyBilling).filter(function(ds){return ds.startsWith(String(year));}).reduce(function(s,ds){return s+getDailyTotal(ds);},0);
+  var t=0;for(var m=0;m<12;m++)t+=calcMonthFees(Number(year),m).total;return t;
 }
 // ===== 令和8年7月1日施行 施術料金計算 =====
 // 後療料（捻挫・打撲・挫傷）: 1部位550円、2部位目×80%=440、3部位目×60%=330、4部位〜算定なし
@@ -1090,7 +1166,7 @@ let billingModalDay=null;
 function openBillingModal(ym){
   billingModalYm=ym;
   var parts=ym.split('-');
-  document.getElementById('billingModalTitle').textContent=parts[0]+'年'+parseInt(parts[1])+'月 保険請求';
+  document.getElementById('billingModalTitle').textContent=parts[0]+'年'+parseInt(parts[1])+'月 窓口一覧';
   document.getElementById('billingModal').classList.add('open');
   showBillingCalView();
 }
@@ -1106,26 +1182,19 @@ function showBillingCalView(){
   renderBillingCal();
 }
 function renderBillingCal(){
+  clearFeeCache();
   var ym=billingModalYm;
   var parts=ym.split('-');
   var y=parseInt(parts[0]),m=parseInt(parts[1])-1;
   var dim=new Date(y,m+1,0).getDate();
   var firstDay=new Date(y,m,1).getDay();
-  var sch=schedules[schMonthKey(y,m)]||{};
-  // 日→患者リスト
-  var dayPatients={};
-  patients.forEach(function(p){
-    (sch[p.id]||[]).forEach(function(d){
-      if(!dayPatients[d])dayPatients[d]=[];
-      dayPatients[d].push(p);
-    });
-  });
+  var fees=calcMonthFees(y,m);
   var html='';
   for(var i=0;i<firstDay;i++) html+='<div class="billing-mcal-empty"></div>';
   for(var d=1;d<=dim;d++){
-    var ds=ym+'-'+String(d).padStart(2,'0');
-    var cnt=(dayPatients[d]||[]).length;
-    var amt=getDailyTotal(ds);
+    var list=fees.days[d]||[];
+    var cnt=list.length;
+    var amt=list.reduce(function(s,x){return s+x.amt;},0);
     var dow=new Date(y,m,d).getDay();
     var isSun=dow===0,isSat=dow===6;
     var cls='billing-mcal-cell'+(amt>0?' has-amount':cnt>0?' has-patients':'');
@@ -1136,7 +1205,8 @@ function renderBillingCal(){
     html+='</div>';
   }
   document.getElementById('billingMcalGrid').innerHTML=html;
-  document.getElementById('billingTotalAmount').textContent=formatMoney(getMonthBillingTotal(ym));
+  document.getElementById('billingTotalAmount').textContent=formatMoney(fees.total);
+  document.getElementById('billingMonthCount').textContent='延べ'+fees.count+'名';
 }
 function openDayBilling(day){
   billingModalDay=day;
@@ -1147,44 +1217,41 @@ function openDayBilling(day){
   renderDayBilling();
 }
 function renderDayBilling(){
+  clearFeeCache();
   var ym=billingModalYm,d=billingModalDay;
   var ds=ym+'-'+String(d).padStart(2,'0');
-  var sch=schedules[schMonthKey(parseInt(ym.split('-')[0]),parseInt(ym.split('-')[1])-1)]||{};
-  // 割振でこの日に来院予定の患者
-  var schPids=[];
-  patients.forEach(function(p){if((sch[p.id]||[]).indexOf(d)!==-1)schPids.push(String(p.id));});
-  // 既に金額が入っている患者
-  var billedPids=Object.keys(getDailyBilling(ds));
-  var allPids=[...new Set([...schPids,...billedPids])];
+  var list=calcMonthFees(parseInt(ym.split('-')[0]),parseInt(ym.split('-')[1])-1).days[d]||[];
   var listEl=document.getElementById('billingDayList');
-  if(allPids.length===0){
+  if(list.length===0){
     listEl.innerHTML='<div class="empty-state" style="margin-top:16px">この日に来院予定の患者がいません<br><small style="color:var(--ink-light)">割振タブでスケジュールを設定してください</small></div>';
   } else {
-    listEl.innerHTML=allPids.map(function(pid){
-      var p=patients.find(function(x){return String(x.id)===String(pid);});
-      if(!p)return'';
-      var saved=(getDailyBilling(ds)[pid])||0;
-      return '<div class="billing-row" style="border-bottom:1px solid var(--border)">'+
-        '<span class="billing-num">No.'+p.num+'</span>'+
-        '<span class="billing-name">'+p.name+'</span>'+
-        '<span class="billing-ins">'+(p.insurance||'—')+'</span>'+
-        '<input type="number" class="billing-amount-input" value="'+(saved||'')+'" placeholder="0" min="0" step="10" inputmode="numeric"'+
-        ' oninput="onDayBillingInput(\''+pid+'\',\''+ds+'\',this.value)">'+
+    listEl.innerHTML=list.map(function(x,i){
+      var p=x.p;
+      var tag=x.kouki?'<span class="billing-tag kouki">後期</span>':'';
+      if(x.tag) tag+='<span class="billing-tag">'+x.tag+'</span>';
+      return '<div class="billing-row">'+
+        '<span class="billing-order">'+(i+1)+'</span>'+
+        '<span class="billing-num">'+p.num+'</span>'+
+        '<span class="billing-name">'+p.name+tag+'</span>'+
+        '<input type="number" class="billing-amount-input'+(x.manual?' manual':'')+'" value="'+x.amt+'" min="0" step="10" inputmode="numeric"'+
+        ' onchange="onDayBillingInput(\''+p.id+'\',\''+ds+'\',this.value)">'+
         '</div>';
     }).join('');
   }
-  document.getElementById('billingDayTotal').textContent=formatMoney(getDailyTotal(ds));
+  var total=list.reduce(function(s,x){return s+x.amt;},0);
+  document.getElementById('billingDayTotal').textContent=formatMoney(total);
+  document.getElementById('billingDayCount').textContent=list.length+'名';
 }
 function onDayBillingInput(pid,ds,val){
-  setDailyBillingAmount(ds,pid,parseInt(val)||0);
-  document.getElementById('billingDayTotal').textContent=formatMoney(getDailyTotal(ds));
-  document.getElementById('billingTotalAmount').textContent=formatMoney(getMonthBillingTotal(billingModalYm));
+  setDailyBillingAmount(ds,pid,val===''?null:parseInt(val));
+  renderDayBilling();
 }
 document.getElementById('billingModal').addEventListener('click',function(e){if(e.target===this)closeBillingModal();});
 
 function changeYear(d){selectedYear+=d;renderSummary();}
 
 function renderSummary(){
+  clearFeeCache();
   document.getElementById('selectedYear').textContent=selectedYear+'年';
   document.getElementById('yearTotal').textContent=formatMoney(getYearBillingTotal(selectedYear));
   const cm=now.getMonth()+1;
@@ -1193,12 +1260,13 @@ function renderSummary(){
     const mr=records.filter(r=>r.date&&r.date.startsWith(ms)&&r.patientId);
     const visitPids=[...new Set(mr.map(r=>r.patientId))];
     const bt=getMonthBillingTotal(ms);
+    const fc=calcMonthFees(selectedYear,m-1).count;
     const ic=selectedYear===now.getFullYear()&&m===cm;
     return`<button type="button" class="month-card ${ic?'current':''}" onclick="openBillingModal('${ms}')">
       <div class="month-label">${m}月</div>
       <div class="month-count">${visitPids.length}名 来院</div>
       <div class="month-amount">${visitPids.length}件</div>
-      <div class="month-billing">${bt>0?formatMoney(bt):'請求未入力'}</div>
+      <div class="month-billing">${fc>0?formatMoney(bt):'割振なし'}</div>
     </button>`;
   }).join('');
 }
@@ -1419,11 +1487,13 @@ function openPatientModal(id){
     document.getElementById('mInsurance').value=p.insurance||'';
     document.getElementById('mMemo').value=p.memo||'';
     document.getElementById('mFreq').value=p.freq||'auto';
+    document.getElementById('mFeeKind').value=p.feeKind||'';
   } else {
     document.getElementById('modalTitle').textContent='患者を登録';
     ['mPatientNum','mPatientName','mMemo'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('mInsurance').value='';
     document.getElementById('mFreq').value='auto';
+    document.getElementById('mFeeKind').value='';
   }
   document.getElementById('patientModal').classList.add('open');
 }
@@ -1437,9 +1507,9 @@ function savePatient(){
   if(dup){alert('その患者番号はすでに登録されています');return;}
   if(editingPatientId){
     const idx=patients.findIndex(p=>p.id===editingPatientId);
-    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value};
+    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value};
   } else {
-    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value});
+    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value});
   }
   savePat();closePatientModal();renderPatients();showToast('✓ 保存しました');
 }

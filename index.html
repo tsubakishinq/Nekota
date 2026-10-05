@@ -455,11 +455,15 @@
     </div>
     <div class="field">
       <label>窓口区分（集計の金額用）</label>
-      <select id="mFeeKind">
+      <select id="mFeeKind" onchange="onFeeKindChange()">
         <option value="">通常（1回200円）</option>
         <option value="child">子ども（月初回1000円・以降0円）</option>
         <option value="single">ひとり親（月初回1000円・以降0円）</option>
+        <option value="monthly">月初1回だけ（金額指定・以降0円）</option>
       </select>
+      <div id="mFeeAmtWrap" style="display:none;margin-top:6px;align-items:center;gap:6px">
+        <input type="number" id="mFeeAmt" min="0" step="100" inputmode="numeric" placeholder="例：3000" style="flex:1"><span>円</span>
+      </div>
     </div>
     <div class="field"><label>メモ</label><textarea id="mMemo" placeholder="備考など自由に"></textarea></div>
     <div class="field">
@@ -825,6 +829,17 @@ let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');
   });
   if(changed)localStorage.setItem(PAT_KEY,JSON.stringify(patients));
 })();
+// 窓口金額の個別設定（初回だけ1回）：22 北川＝月初1回3000円、1 二葉＝月初1回1000円（以降0円）
+(function(){
+  var FLAG='sekkotsu_fee_preset_v1';
+  if(localStorage.getItem(FLAG))return;
+  [{num:'22',name:'北川',amt:3000},{num:'1',name:'二葉',amt:1000}].forEach(function(t){
+    var p=patients.find(function(x){return String(x.num)===t.num && String(x.name).indexOf(t.name)!==-1;});
+    if(p){p.feeKind='monthly';p.feeAmt=t.amt;}
+  });
+  localStorage.setItem(PAT_KEY,JSON.stringify(patients));
+  localStorage.setItem(FLAG,'1');
+})();
 let resets   =JSON.parse(localStorage.getItem(RST_KEY)||'{}');
 let appts    =JSON.parse(localStorage.getItem(APPT_KEY)||'[]');
 let karteEntries=JSON.parse(localStorage.getItem(KARTE_KEY)||'[]'); // {id, patientId, date, text}
@@ -854,8 +869,9 @@ function setDailyBillingAmount(ds,pid,amount){
 //   通常 200円
 //   子ども・ひとり親：その月の最初の来院 1000円、以降 0円
 //   初めて来た人：最初の来院 1000円、以降 200円
+//   月1回（金額指定）：その月の最初の来院だけ指定金額、以降 0円
 // 来た順番：後期高齢者が先、その他は順不同（日付ごとに固定のランダム）
-const FEE_KIND_LABEL={child:'子ども',single:'ひとり親'};
+const FEE_KIND_LABEL={child:'子ども',single:'ひとり親',monthly:'月1回'};
 function feeHash(str){
   var h=2166136261;
   for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}
@@ -890,6 +906,7 @@ function calcMonthFees(y,m){
     list.forEach(function(d,i){
       var def;
       if(kind==='child'||kind==='single') def=(i===0?1000:0);
+      else if(kind==='monthly') def=(i===0?(Number(p.feeAmt)||0):0);
       else def=(isNew&&i===0)?1000:200;
       var ds=ym+'-'+String(d).padStart(2,'0');
       var saved=(dailyBilling[ds]||{})[String(p.id)];
@@ -1488,17 +1505,24 @@ function openPatientModal(id){
     document.getElementById('mMemo').value=p.memo||'';
     document.getElementById('mFreq').value=p.freq||'auto';
     document.getElementById('mFeeKind').value=p.feeKind||'';
+    document.getElementById('mFeeAmt').value=p.feeAmt||'';
+    onFeeKindChange();
   } else {
     document.getElementById('modalTitle').textContent='患者を登録';
     ['mPatientNum','mPatientName','mMemo'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('mInsurance').value='';
     document.getElementById('mFreq').value='auto';
     document.getElementById('mFeeKind').value='';
+    document.getElementById('mFeeAmt').value='';
+    onFeeKindChange();
   }
   document.getElementById('patientModal').classList.add('open');
 }
 function closePatientModal(){document.getElementById('patientModal').classList.remove('open');editingPatientId=null;}
 
+function onFeeKindChange(){
+  document.getElementById('mFeeAmtWrap').style.display=document.getElementById('mFeeKind').value==='monthly'?'flex':'none';
+}
 function savePatient(){
   const num=document.getElementById('mPatientNum').value.trim();
   const name=document.getElementById('mPatientName').value.trim();
@@ -1507,9 +1531,9 @@ function savePatient(){
   if(dup){alert('その患者番号はすでに登録されています');return;}
   if(editingPatientId){
     const idx=patients.findIndex(p=>p.id===editingPatientId);
-    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value};
+    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0};
   } else {
-    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value});
+    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0});
   }
   savePat();closePatientModal();renderPatients();showToast('✓ 保存しました');
 }

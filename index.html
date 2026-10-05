@@ -275,6 +275,12 @@
   .sch-day-card-num{font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-light);min-width:52px;}
   .sch-day-card-name{font-size:14px;font-weight:700;flex:1;}
   .sch-day-amount-input{width:90px;border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-size:14px;font-family:'DM Mono',monospace;color:var(--ink);background:var(--bg);outline:none;text-align:right;}
+  .sch-day-del{border:1.5px solid #e6b0aa;background:#fdf2f0;color:var(--accent);border-radius:7px;padding:7px 10px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .sch-day-add{background:var(--surface);border:2px dashed var(--accent);border-radius:10px;padding:12px;margin-bottom:10px;}
+  .sch-day-add-row{display:flex;gap:8px;align-items:center;}
+  .sch-day-add-row input{flex:1;min-width:0;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-size:16px;font-family:'DM Mono',monospace;background:var(--bg);color:var(--ink);outline:none;}
+  .sch-day-add-row button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap;}
+  .sch-day-add-hint{font-size:13px;margin-top:6px;min-height:18px;color:var(--ink-light);}
   .sch-day-amount-input:focus{border-color:var(--accent);background:white;}
   .sch-day-empty{padding:30px;text-align:center;color:var(--ink-light);font-size:13px;}
   .sch-day-header{background:var(--ink);color:white;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
@@ -2184,6 +2190,49 @@ function updateDayAmount(el){
   showToast('✓ 金額を更新しました（¥'+val.toLocaleString()+'）');
 }
 
+// ===== 日別：この日の患者を追加・削除（割振を1日ずつ直す） =====
+function findSchDayPatient(q){
+  q=String(q||'').trim();
+  if(!q)return {list:[]};
+  var exact=patients.filter(function(p){return String(p.num)===q;});
+  if(exact.length)return {list:exact};
+  var ql=q.toLowerCase();
+  return {list:patients.filter(function(p){return String(p.name).toLowerCase().indexOf(ql)!==-1;})};
+}
+function onSchDayAddInput(){
+  var hint=document.getElementById('schDayAddHint');
+  var r=findSchDayPatient(document.getElementById('schDayAddInput').value);
+  if(!document.getElementById('schDayAddInput').value.trim()){hint.innerHTML='';return;}
+  if(!r.list.length){hint.innerHTML='<span style="color:var(--accent)">該当する患者がいません</span>';return;}
+  if(r.list.length===1){hint.innerHTML='→ <b style="color:var(--ink)">No.'+r.list[0].num+'　'+r.list[0].name+'</b>';return;}
+  hint.innerHTML=r.list.slice(0,8).map(function(p){
+    return '<button type="button" style="margin:2px 4px 2px 0;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-size:13px;cursor:pointer" onclick="document.getElementById(\'schDayAddInput\').value=\''+p.num+'\';onSchDayAddInput()">No.'+p.num+' '+p.name+'</button>';
+  }).join('')+(r.list.length>8?'…':'');
+}
+function addSchDayPatient(){
+  var r=findSchDayPatient(document.getElementById('schDayAddInput').value);
+  if(r.list.length!==1){showToast(r.list.length?'候補から1人選んでください':'患者が見つかりません');return;}
+  var p=r.list[0],key=schMonthKey(schYear,schMonth),day=window._schDayNum;
+  if(!schedules[key])schedules[key]={};
+  var arr=schedules[key][p.id]||[];
+  if(arr.indexOf(day)!==-1){showToast('No.'+p.num+' '+p.name+' はこの日にもう入っています');return;}
+  arr.push(day);arr.sort(function(a,b){return a-b;});
+  schedules[key][p.id]=arr;
+  saveSchedules();
+  renderSchedule();
+  showToast('✓ No.'+p.num+' '+p.name+' を追加しました');
+}
+function removeSchDayPatient(pid){
+  var p=patients.find(function(x){return String(x.id)===String(pid);});
+  var key=schMonthKey(schYear,schMonth),day=window._schDayNum;
+  if(!p||!schedules[key]||!schedules[key][p.id])return;
+  if(!confirm('No.'+p.num+' '+p.name+' を'+(schMonth+1)+'月'+day+'日から削除しますか？'))return;
+  schedules[key][p.id]=schedules[key][p.id].filter(function(d){return d!==day;});
+  saveSchedules();
+  renderSchedule();
+  showToast('✓ 削除しました');
+}
+
 function renderSchDay() {
   var y=schYear, m=schMonth;
   var dim = new Date(y, m+1, 0).getDate();
@@ -2221,6 +2270,14 @@ function renderSchDay() {
   html += '<div style="text-align:right"><div class="sch-day-header-label">上限</div><div style="font-family:DM Mono,monospace;font-size:20px;font-weight:500;color:'+(isOver?'#ffcccc':'#6bb8e8')+'">'+limit+'名</div></div>';
   html += '</div>';
 
+  // この日に患者を追加
+  html += '<div class="sch-day-add">'+
+    '<div style="font-size:13px;font-weight:700;margin-bottom:8px">＋ この日に患者を追加</div>'+
+    '<div class="sch-day-add-row">'+
+      '<input type="text" id="schDayAddInput" placeholder="患者番号 または 名前" oninput="onSchDayAddInput()" onkeydown="if(event.key===\'Enter\')addSchDayPatient()">'+
+      '<button onclick="addSchDayPatient()">追加</button>'+
+    '</div><div class="sch-day-add-hint" id="schDayAddHint"></div></div>';
+
   if(visitors.length === 0) {
     html += '<div class="sch-day-empty">この日の来院予定はありません</div>';
   } else {
@@ -2238,6 +2295,7 @@ function renderSchDay() {
       html += '<span class="sch-badge '+(dk?'dk':'ot')+'">'+(dk?'大阪協会':'その他')+'</span>';
       if(over) html += '<span style="font-size:10px;color:var(--accent)">⚠️</span>';
       html += '<input type="number" class="sch-day-amount-input" inputmode="numeric" placeholder="¥0" value="'+amountVal+'" data-pid="'+p.id+'" data-date="'+ds+'" data-num="'+p.num+'" data-name="'+p.name+'" onchange="updateDayAmount(this)">';
+      html += '<button class="sch-day-del" onclick="removeSchDayPatient('+JSON.stringify(String(p.id)).replace(/"/g,'&quot;')+')">削除</button>';
       html += '</div>';
     });
   }

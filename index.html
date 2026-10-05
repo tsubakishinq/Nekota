@@ -458,6 +458,9 @@
         <option>組合</option><option>国保</option><option>後期</option>
         <option>自費</option><option>学生</option><option>その他</option>
       </select>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer">
+        <input type="checkbox" id="mStudent" style="width:22px;height:22px;accent-color:var(--accent)"> 学生（月初回1000円・以降0円）
+      </label>
     </div>
     <div class="field">
       <label>窓口区分（集計の金額用）</label>
@@ -846,6 +849,16 @@ let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');
   localStorage.setItem(PAT_KEY,JSON.stringify(patients));
   localStorage.setItem(FLAG,'1');
 })();
+// 学生の初期設定：803吉近・651佐藤・602佐藤・452佐藤・1022山野・1093野崎
+// まだ学生の設定をしていない（未設定の）人だけに付ける。チェックを外した人には付け直さない。
+(function(){
+  var changed=false;
+  [['803','吉近'],['651','佐藤'],['602','佐藤'],['452','佐藤'],['1022','山野'],['1093','野崎']].forEach(function(t){
+    var p=patients.find(function(x){return String(x.num)===t[0] && String(x.name).indexOf(t[1])!==-1;});
+    if(p && p.student===undefined){p.student=true;changed=true;}
+  });
+  if(changed)localStorage.setItem(PAT_KEY,JSON.stringify(patients));
+})();
 let resets   =JSON.parse(localStorage.getItem(RST_KEY)||'{}');
 let appts    =JSON.parse(localStorage.getItem(APPT_KEY)||'[]');
 let karteEntries=JSON.parse(localStorage.getItem(KARTE_KEY)||'[]'); // {id, patientId, date, text}
@@ -875,6 +888,7 @@ function setDailyBillingAmount(ds,pid,amount){
 //   通常 200円
 //   子ども・ひとり親：その月の最初の来院 1000円、以降 0円
 //   初めて来た人：最初の来院 1000円、以降 200円
+//   学生（患者登録でチェック）：月初回 1000円、以降 0円
 //   月1回（金額指定）：その月の最初の来院だけ指定金額、以降 0円
 // 来た順番：後期高齢者が先、その他は順不同（日付ごとに固定のランダム）
 const FEE_KIND_LABEL={child:'子ども',single:'ひとり親',monthly:'月1回'};
@@ -911,14 +925,14 @@ function calcMonthFees(y,m){
     var isNew=!hasVisitBeforeMonth(p,y,m);
     list.forEach(function(d,i){
       var def;
-      if(kind==='child'||kind==='single') def=(i===0?1000:0);
-      else if(kind==='monthly') def=(i===0?(Number(p.feeAmt)||0):0);
+      if(kind==='monthly') def=(i===0?(Number(p.feeAmt)||0):0);
+      else if(kind==='child'||kind==='single'||p.student) def=(i===0?1000:0);
       else def=(isNew&&i===0)?1000:200;
       var ds=ym+'-'+String(d).padStart(2,'0');
       var saved=(dailyBilling[ds]||{})[String(p.id)];
       var manual=saved!==undefined&&saved!==null;
       var amt=manual?Number(saved)||0:def;
-      var tag=FEE_KIND_LABEL[kind]||((isNew&&i===0)?'初':'');
+      var tag=FEE_KIND_LABEL[kind]||(p.student?'学生':'')||((isNew&&i===0)?'初':'');
       if(!days[d])days[d]=[];
       days[d].push({p:p,amt:amt,def:def,manual:manual,tag:tag,kouki:p.insurance==='後期',key:feeHash(ds+':'+p.id)});
       total+=amt;count++;
@@ -1512,6 +1526,7 @@ function openPatientModal(id){
     document.getElementById('mFreq').value=p.freq||'auto';
     document.getElementById('mFeeKind').value=p.feeKind||'';
     document.getElementById('mFeeAmt').value=p.feeAmt||'';
+    document.getElementById('mStudent').checked=!!p.student;
     onFeeKindChange();
   } else {
     document.getElementById('modalTitle').textContent='患者を登録';
@@ -1520,6 +1535,7 @@ function openPatientModal(id){
     document.getElementById('mFreq').value='auto';
     document.getElementById('mFeeKind').value='';
     document.getElementById('mFeeAmt').value='';
+    document.getElementById('mStudent').checked=false;
     onFeeKindChange();
   }
   document.getElementById('patientModal').classList.add('open');
@@ -1537,9 +1553,9 @@ function savePatient(){
   if(dup){alert('その患者番号はすでに登録されています');return;}
   if(editingPatientId){
     const idx=patients.findIndex(p=>p.id===editingPatientId);
-    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0};
+    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0,student:document.getElementById('mStudent').checked};
   } else {
-    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0});
+    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0,student:document.getElementById('mStudent').checked});
   }
   savePat();closePatientModal();renderPatients();showToast('✓ 保存しました');
 }

@@ -82,8 +82,8 @@
   .month-card.current .month-label,.month-card.current .month-count{color:var(--accent);}
   .month-card.current .month-amount{color:var(--accent);}
   /* 保険請求モーダル */
-  .billing-row{display:grid;grid-template-columns:30px 46px 1fr 96px;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border);}
-  .billing-head{display:grid;grid-template-columns:30px 46px 1fr 96px;gap:6px;font-size:11px;font-weight:700;color:var(--ink-light);padding:4px 0;border-bottom:2px solid var(--border);}
+  .billing-row{display:grid;grid-template-columns:26px 44px 1fr 84px 44px;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .billing-head{display:grid;grid-template-columns:26px 44px 1fr 84px 44px;gap:6px;font-size:11px;font-weight:700;color:var(--ink-light);padding:4px 0;border-bottom:2px solid var(--border);}
   .billing-order{font-family:'DM Mono',monospace;font-size:16px;font-weight:700;text-align:center;color:var(--accent);}
   .billing-tag{display:inline-block;font-size:10px;font-weight:700;color:#8e44ad;border:1px solid #8e44ad;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:middle;}
   .billing-tag.kouki{color:#2874a6;border-color:#5499c7;}
@@ -91,7 +91,9 @@
   .billing-num{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--ink);}
   .billing-name{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .billing-ins{font-size:11px;color:var(--ink-light);background:var(--bg);border-radius:4px;padding:2px 5px;white-space:nowrap;}
-  .billing-amount-input{width:96px;box-sizing:border-box;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:14px;text-align:right;background:var(--surface);color:var(--ink);outline:none;}
+  .rece-check{width:40px;height:40px;border:2px solid var(--border);border-radius:8px;background:var(--surface);color:transparent;font-size:24px;font-weight:900;line-height:1;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  .rece-check.on{background:var(--success);border-color:var(--success);color:#fff;}
+  .billing-amount-input{width:84px;box-sizing:border-box;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:'DM Mono',monospace;font-size:14px;text-align:right;background:var(--surface);color:var(--ink);outline:none;}
   .billing-amount-input:focus{border-color:var(--accent);}
   .billing-total-bar{display:flex;justify-content:space-between;align-items:center;padding:14px 0 4px;font-weight:700;}
   .billing-total-label{font-size:14px;color:var(--ink-light);}
@@ -665,7 +667,8 @@
         <span class="billing-total-label">👥 合計 <b id="billingDayCount" style="font-size:18px;color:var(--ink)">0名</b></span>
         <span class="billing-total-amount" id="billingDayTotal">¥0</span>
       </div>
-      <div class="billing-head"><span>順</span><span>No.</span><span>名前</span><span style="text-align:right">金額</span></div>
+      <div id="billingReceProgress" style="font-size:13px;font-weight:700;text-align:right;margin:-4px 0 6px"></div>
+      <div class="billing-head"><span>順</span><span>No.</span><span>名前</span><span style="text-align:right">金額</span><span style="text-align:center">入力</span></div>
       <div id="billingDayList" style="max-height:55vh;overflow-y:auto;margin-bottom:4px;"></div>
       <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="showBillingCalView()">← カレンダーに戻る</button>
     </div>
@@ -865,6 +868,8 @@ let karteEntries=JSON.parse(localStorage.getItem(KARTE_KEY)||'[]'); // {id, pati
 let billing  =JSON.parse(localStorage.getItem(BILLING_KEY)||'{}'); // {'YYYY-MM': {patientId: amount}} (旧形式・互換用)
 const DAILY_BILLING_KEY='sekkotsu_daily_billing';
 let dailyBilling=JSON.parse(localStorage.getItem(DAILY_BILLING_KEY)||'{}'); // {'YYYY-MM-DD': {patientId: amount}}
+const RECE_CHECK_KEY='sekkotsu_rece_checks';
+let receChecks=JSON.parse(localStorage.getItem(RECE_CHECK_KEY)||'{}'); // {'YYYY-MM-DD': {patientId: 1}} レセコン入力済みチェック
 let selectedYear=new Date().getFullYear(),historyMode='day',editingPatientId=null,resetTargetId=null;
 let apptDate=new Date().toISOString().slice(0,10);
 
@@ -1272,12 +1277,31 @@ function renderDayBilling(){
         '<span class="billing-name">'+p.name+tag+'</span>'+
         '<input type="number" class="billing-amount-input'+(x.manual?' manual':'')+'" value="'+x.amt+'" min="0" step="10" inputmode="numeric"'+
         ' onchange="onDayBillingInput(\''+p.id+'\',\''+ds+'\',this.value)">'+
+        '<button type="button" class="rece-check'+(isReceChecked(ds,p.id)?' on':'')+'" onclick="toggleReceCheck(\''+ds+'\',\''+p.id+'\',this)" aria-label="レセコン入力済み">✓</button>'+
         '</div>';
     }).join('');
   }
   var total=list.reduce(function(s,x){return s+x.amt;},0);
   document.getElementById('billingDayTotal').textContent=formatMoney(total);
   document.getElementById('billingDayCount').textContent=list.length+'名';
+  updateReceProgress(ds,list);
+}
+function isReceChecked(ds,pid){return !!(receChecks[ds]&&receChecks[ds][String(pid)]);}
+function toggleReceCheck(ds,pid,btn){
+  if(!receChecks[ds])receChecks[ds]={};
+  if(receChecks[ds][String(pid)]){delete receChecks[ds][String(pid)];if(!Object.keys(receChecks[ds]).length)delete receChecks[ds];}
+  else receChecks[ds][String(pid)]=1;
+  localStorage.setItem(RECE_CHECK_KEY,JSON.stringify(receChecks));
+  btn.classList.toggle('on',isReceChecked(ds,pid));
+  var y=parseInt(ds.slice(0,4)),m=parseInt(ds.slice(5,7))-1,d=parseInt(ds.slice(8,10));
+  updateReceProgress(ds,calcMonthFees(y,m).days[d]||[]);
+}
+function updateReceProgress(ds,list){
+  var done=list.filter(function(x){return isReceChecked(ds,x.p.id);}).length;
+  var el=document.getElementById('billingReceProgress');
+  if(!el)return;
+  el.textContent='レセコン入力済 '+done+'/'+list.length;
+  el.style.color=(list.length&&done===list.length)?'var(--success)':'var(--ink-light)';
 }
 function onDayBillingInput(pid,ds,val){
   setDailyBillingAmount(ds,pid,val===''?null:parseInt(val));
@@ -2527,6 +2551,7 @@ function backupData(){
     karte:     JSON.parse(localStorage.getItem('sekkotsu_karte') || '[]'),
     billing:   JSON.parse(localStorage.getItem('sekkotsu_billing') || '{}'),
     dailyBilling: JSON.parse(localStorage.getItem('sekkotsu_daily_billing') || '{}'),
+    receChecks: JSON.parse(localStorage.getItem('sekkotsu_rece_checks') || '{}'),
   };
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type:'application/json'});
@@ -2559,6 +2584,7 @@ function restoreData(event){
       localStorage.setItem('sekkotsu_karte',     JSON.stringify(data.karte     || []));
       localStorage.setItem('sekkotsu_billing',   JSON.stringify(data.billing   || {}));
       localStorage.setItem('sekkotsu_daily_billing', JSON.stringify(data.dailyBilling || {}));
+      localStorage.setItem('sekkotsu_rece_checks', JSON.stringify(data.receChecks || {}));
       // メモリ上のデータも更新
       records   = data.records   || [];
       patients  = data.patients  || [];
@@ -2571,6 +2597,7 @@ function restoreData(event){
       karteEntries = data.karte || [];
       billing      = data.billing || {};
       dailyBilling = data.dailyBilling || {};
+      receChecks   = data.receChecks || {};
       showToast('✓ 復元しました！');
       renderToday();
       renderPatients();

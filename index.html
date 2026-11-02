@@ -237,6 +237,12 @@
   .sch-badge.ot{background:#eafaf1;color:#1a6b3a;}
   .sch-badge.cnt{background:var(--accent-light);color:var(--accent);}
   .sch-badge.cnt.ok{background:#eafaf1;color:#1a6b3a;}
+  .sch-padd-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:10px 0;}
+  .sch-padd-day{border:1.5px solid var(--border);border-radius:7px;background:var(--surface);padding:8px 0;font-family:'DM Mono',monospace;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  .sch-padd-day.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .sch-padd-day.off{background:#f0f0f0;color:#bbb;cursor:default;border-color:#eee;}
+  .sch-padd-btns{display:flex;gap:8px;}
+  .sch-padd-btns button{flex:1;padding:11px 4px;border-radius:8px;font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
   .sch-dates{font-size:11px;color:var(--ink-light);line-height:1.8;}
   .sch-regen{background:none;border:1.5px solid var(--border);border-radius:7px;padding:5px 9px;font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;color:var(--ink-light);}
   .day-limit-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
@@ -2147,7 +2153,7 @@ function renderSchedule(){
 
   const el=document.getElementById('schPatientList');
   if(!patients.length){el.innerHTML='<div class="empty-state">患者が登録されていません</div>';return;}
-  if(!Object.keys(sch).length){el.innerHTML='<div class="empty-state">「生成」ボタンを押してください</div>';return;}
+  if(!Object.keys(sch).length){if(schSubTab==='patient'){renderSchPatient();return;}el.innerHTML='<div class="empty-state">「生成」ボタンを押してください</div>';return;}
   // 現在のサブタブに応じて描画
   if(schSubTab==='patient') renderSchPatient();
   if(schSubTab==='day') renderSchDay();
@@ -2343,16 +2349,104 @@ function renderSchDay() {
   el.innerHTML = html;
 }
 
+// ===== 患者別：この月に患者を追加 =====
+var schPatAdd={pid:null,days:[]};
+function renderSchPatAddBox(){
+  var html='<div class="sch-day-add">'+
+    '<div style="font-size:13px;font-weight:700;margin-bottom:8px">＋ 患者の追加（'+(schMonth+1)+'月）</div>'+
+    '<div class="sch-day-add-row">'+
+      '<input type="text" id="schPatAddInput" placeholder="患者番号 または 名前" oninput="onSchPatAddInput()" onkeydown="if(event.key===\'Enter\')pickSchPatAdd()">'+
+      '<button onclick="pickSchPatAdd()">選ぶ</button>'+
+    '</div><div class="sch-day-add-hint" id="schPatAddHint"></div>'+
+    '<div id="schPatAddBody"></div>'+
+    '<div style="font-size:12px;margin-top:6px;color:var(--ink-light)">名簿にいない人は <a href="#" onclick="openPatientModal();return false" style="color:var(--accent);font-weight:700">新しく患者登録</a> してから追加してください</div>'+
+    '</div>';
+  return html;
+}
+function onSchPatAddInput(){
+  var v=document.getElementById('schPatAddInput').value;
+  var hint=document.getElementById('schPatAddHint');
+  var r=findSchDayPatient(v);
+  if(!v.trim()){hint.innerHTML='';return;}
+  if(!r.list.length){hint.innerHTML='<span style="color:var(--accent)">該当する患者がいません</span>';return;}
+  if(r.list.length===1){hint.innerHTML='→ <b style="color:var(--ink)">No.'+r.list[0].num+'　'+r.list[0].name+'</b>';return;}
+  hint.innerHTML=r.list.slice(0,8).map(function(p){
+    return '<button type="button" style="margin:2px 4px 2px 0;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-size:13px;cursor:pointer" onclick="document.getElementById(\'schPatAddInput\').value=\''+p.num+'\';pickSchPatAdd()">No.'+p.num+' '+p.name+'</button>';
+  }).join('')+(r.list.length>8?'…':'');
+}
+function pickSchPatAdd(){
+  var r=findSchDayPatient(document.getElementById('schPatAddInput').value);
+  if(r.list.length!==1){showToast(r.list.length?'候補から1人選んでください':'患者が見つかりません');return;}
+  var p=r.list[0];
+  var sch=schedules[schMonthKey(schYear,schMonth)]||{};
+  schPatAdd={pid:p.id,days:(sch[p.id]||[]).slice()};
+  document.getElementById('schPatAddHint').innerHTML='';
+  renderSchPatAddBody();
+}
+function renderSchPatAddBody(){
+  var body=document.getElementById('schPatAddBody');
+  if(!body)return;
+  var p=patients.find(function(x){return x.id===schPatAdd.pid;});
+  if(!p){body.innerHTML='';return;}
+  var y=schYear,m=schMonth,dim=new Date(y,m+1,0).getDate(),first=new Date(y,m,1).getDay();
+  var work=getWorkDays(y,m);
+  var already=((schedules[schMonthKey(y,m)]||{})[p.id]||[]).length>0;
+  var html='<div style="margin-top:10px;font-size:15px;font-weight:700">No.'+p.num+'　'+p.name+
+    (already?'<span style="font-size:11px;color:var(--accent);margin-left:6px">（もう入っています：日程を変更）</span>':'')+'</div>'+
+    '<div style="font-size:12px;color:var(--ink-light);margin-top:4px">通院する日をタップ（<b id="schPatAddCnt">'+schPatAdd.days.length+'</b>日選択中）</div>'+
+    '<div class="sch-padd-days">';
+  ['日','月','火','水','木','金','土'].forEach(function(w,i){html+='<div style="text-align:center;font-size:10px;font-weight:700;color:'+(i===0?'#e74c3c':i===6?'#3498db':'var(--ink-light)')+'">'+w+'</div>';});
+  for(var i=0;i<first;i++)html+='<div></div>';
+  for(var d=1;d<=dim;d++){
+    var ok=work.indexOf(d)!==-1;
+    var on=schPatAdd.days.indexOf(d)!==-1;
+    html+='<button type="button" class="sch-padd-day'+(on?' on':'')+(ok?'':' off')+'" '+(ok?'onclick="toggleSchPatAddDay('+d+',this)"':'disabled')+'>'+d+'</button>';
+  }
+  html+='</div><div class="sch-padd-btns">'+
+    '<button type="button" style="background:var(--bg);border:1.5px solid var(--border);color:var(--ink)" onclick="autoSchPatAdd()">🔄 自動で割り振る</button>'+
+    '<button type="button" style="background:var(--accent);border:none;color:#fff" onclick="saveSchPatAdd()">この日程で追加</button>'+
+    '</div>';
+  body.innerHTML=html;
+}
+function toggleSchPatAddDay(d,btn){
+  var i=schPatAdd.days.indexOf(d);
+  if(i===-1)schPatAdd.days.push(d);else schPatAdd.days.splice(i,1);
+  btn.classList.toggle('on',i===-1);
+  document.getElementById('schPatAddCnt').textContent=schPatAdd.days.length;
+}
+function autoSchPatAdd(){
+  var p=patients.find(function(x){return x.id===schPatAdd.pid;});
+  if(!p)return;
+  schPatAdd.days=genOnePat(schYear,schMonth,false,p);
+  renderSchPatAddBody();
+}
+function saveSchPatAdd(){
+  var p=patients.find(function(x){return x.id===schPatAdd.pid;});
+  if(!p)return;
+  if(!schPatAdd.days.length){showToast('通院する日を選んでください');return;}
+  var key=schMonthKey(schYear,schMonth);
+  if(!schedules[key])schedules[key]={};
+  schedules[key][p.id]=schPatAdd.days.slice().sort(function(a,b){return a-b;});
+  saveSchedules();
+  // この月を通院対象月にしておく（スケジュール再生成でも外れないように）
+  var fk=String(p.id),mo=schMonth+1;
+  if(!attendFlags[fk])attendFlags[fk]=[];
+  if(attendFlags[fk].indexOf(mo)===-1){attendFlags[fk].push(mo);saveAttendFlags();}
+  schPatAdd={pid:null,days:[]};
+  renderSchedule();
+  showToast('✓ No.'+p.num+' '+p.name+' を追加しました（'+schedules[key][p.id].length+'日）');
+}
+
 function renderSchPatient() {
   var key = schMonthKey(schYear, schMonth);
   var sch = schedules[key] || {};
   var el = document.getElementById('schPatientList');
   if(!patients.length){el.innerHTML='<div class="empty-state">患者が登録されていません</div>';return;}
-  if(!Object.keys(sch).length){el.innerHTML='<div class="empty-state">「生成」ボタンを押してください</div>';return;}
+  var addBox = renderSchPatAddBox();
   // 今月の通院割り振りがある患者のみ表示
   var visiblePats = patients.filter(function(p){ return (sch[p.id]||[]).length>0; }).sort(function(a,b){return Number(a.num)-Number(b.num);});
-  if(!visiblePats.length){el.innerHTML='<div class="empty-state">今月 割り振りされた患者がいません</div>';return;}
-  el.innerHTML = visiblePats.map(function(p){
+  if(!visiblePats.length){el.innerHTML=addBox+'<div class="empty-state">今月 割り振りされた患者がいません</div>';return;}
+  el.innerHTML = addBox + visiblePats.map(function(p){
     var dates=sch[p.id]||[], cnt=dates.length, dkp=isDaikyo(p), over=dkp&&cnt>=10;
     return '<div class="sch-pat-row">'+
       '<div class="sch-pat-top">'+

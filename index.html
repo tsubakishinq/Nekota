@@ -507,7 +507,8 @@
     <span id="schLabel"></span>
     <button onclick="schChangeMonth(1)">▶</button>
   </div>
-  <button class="btn-primary" style="margin-bottom:12px" onclick="generateAll()">🔄 今月のスケジュールを生成</button>
+  <button class="btn-primary" style="margin-bottom:12px" onclick="generateAll()" id="schGenBtn">🔄 今月のスケジュールを生成</button>
+  <button class="btn-secondary" style="margin-bottom:12px;width:100%;display:none;border-color:#e67e22;color:#b9600f;font-weight:700" onclick="undoSchedule()" id="schUndoBtn">↩ 生成・再生成の前に戻す</button>
   <button class="btn-secondary" style="margin-bottom:12px;width:100%" onclick="printSchList()">🖨 割振一覧表を印刷（紙で見ながら入力用）</button>
   <div style="text-align:right;font-size:10px;color:var(--ink-light);margin:-8px 0 10px">一覧表 版：9/30-前月列あり</div>
 
@@ -742,6 +743,8 @@
      ため何もせず終了するガードのままにしている。
    ============================================================ */
 const REC_KEY='sekkotsu_records',PAT_KEY='sekkotsu_patients',RST_KEY='sekkotsu_resets',APPT_KEY='sekkotsu_appts',KARTE_KEY='sekkotsu_karte',BILLING_KEY='sekkotsu_billing';
+// ブラウザにデータを勝手に消さないよう頼む（対応ブラウザのみ）
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
 let records  =JSON.parse(localStorage.getItem(REC_KEY)||'[]');
 const INITIAL_PATIENTS=[
   {id:1,num:'1',name:'二葉',insurance:'協会1',memo:'',freq:''},
@@ -1759,6 +1762,34 @@ let schedules=JSON.parse(localStorage.getItem(SCH_KEY)||'{}');
 let schYear=new Date().getFullYear(),schMonth=new Date().getMonth();
 
 function saveSchedules(){localStorage.setItem(SCH_KEY,JSON.stringify(schedules));}
+// 生成・再生成で上書きする前の割振を控えておく（月ごとに最新10回分）。「元に戻す」で復元できる。
+const SCH_UNDO_KEY='sekkotsu_sch_undo';
+let schUndo=JSON.parse(localStorage.getItem(SCH_UNDO_KEY)||'{}'); // {'YYYY-MM': [{at, data}, ...]}
+function pushSchUndo(key){
+  var cur=schedules[key];
+  if(!cur||!Object.keys(cur).some(function(k){return (cur[k]||[]).length;}))return;
+  if(!schUndo[key])schUndo[key]=[];
+  schUndo[key].push({at:new Date().toISOString(),data:JSON.parse(JSON.stringify(cur))});
+  if(schUndo[key].length>10)schUndo[key]=schUndo[key].slice(-10);
+  try{localStorage.setItem(SCH_UNDO_KEY,JSON.stringify(schUndo));}catch(e){}
+}
+function undoSchedule(){
+  var key=schMonthKey(schYear,schMonth),list=schUndo[key]||[];
+  if(!list.length){showToast('戻せる履歴がありません');return;}
+  var last=list[list.length-1],t=new Date(last.at);
+  if(!confirm((schMonth+1)+'月の割振を、'+(t.getMonth()+1)+'/'+t.getDate()+' '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0')+' の生成・再生成の前の状態に戻しますか？'))return;
+  schedules[key]=last.data;
+  list.pop();
+  if(!list.length)delete schUndo[key];
+  saveSchedules();
+  try{localStorage.setItem(SCH_UNDO_KEY,JSON.stringify(schUndo));}catch(e){}
+  renderSchedule();
+  showToast('✓ 元に戻しました');
+}
+function hasSchData(key){
+  var cur=schedules[key]||{};
+  return Object.keys(cur).some(function(k){return (cur[k]||[]).length;});
+}
 function schMonthKey(y,m){return`${y}-${String(m+1).padStart(2,'0')}`;}
 function isDaikyo(p){return p.insurance==='協会1';}
 
@@ -1827,6 +1858,11 @@ function genOnePat(y,m,forceUnder10,p){
 function generateAll(){
   if(!patients.length){showToast('患者が登録されていません');return;}
   const y=schYear,m=schMonth,key=schMonthKey(y,m);
+  if(hasSchData(key)){
+    const nowD=new Date(),isPast=(y<nowD.getFullYear())||(y===nowD.getFullYear()&&m<nowD.getMonth());
+    if(!confirm((isPast?'⚠️ 過去の月です！\n\n':'')+y+'年'+(m+1)+'月の割振はすでに入っています。\n\n作り直すと、この月の割振（追加・削除した分も含む）がすべて新しい内容に置き換わり、集計の一覧も変わります。\n\n本当に作り直しますか？\n（あとで「生成・再生成の前に戻す」で戻せます）'))return;
+    if(isPast&&!confirm('もう一度確認します。過去の月 '+(m+1)+'月 の割振を作り直しますか？'))return;
+  }
   const result={};
   const workDays=getWorkDays(y,m);
   const TARGET_PER_DAY=35; // だいたい1日あたりの目標来院人数（この付近にそろえる）
@@ -1950,6 +1986,7 @@ function generateAll(){
     }
   });
 
+  pushSchUndo(key);
   schedules[key]=result;
   saveSchedules();
   showToast('✓ スケジュールを生成しました');
@@ -1967,6 +2004,8 @@ function regenOne(pid){
     const cur=dk.filter(x=>x.id!==pid&&((schedules[key][x.id]||[]).length>=10)).length;
     forceUnder=cur>=allow;
   }
+  if((schedules[key][pid]||[]).length && !confirm('No.'+p.num+' '+p.name+' の'+(schMonth+1)+'月の通院日を作り直しますか？'))return;
+  pushSchUndo(key);
   schedules[key][pid]=genOnePat(schYear,schMonth,forceUnder,p);
   saveSchedules();showToast('✓ 再生成しました');renderSchedule();
 }
@@ -2092,6 +2131,8 @@ function renderInsuranceTable(y, m, sch){
 function renderSchedule(){
   const y=schYear,m=schMonth,key=schMonthKey(y,m);
   document.getElementById('schLabel').textContent=y+'年'+(m+1)+'月';
+  document.getElementById('schGenBtn').textContent='🔄 '+(m+1)+'月のスケジュールを'+(hasSchData(key)?'作り直す':'生成');
+  document.getElementById('schUndoBtn').style.display=(schUndo[key]&&schUndo[key].length)?'block':'none';
   const sch=schedules[key]||{};
   // 今月の通院対象（通院対象月ON）の大阪協会患者だけを母数にする。
   // スケジュール生成の30%計算と分母をそろえるため。

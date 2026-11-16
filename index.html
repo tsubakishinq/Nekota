@@ -50,7 +50,7 @@
   .day-summary-value{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;}
   .day-summary-value span{font-size:14px;margin-left:2px;color:#aaa;}
   .day-summary-value.accent{color:#e74c3c;}
-  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--success);color:white;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:200;pointer-events:none;white-space:nowrap;}
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--success);color:white;padding:12px 24px;border-radius:24px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:2100;pointer-events:none;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .section-title{font-size:11px;font-weight:700;color:var(--ink-light);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;margin-top:20px;}
   .record-list{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
@@ -83,6 +83,19 @@
   .month-card.current .month-amount{color:var(--accent);}
   /* 保険請求モーダル */
   .billing-row{display:grid;grid-template-columns:26px 44px 1fr 84px 44px;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--border);}
+  .tts-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px;}
+  .tts-bar button{border:none;border-radius:8px;padding:9px 12px;font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .tts-bar select{border:1.5px solid var(--border);border-radius:8px;padding:7px;font-size:13px;background:var(--surface);color:var(--ink);}
+  .tts-bar label{font-size:12px;display:flex;align-items:center;gap:3px;color:var(--ink);}
+  .tts-now{background:#fff7ee;border:2px solid #e67e22;border-radius:10px;padding:10px;margin-bottom:8px;}
+  .tts-now-text{font-size:22px;font-weight:900;color:var(--ink);margin-bottom:8px;}
+  .tts-now-btns{display:flex;gap:6px;}
+  .tts-now-btns button{flex:1;border:none;border-radius:8px;padding:12px 4px;font-size:15px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;}
+  .billing-row.tts-cur{background:#fff3e0;outline:2px solid #e67e22;border-radius:6px;}
+  #micFab{position:fixed;left:14px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:2000;width:60px;height:60px;border-radius:50%;border:none;background:#2c3e6b;color:#fff;font-size:28px;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  #micFab.listening{background:#c0392b;animation:micPulse 1s infinite;}
+  @keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,.6);}100%{box-shadow:0 0 0 18px rgba(192,57,43,0);}}
+  @media print{#micFab{display:none!important;}}
   .billing-head{display:grid;grid-template-columns:26px 44px 1fr 84px 44px;gap:6px;font-size:11px;font-weight:700;color:var(--ink-light);padding:4px 0;border-bottom:2px solid var(--border);}
   .billing-order{font-family:'DM Mono',monospace;font-size:16px;font-weight:700;text-align:center;color:var(--accent);}
   .billing-tag{display:inline-block;font-size:10px;font-weight:700;color:#8e44ad;border:1px solid #8e44ad;border-radius:4px;padding:0 4px;margin-left:5px;vertical-align:middle;}
@@ -458,6 +471,7 @@
     <h3 id="modalTitle">患者を登録</h3>
     <div class="field"><label>患者番号</label><input type="number" id="mPatientNum" placeholder="例：001" inputmode="numeric"></div>
     <div class="field"><label>患者氏名</label><input type="text" id="mPatientName" placeholder="例：山田 太郎"></div>
+    <div class="field"><label>よみがな（読み上げ用・空欄なら氏名を読む）</label><input type="text" id="mPatientKana" placeholder="例：やまだ たろう"></div>
     <div class="field">
       <label>保険区分</label>
       <select id="mInsurance">
@@ -675,6 +689,23 @@
         <span class="billing-total-amount" id="billingDayTotal">¥0</span>
       </div>
       <div id="billingReceProgress" style="font-size:13px;font-weight:700;text-align:right;margin:-4px 0 6px"></div>
+      <div class="tts-bar">
+        <button type="button" style="background:#2c3e6b;color:#fff" onclick="ttsStart()">🔊 読み上げ</button>
+        <button type="button" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--border)" onclick="ttsStop()">⏹ 止める</button>
+        <select id="ttsRate"><option value="0.75">ゆっくり</option><option value="0.95" selected>ふつう</option><option value="1.25">はやい</option></select>
+        <label><input type="checkbox" id="ttsOneByOne" checked>1人ずつ</label>
+        <label><input type="checkbox" id="ttsSkipDone" checked>入力済は飛ばす</label>
+        <label><input type="checkbox" id="ttsAmt">金額も</label>
+      </div>
+      <div class="tts-now" id="ttsNow" style="display:none">
+        <div style="font-size:12px;color:var(--ink-light)" id="ttsNowPos"></div>
+        <div class="tts-now-text" id="ttsNowText"></div>
+        <div class="tts-now-btns">
+          <button type="button" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--border)" onclick="ttsRepeat()">🔁 もう1回</button>
+          <button type="button" style="background:var(--bg);color:var(--ink);border:1.5px solid var(--border)" onclick="ttsSkip()">飛ばす</button>
+          <button type="button" style="background:var(--success);color:#fff;flex:2" onclick="ttsNextDone()">✓ 入力した・次へ</button>
+        </div>
+      </div>
       <div class="billing-head"><span>順</span><span>No.</span><span>名前</span><span style="text-align:right">金額</span><span style="text-align:center">入力</span></div>
       <div id="billingDayList" style="max-height:55vh;overflow-y:auto;margin-bottom:4px;"></div>
       <button class="btn-secondary" style="width:100%;margin-top:10px" onclick="showBillingCalView()">← カレンダーに戻る</button>
@@ -1222,12 +1253,14 @@ function openBillingModal(ym){
   showBillingCalView();
 }
 function closeBillingModal(){
+  ttsStop();
   document.getElementById('billingModal').classList.remove('open');
   billingModalYm=null;
   billingModalDay=null;
   renderSummary();
 }
 function showBillingCalView(){
+  ttsStop();
   document.getElementById('billingCalView').style.display='';
   document.getElementById('billingDayView').style.display='none';
   renderBillingCal();
@@ -1280,7 +1313,7 @@ function renderDayBilling(){
       var p=x.p;
       var tag=x.kouki?'<span class="billing-tag kouki">後期</span>':'';
       if(x.tag) tag+='<span class="billing-tag">'+x.tag+'</span>';
-      return '<div class="billing-row">'+
+      return '<div class="billing-row" data-pid="'+p.id+'">'+
         '<span class="billing-order">'+(i+1)+'</span>'+
         '<span class="billing-num">'+p.num+'</span>'+
         '<span class="billing-name">'+p.name+tag+'</span>'+
@@ -1554,6 +1587,7 @@ function openPatientModal(id){
     document.getElementById('modalTitle').textContent='患者情報を編集';
     document.getElementById('mPatientNum').value=p.num;
     document.getElementById('mPatientName').value=p.name;
+    document.getElementById('mPatientKana').value=p.kana||'';
     document.getElementById('mInsurance').value=p.insurance||'';
     document.getElementById('mMemo').value=p.memo||'';
     document.getElementById('mFreq').value=p.freq||'auto';
@@ -1563,7 +1597,7 @@ function openPatientModal(id){
     onFeeKindChange();
   } else {
     document.getElementById('modalTitle').textContent='患者を登録';
-    ['mPatientNum','mPatientName','mMemo'].forEach(i=>document.getElementById(i).value='');
+    ['mPatientNum','mPatientName','mPatientKana','mMemo'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('mInsurance').value='';
     document.getElementById('mFreq').value='auto';
     document.getElementById('mFeeKind').value='';
@@ -1586,9 +1620,9 @@ function savePatient(){
   if(dup){alert('その患者番号はすでに登録されています');return;}
   if(editingPatientId){
     const idx=patients.findIndex(p=>p.id===editingPatientId);
-    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0,student:document.getElementById('mStudent').checked};
+    patients[idx]={...patients[idx],num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0,student:document.getElementById('mStudent').checked,kana:document.getElementById('mPatientKana').value.trim()};
   } else {
-    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0,student:document.getElementById('mStudent').checked});
+    patients.push({id:Date.now(),num,name,insurance:document.getElementById('mInsurance').value,memo:document.getElementById('mMemo').value.trim(),freq:document.getElementById('mFreq').value,feeKind:document.getElementById('mFeeKind').value,feeAmt:Number(document.getElementById('mFeeAmt').value)||0,student:document.getElementById('mStudent').checked,kana:document.getElementById('mPatientKana').value.trim()});
   }
   savePat();closePatientModal();renderPatients();showToast('✓ 保存しました');
 }
@@ -2913,7 +2947,176 @@ function showSchListImages(){
   body.innerHTML=html;
   document.getElementById('printArea').scrollTop=0;
 }
+
+// ===== 読み上げ（集計の日別一覧：レセコン入力用） =====
+var tts={list:[],i:0,ds:'',on:false};
+function ttsCurrentList(){
+  var ym=billingModalYm,d=billingModalDay;
+  if(!ym||!d)return {ds:'',list:[]};
+  var ds=ym+'-'+String(d).padStart(2,'0');
+  var list=calcMonthFees(parseInt(ym.split('-')[0]),parseInt(ym.split('-')[1])-1).days[d]||[];
+  return {ds:ds,list:list};
+}
+function ttsSay(text,onend){
+  if(!window.speechSynthesis){showToast('この端末は読み上げに対応していません');return;}
+  speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(text);
+  u.lang='ja-JP';
+  u.rate=Number((document.getElementById('ttsRate')||{}).value)||0.95;
+  var v=speechSynthesis.getVoices().filter(function(x){return /ja/i.test(x.lang);})[0];
+  if(v)u.voice=v;
+  if(onend)u.onend=onend;
+  speechSynthesis.speak(u);
+}
+function ttsStart(){
+  var c=ttsCurrentList();
+  if(!c.list.length){showToast('読み上げる患者がいません');return;}
+  var skip=document.getElementById('ttsSkipDone').checked;
+  tts.ds=c.ds;
+  tts.list=c.list.map(function(x,i){return {x:x,order:i+1};}).filter(function(o){return !skip||!isReceChecked(c.ds,o.x.p.id);});
+  if(!tts.list.length){showToast('全員入力済みです');return;}
+  tts.i=0;tts.on=true;
+  ttsSpeakCurrent();
+}
+function ttsText(o){
+  var p=o.x.p;
+  var t=p.num+'番、'+(p.kana||p.name);
+  if(document.getElementById('ttsAmt').checked)t+='、'+o.x.amt+'円';
+  return t;
+}
+function ttsSpeakCurrent(){
+  document.querySelectorAll('#billingDayList .billing-row.tts-cur').forEach(function(r){r.classList.remove('tts-cur');});
+  if(!tts.on||tts.i>=tts.list.length){
+    if(tts.on){ttsSay('おわりです');showToast('✓ 読み上げおわり');}
+    ttsStop(true);return;
+  }
+  var o=tts.list[tts.i],p=o.x.p;
+  var row=document.querySelector('#billingDayList .billing-row[data-pid="'+p.id+'"]');
+  if(row){row.classList.add('tts-cur');row.scrollIntoView({block:'center',behavior:'smooth'});}
+  document.getElementById('ttsNow').style.display='';
+  document.getElementById('ttsNowPos').textContent=(tts.i+1)+' / '+tts.list.length+'人目（順 '+o.order+'）';
+  document.getElementById('ttsNowText').textContent='No.'+p.num+'　'+p.name+(document.getElementById('ttsAmt').checked?'　'+o.x.amt+'円':'');
+  var oneByOne=document.getElementById('ttsOneByOne').checked;
+  ttsSay(ttsText(o),oneByOne?null:function(){if(tts.on){tts.i++;setTimeout(ttsSpeakCurrent,700);}});
+}
+function ttsRepeat(){if(tts.on)ttsSpeakCurrent();}
+function ttsSkip(){if(!tts.on)return;tts.i++;ttsSpeakCurrent();}
+function ttsNextDone(){
+  if(!tts.on)return;
+  var p=tts.list[tts.i].x.p;
+  if(!isReceChecked(tts.ds,p.id)){
+    var btn=document.querySelector('#billingDayList .billing-row[data-pid="'+p.id+'"] .rece-check');
+    if(btn)toggleReceCheck(tts.ds,p.id,btn);
+  }
+  tts.i++;ttsSpeakCurrent();
+}
+function ttsStop(keepVoice){
+  tts.on=false;
+  if(window.speechSynthesis&&keepVoice!==true)speechSynthesis.cancel();
+  var n=document.getElementById('ttsNow');if(n)n.style.display='none';
+  document.querySelectorAll('#billingDayList .billing-row.tts-cur').forEach(function(r){r.classList.remove('tts-cur');});
+}
+
+// ===== 音声入力（🎤ボタン：どの画面でも） =====
+// 入力欄を触った直後なら、話した言葉をその欄に入れる。
+// それ以外は画面に合わせた「声の操作」として扱う。
+var voiceLastField=null,voiceLastFieldAt=0,voiceRec=null;
+document.addEventListener('focusin',function(e){
+  var t=e.target;
+  if(t&&(t.tagName==='TEXTAREA'||(t.tagName==='INPUT'&&/^(text|number|search|tel|)$/.test(t.type||'')))){voiceLastField=t;voiceLastFieldAt=Date.now();}
+});
+document.addEventListener('focusout',function(e){if(e.target===voiceLastField)voiceLastFieldAt=Date.now();});
+function kanjiToNum(s){
+  var d={'〇':0,'零':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9};
+  return s.replace(/[〇零一二三四五六七八九十百千]+/g,function(k){
+    var total=0,cur=0,digits='';
+    var simple=/^[〇零一二三四五六七八九]+$/.test(k);
+    if(simple){for(var i=0;i<k.length;i++)digits+=d[k[i]];return digits;}
+    for(var j=0;j<k.length;j++){
+      var c=k[j];
+      if(c in d)cur=d[c];
+      else{var u=c==='十'?10:c==='百'?100:1000;total+=(cur||1)*u;cur=0;}
+    }
+    return String(total+cur);
+  });
+}
+function voiceNormalize(t){
+  t=String(t||'').replace(/[０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0xFEE0);});
+  return kanjiToNum(t).replace(/\s+/g,'');
+}
+function voiceStart(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){alert('この開き方では🎤が使えません。\n文字を入れる欄をタップして、キーボードのマイクボタンを使ってください。');return;}
+  if(voiceRec){try{voiceRec.stop();}catch(e){}return;}
+  var field=(voiceLastField&&document.body.contains(voiceLastField)&&Date.now()-voiceLastFieldAt<15000)?voiceLastField:null;
+  if(window.speechSynthesis)speechSynthesis.cancel();
+  var r=new SR();
+  r.lang='ja-JP';r.interimResults=false;r.maxAlternatives=1;
+  var fab=document.getElementById('micFab');
+  fab.classList.add('listening');
+  r.onresult=function(e){
+    var text=e.results[0][0].transcript;
+    voiceHandle(text,field);
+  };
+  r.onerror=function(e){
+    if(e.error==='not-allowed'||e.error==='service-not-allowed')alert('マイクが許可されていません。\niPhoneの設定でマイクと音声認識を許可するか、キーボードのマイクボタンを使ってください。');
+    else if(e.error!=='aborted'&&e.error!=='no-speech')showToast('聞き取れませんでした（'+e.error+'）');
+    else if(e.error==='no-speech')showToast('聞き取れませんでした。もう一度どうぞ');
+  };
+  r.onend=function(){fab.classList.remove('listening');voiceRec=null;};
+  voiceRec=r;
+  try{r.start();showToast('🎤 どうぞ話してください');}catch(e){fab.classList.remove('listening');voiceRec=null;showToast('🎤 を開始できませんでした');}
+}
+function voiceFill(field,text){
+  var v=field.type==='number'?(voiceNormalize(text).match(/\d+/)||[''])[0]:text;
+  if(field.type==='number'||field.tagName==='INPUT')field.value=(field.type==='number'||!field.value)?v:field.value+v;
+  else field.value=field.value?(field.value+v):v;
+  field.dispatchEvent(new Event('input',{bubbles:true}));
+  field.dispatchEvent(new Event('change',{bubbles:true}));
+  field.focus();
+  showToast('🎤 「'+text+'」を入力しました');
+}
+function isShown(id){var el=document.getElementById(id);return !!(el&&el.offsetParent!==null);}
+function voiceHandle(text,field){
+  var t=voiceNormalize(text);
+  var num=(t.match(/(\d+)/)||[])[1];
+  // 集計の日別一覧（読み上げ・レセコンチェック）
+  if(isShown('billingDayView')){
+    if(/^(次|つぎ|入力した|オッケー|OK|ok|はい)/.test(t)){if(tts.on){ttsNextDone();return;}}
+    if(/もう(一|1)?(度|回)|もういっかい|繰り返/.test(t)){ttsRepeat();return;}
+    if(/飛ばす|スキップ/.test(t)){ttsSkip();return;}
+    if(/止め|とめ|ストップ|終わり|おわり/.test(t)){ttsStop();showToast('⏹ 止めました');return;}
+    if(/読み上げ|読んで|よんで|スタート|開始/.test(t)){ttsStart();return;}
+    if(num&&/チェック|入力済|済み|すみ|完了/.test(t)){voiceReceCheck(num,true);return;}
+    if(num&&/外す|はずす|取り消|とりけし/.test(t)){voiceReceCheck(num,false);return;}
+  }
+  // 割振の日別（追加・削除）
+  if(isShown('sch-view-day')&&num){
+    if(/追加|ついか|入れ/.test(t)){var inp=document.getElementById('schDayAddInput');if(inp){inp.value=num;onSchDayAddInput();addSchDayPatient();}return;}
+    if(/削除|さくじょ|消/.test(t)){var p=patients.find(function(x){return String(x.num)===num;});if(p)removeSchDayPatient(p.id);else showToast(num+'番の患者が見つかりません');return;}
+  }
+  // 割振の患者別（患者の追加）
+  if(isShown('sch-view-patient')&&num&&/追加|ついか|選/.test(t)){var pi=document.getElementById('schPatAddInput');if(pi){pi.value=num;pickSchPatAdd();}return;}
+  // 入力欄に入れる
+  if(field){voiceFill(field,text);return;}
+  // 患者タブ：検索欄に入れる
+  if(document.getElementById('page-patients').classList.contains('active')){var ps=document.getElementById('patientSearch');if(ps){voiceFill(ps,num&&/^\d+番?$/.test(t)?num:text);return;}}
+  // カルテタブ：番号なら患者番号欄に
+  if(document.getElementById('page-input').classList.contains('active')&&num){var kn=document.getElementById('karteNum');if(kn){kn.value=num;kn.dispatchEvent(new Event('input',{bubbles:true}));showToast('🎤 '+num+'番');return;}}
+  showToast('🎤 「'+text+'」（この画面では使えない言葉です。入力欄をタップしてから🎤を押してください）');
+}
+function voiceReceCheck(num,on){
+  var c=ttsCurrentList();
+  var x=c.list.find(function(o){return String(o.p.num)===String(num);});
+  if(!x){showToast(num+'番はこの日の一覧にいません');return;}
+  if(isReceChecked(c.ds,x.p.id)!==on){
+    var btn=document.querySelector('#billingDayList .billing-row[data-pid="'+x.p.id+'"] .rece-check');
+    if(btn)toggleReceCheck(c.ds,x.p.id,btn);
+  }
+  showToast((on?'✓ ':'')+num+'番 '+x.p.name+(on?' を入力済みにしました':' のチェックを外しました'));
+}
 </script>
 <div id="printArea"></div>
+<button type="button" id="micFab" onclick="voiceStart()" aria-label="音声入力">🎤</button>
 </body>
 </html>

@@ -459,6 +459,9 @@
       <label class="file-input-label" for="restoreFileInput">📥 バックアップから復元</label>
       <input type="file" id="restoreFileInput" accept="application/json" style="display:none" onchange="restoreData(event)">
     </div>
+    <div class="backup-row" style="margin-top:8px">
+      <button class="btn-secondary" style="flex:1;margin-bottom:0;border-color:var(--success);color:var(--success);font-weight:700" onclick="openMergeImport()">➕ データを追加で取り込む（今のデータは消さない）</button>
+    </div>
     <div class="backup-note">端末を変える時・修正版に入れ替える時は、先に「バックアップを保存」してファイル（JSON）を保存しておいてください。新しい画面を開いたら「バックアップから復元」でそのファイルを選べば、患者・記録・スケジュールなどすべてのデータがそのまま引き継がれます。</div>
   </div>
 
@@ -655,6 +658,21 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 追加で取り込むモーダル -->
+<div class="modal-overlay" id="mergeModal">
+  <div class="modal">
+    <h3>データを追加で取り込む</h3>
+    <div style="font-size:13px;color:var(--ink-light);line-height:1.7;margin-bottom:10px">今のデータは消さずに、通院日・患者を<b>足すだけ</b>です。取り込み用の文字を貼り付けるか、ファイルを選んでください。</div>
+    <textarea id="mergeText" placeholder="ここに取り込み用の文字を貼り付け" style="width:100%;height:120px;box-sizing:border-box;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-size:12px;font-family:'DM Mono',monospace"></textarea>
+    <label class="file-input-label" for="mergeFile" style="margin-top:8px">📄 ファイルを選ぶ</label>
+    <input type="file" id="mergeFile" accept="application/json,text/plain,.json,.txt" style="display:none" onchange="onMergeFile(event)">
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn-secondary" onclick="document.getElementById('mergeModal').classList.remove('open')">閉じる</button>
+      <button class="btn-primary" style="flex:2" onclick="runMergeImport(document.getElementById('mergeText').value)">取り込む</button>
+    </div>
+  </div>
+</div>
 
 <!-- 保険請求モーダル -->
 <div class="modal-overlay" id="billingModal">
@@ -945,6 +963,14 @@ function feeHash(str){
 }
 var _feeCache={};
 function clearFeeCache(){_feeCache={};}
+// 「初めて来た人」にしない患者：最初からの名簿にいる人、取り込みで来た人（existing）
+// ※ 9・10月のデータが消えたため、前月の通院だけでは判定できない人がいる
+var _rosterNums=null;
+function isKnownPatient(p){
+  if(p.existing)return true;
+  if(!_rosterNums){_rosterNums={};INITIAL_PATIENTS.forEach(function(ip){_rosterNums[String(ip.num)]=1;});}
+  return !!_rosterNums[String(p.num)];
+}
 function calcMonthFees(y,m){
   var ym=y+'-'+String(m+1).padStart(2,'0');
   if(_feeCache[ym])return _feeCache[ym];
@@ -967,7 +993,7 @@ function calcMonthFees(y,m){
     var list=Object.keys(visits[p.id]||{}).map(Number).sort(function(a,b){return a-b;});
     if(!list.length)return;
     var kind=p.feeKind||'';
-    var isNew=!hasVisitBeforeMonth(p,y,m);
+    var isNew=!isKnownPatient(p)&&!hasVisitBeforeMonth(p,y,m);
     list.forEach(function(d,i){
       var def;
       if(kind==='monthly') def=(i===0?(Number(p.feeAmt)||0):0);
@@ -3115,6 +3141,92 @@ function voiceReceCheck(num,on){
   }
   showToast((on?'✓ ':'')+num+'番 '+x.p.name+(on?' を入力済みにしました':' のチェックを外しました'));
 }
+
+// ===== データを追加で取り込む（今のデータは消さない） =====
+// 形式: {"nekota":"merge","patients":[{num,name,insurance,feeKind?,student?}],"visits":{"YYYY-MM":{"患者番号":[日,...]}}}
+// ・患者は番号で照合。いなければ新しく登録（氏名などは既存を上書きしない。窓口区分は未設定のときだけ入れる）
+// ・通院日は今の割振に足す（重複は1回）。その月は通院対象月にも入れる
+function openMergeImport(){
+  document.getElementById('mergeText').value='';
+  document.getElementById('mergeModal').classList.add('open');
+}
+function onMergeFile(e){
+  var f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){document.getElementById('mergeText').value=r.result;runMergeImport(r.result);};
+  r.readAsText(f);
+  e.target.value='';
+}
+function decodeMergeText(text){
+  text=String(text||'').trim();
+  var i=text.indexOf('{');
+  if(i>0)text=text.slice(i);
+  if(text[0]!=='{'){
+    var b=text.replace(/^.*#import=/,'').replace(/-/g,'+').replace(/_/g,'/');
+    text=decodeURIComponent(escape(atob(b)));
+  }
+  var d=JSON.parse(text);
+  if(!d||d.nekota!=='merge')throw new Error('format');
+  return d;
+}
+function runMergeImport(text){
+  var d;
+  try{d=decodeMergeText(text);}catch(e){alert('取り込み用のデータとして読めませんでした。貼り付け内容を確認してください。');return;}
+  var plist=d.patients||[],visits=d.visits||{};
+  var newP=[],addDays=0,months=Object.keys(visits);
+  plist.forEach(function(ip){if(!patients.find(function(p){return String(p.num)===String(ip.num);}))newP.push(ip);});
+  months.forEach(function(ym){Object.keys(visits[ym]).forEach(function(n){addDays+=(visits[ym][n]||[]).length;});});
+  var msg='次の内容を取り込みます（今のデータは消しません）。\n\n'+
+    '・対象月：'+months.map(function(ym){return ym.replace('-','年')+'月';}).join('、')+'\n'+
+    '・通院：'+months.reduce(function(s,ym){return s+Object.keys(visits[ym]).length;},0)+'人分（延べ'+addDays+'回）\n'+
+    '・新しく登録する患者：'+newP.length+'人'+(newP.length?'\n　'+newP.map(function(p){return p.num+' '+p.name;}).join('、'):'')+'\n\n取り込みますか？';
+  if(!confirm(msg))return;
+  var maxId=patients.reduce(function(m,p){return Math.max(m,Number(p.id)||0);},100);
+  plist.forEach(function(ip){
+    var p=patients.find(function(x){return String(x.num)===String(ip.num);});
+    if(!p){
+      p={id:++maxId,num:String(ip.num),name:ip.name||('No.'+ip.num),insurance:ip.insurance||'',memo:'',freq:''};
+      patients.push(p);
+      var di=deletedNums.map(String).indexOf(String(ip.num));
+      if(di!==-1){deletedNums.splice(di,1);saveDeletedNums();}
+    }
+    if(ip.feeKind&&!p.feeKind)p.feeKind=ip.feeKind;
+    if(ip.student&&p.student===undefined)p.student=true;
+    if(ip.existing!==false&&p.existing===undefined)p.existing=true;
+  });
+  savePat();
+  var added=0,missing=[];
+  months.forEach(function(ym){
+    if(!schedules[ym])schedules[ym]={};
+    var mo=Number(ym.slice(5,7));
+    Object.keys(visits[ym]).forEach(function(n){
+      var p=patients.find(function(x){return String(x.num)===String(n);});
+      if(!p){missing.push(n);return;}
+      var cur=schedules[ym][p.id]||[];
+      (visits[ym][n]||[]).forEach(function(day){day=Number(day);if(cur.indexOf(day)===-1){cur.push(day);added++;}});
+      cur.sort(function(a,b){return a-b;});
+      schedules[ym][p.id]=cur;
+      var fk=String(p.id);
+      if(!attendFlags[fk])attendFlags[fk]=[];
+      if(attendFlags[fk].indexOf(mo)===-1)attendFlags[fk].push(mo);
+    });
+  });
+  saveSchedules();saveAttendFlags();clearFeeCache();
+  document.getElementById('mergeModal').classList.remove('open');
+  renderPatients();
+  alert('✓ 取り込みました\n\n・新しく足した通院：'+added+'回\n・新しく登録した患者：'+newP.length+'人'+(missing.length?'\n・番号が見つからず取り込めなかった：'+missing.join('、'):''));
+}
+// リンク（…/#import=…）で開いたときも取り込めるようにする
+function checkImportHash(){
+  if(location.hash.indexOf('#import=')===0){
+    var h=location.hash;
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+    setTimeout(function(){runMergeImport(h);},300);
+  }
+}
+checkImportHash();
+window.addEventListener('hashchange',checkImportHash);
 </script>
 <div id="printArea"></div>
 <button type="button" id="micFab" onclick="voiceStart()" aria-label="音声入力">🎤</button>

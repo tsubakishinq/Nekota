@@ -659,6 +659,14 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- 画面内のお知らせ・確認（アプリ内ブラウザでは alert/confirm が出ないため） -->
+<div class="modal-overlay" id="pageDlg" style="z-index:2500;align-items:center">
+  <div class="modal" style="max-width:440px;width:92%;border-radius:16px">
+    <div id="pageDlgBody" style="font-size:15px;line-height:1.8;white-space:pre-wrap;max-height:60vh;overflow-y:auto;margin-bottom:14px"></div>
+    <div class="modal-actions" id="pageDlgBtns"></div>
+  </div>
+</div>
+
 <!-- 追加で取り込むモーダル -->
 <div class="modal-overlay" id="mergeModal">
   <div class="modal">
@@ -990,10 +998,11 @@ function calcMonthFees(y,m){
       else { var p=patients.find(function(x){return String(x.id)===String(pid);}); if(p){visits[p.id]=visits[p.id]||{};visits[p.id][Number(ds.slice(8,10))]=1;} }
     });
   });
-  var days={},total=0,count=0;
+  var days={},total=0,count=0,people=0;
   patients.forEach(function(p){
     var list=Object.keys(visits[p.id]||{}).map(Number).sort(function(a,b){return a-b;});
     if(!list.length)return;
+    people++;
     var kind=p.feeKind||'';
     var isNew=!isKnownPatient(p)&&!hasVisitBeforeMonth(p,y,m);
     list.forEach(function(d,i){
@@ -1028,7 +1037,7 @@ function calcMonthFees(y,m){
       return a.key-b.key;
     });
   });
-  return (_feeCache[ym]={days:days,total:total,count:count});
+  return (_feeCache[ym]={days:days,total:total,count:count,people:people});
 }
 function getDailyTotal(ds){
   var r=calcMonthFees(Number(ds.slice(0,4)),Number(ds.slice(5,7))-1).days[Number(ds.slice(8,10))]||[];
@@ -1406,8 +1415,8 @@ function renderSummary(){
     const ic=selectedYear===now.getFullYear()&&m===cm;
     return`<button type="button" class="month-card ${ic?'current':''}" onclick="openBillingModal('${ms}')">
       <div class="month-label">${m}月</div>
-      <div class="month-count">${visitPids.length}名 来院</div>
-      <div class="month-amount">${visitPids.length}件</div>
+      <div class="month-count">${Math.max(visitPids.length,calcMonthFees(selectedYear,m-1).people||0)}名 来院</div>
+      <div class="month-amount">延べ${Math.max(mr.length,fc)}件</div>
       <div class="month-billing">${fc>0?formatMoney(bt):'割振なし'}</div>
     </button>`;
   }).join('');
@@ -3186,9 +3195,23 @@ function decodeMergeText(text){
   if(!d||d.nekota!=='merge')throw new Error('format');
   return d;
 }
+// 画面内ダイアログ。okLabel を渡すと「キャンセル／OK」の確認になる
+function pageDialog(text,okLabel,onOk){
+  document.getElementById('pageDlgBody').textContent=text;
+  var btns=document.getElementById('pageDlgBtns');
+  btns.innerHTML='';
+  var close=function(){document.getElementById('pageDlg').classList.remove('open');};
+  if(okLabel){
+    var c=document.createElement('button');c.className='btn-secondary';c.textContent='キャンセル';c.onclick=close;btns.appendChild(c);
+  }
+  var o=document.createElement('button');o.className='btn-primary';o.style.flex='2';o.textContent=okLabel||'OK';
+  o.onclick=function(){close();if(onOk)onOk();};
+  btns.appendChild(o);
+  document.getElementById('pageDlg').classList.add('open');
+}
 function runMergeImport(text){
   var d;
-  try{d=decodeMergeText(text);}catch(e){alert('取り込み用のデータとして読めませんでした。貼り付け内容を確認してください。');return;}
+  try{d=decodeMergeText(text);}catch(e){pageDialog('取り込み用のデータとして読めませんでした。\n貼り付け内容（またはリンク）を確認してください。');return;}
   var plist=d.patients||[],visits=d.visits||{};
   var newP=[],addDays=0,months=Object.keys(visits);
   plist.forEach(function(ip){if(!patients.find(function(p){return String(p.num)===String(ip.num);}))newP.push(ip);});
@@ -3197,7 +3220,10 @@ function runMergeImport(text){
     '・対象月：'+months.map(function(ym){return ym.replace('-','年')+'月';}).join('、')+'\n'+
     '・通院：'+months.reduce(function(s,ym){return s+Object.keys(visits[ym]).length;},0)+'人分（延べ'+addDays+'回）\n'+
     '・新しく登録する患者：'+newP.length+'人'+(newP.length?'\n　'+newP.map(function(p){return p.num+' '+p.name;}).join('、'):'')+'\n\n取り込みますか？';
-  if(!confirm(msg))return;
+  pageDialog(msg,'取り込む',function(){doMergeImport(d,newP);});
+}
+function doMergeImport(d,newP){
+  var plist=d.patients||[],visits=d.visits||{},months=Object.keys(visits);
   var maxId=patients.reduce(function(m,p){return Math.max(m,Number(p.id)||0);},100);
   plist.forEach(function(ip){
     var p=patients.find(function(x){return String(x.num)===String(ip.num);});
@@ -3246,7 +3272,8 @@ function runMergeImport(text){
   saveSchedules();saveAttendFlags();clearFeeCache();
   document.getElementById('mergeModal').classList.remove('open');
   renderPatients();
-  alert('✓ 取り込みました\n\n・新しく足した通院：'+added+'回\n・新しく登録した患者：'+newP.length+'人'+(missing.length?'\n・番号が見つからず取り込めなかった：'+missing.join('、'):''));
+  renderSummary();
+  pageDialog('✓ 取り込みました\n\n・新しく足した通院：'+added+'回\n・新しく登録した患者：'+newP.length+'人'+(missing.length?'\n・番号が見つからず取り込めなかった：'+missing.join('、'):''));
 }
 // リンク（…/#import=…）で開いたときも取り込めるようにする
 function checkImportHash(){
@@ -3254,14 +3281,14 @@ function checkImportHash(){
     // 圧縮（gzip）版のリンク
     var hz=location.hash.slice(9);
     try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
-    if(!window.DecompressionStream){alert('この端末ではリンクから取り込めません。ファイルで取り込んでください。');return;}
+    if(!window.DecompressionStream){pageDialog('この端末ではリンクから取り込めません。ファイルで取り込んでください。');return;}
     try{
       var bin=atob(hz.replace(/-/g,'+').replace(/_/g,'/'));
       var u8=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
       new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).text()
         .then(function(t){setTimeout(function(){runMergeImport(t);},300);})
-        .catch(function(){alert('取り込み用のリンクが壊れています。');});
-    }catch(e){alert('取り込み用のリンクが壊れています。');}
+        .catch(function(){pageDialog('取り込み用のリンクが壊れています。');});
+    }catch(e){pageDialog('取り込み用のリンクが壊れています。');}
     return;
   }
   if(location.hash.indexOf('#import=')===0){

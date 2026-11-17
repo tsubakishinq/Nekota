@@ -927,7 +927,9 @@ let billing  =JSON.parse(localStorage.getItem(BILLING_KEY)||'{}'); // {'YYYY-MM'
 const DAILY_BILLING_KEY='sekkotsu_daily_billing';
 let dailyBilling=JSON.parse(localStorage.getItem(DAILY_BILLING_KEY)||'{}'); // {'YYYY-MM-DD': {patientId: amount}}
 const RECE_CHECK_KEY='sekkotsu_rece_checks';
-let receChecks=JSON.parse(localStorage.getItem(RECE_CHECK_KEY)||'{}'); // {'YYYY-MM-DD': {patientId: 1}} レセコン入力済みチェック
+let receChecks=JSON.parse(localStorage.getItem(RECE_CHECK_KEY)||'{}');
+const DAY_ORDER_KEY='sekkotsu_day_order';
+let dayOrder=JSON.parse(localStorage.getItem(DAY_ORDER_KEY)||'{}'); // {'YYYY-MM-DD': [患者番号,...]} 実際に来た順（窓口表から） // {'YYYY-MM-DD': {patientId: 1}} レセコン入力済みチェック
 let selectedYear=new Date().getFullYear(),historyMode='day',editingPatientId=null,resetTargetId=null;
 let apptDate=new Date().toISOString().slice(0,10);
 
@@ -1010,6 +1012,17 @@ function calcMonthFees(y,m){
     });
   });
   Object.keys(days).forEach(function(d){
+    var ord=dayOrder[ym+'-'+String(d).padStart(2,'0')];
+    if(ord&&ord.length){
+      var idx={};ord.forEach(function(n,i){if(idx[String(n)]===undefined)idx[String(n)]=i;});
+      days[d].sort(function(a,b){
+        var ia=idx[String(a.p.num)],ib=idx[String(b.p.num)];
+        if(ia===undefined&&ib===undefined)return a.key-b.key;
+        if(ia===undefined)return 1;if(ib===undefined)return -1;
+        return ia-ib;
+      });
+      return;
+    }
     days[d].sort(function(a,b){
       if(a.kouki!==b.kouki)return a.kouki?-1:1;
       return a.key-b.key;
@@ -2747,6 +2760,7 @@ function backupData(){
     billing:   JSON.parse(localStorage.getItem('sekkotsu_billing') || '{}'),
     dailyBilling: JSON.parse(localStorage.getItem('sekkotsu_daily_billing') || '{}'),
     receChecks: JSON.parse(localStorage.getItem('sekkotsu_rece_checks') || '{}'),
+    dayOrder: JSON.parse(localStorage.getItem('sekkotsu_day_order') || '{}'),
   };
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type:'application/json'});
@@ -2780,6 +2794,7 @@ function restoreData(event){
       localStorage.setItem('sekkotsu_billing',   JSON.stringify(data.billing   || {}));
       localStorage.setItem('sekkotsu_daily_billing', JSON.stringify(data.dailyBilling || {}));
       localStorage.setItem('sekkotsu_rece_checks', JSON.stringify(data.receChecks || {}));
+      localStorage.setItem('sekkotsu_day_order', JSON.stringify(data.dayOrder || {}));
       // メモリ上のデータも更新
       records   = data.records   || [];
       patients  = data.patients  || [];
@@ -2793,6 +2808,7 @@ function restoreData(event){
       billing      = data.billing || {};
       dailyBilling = data.dailyBilling || {};
       receChecks   = data.receChecks || {};
+      dayOrder     = data.dayOrder || {};
       showToast('✓ 復元しました！');
       renderToday();
       renderPatients();
@@ -3191,9 +3207,9 @@ function runMergeImport(text){
       var di=deletedNums.map(String).indexOf(String(ip.num));
       if(di!==-1){deletedNums.splice(di,1);saveDeletedNums();}
     }
-    if(ip.feeKind&&!p.feeKind)p.feeKind=ip.feeKind;
+    if(ip.feeKind&&!p.feeKind){p.feeKind=ip.feeKind;if(ip.feeAmt!=null)p.feeAmt=ip.feeAmt;}
     if(ip.student&&p.student===undefined)p.student=true;
-    if(ip.existing!==false&&p.existing===undefined)p.existing=true;
+    if(p.existing===undefined)p.existing=(ip.existing!==false);
   });
   savePat();
   var added=0,missing=[];
@@ -3212,6 +3228,21 @@ function runMergeImport(text){
       if(attendFlags[fk].indexOf(mo)===-1)attendFlags[fk].push(mo);
     });
   });
+  // 金額の指定（窓口表に書かれた特別な金額）：まだ手入力が無い日だけ入れる
+  var amts=d.amounts||{};
+  Object.keys(amts).forEach(function(ds){
+    Object.keys(amts[ds]).forEach(function(n){
+      var p=patients.find(function(x){return String(x.num)===String(n);});
+      if(!p)return;
+      if(dailyBilling[ds]&&dailyBilling[ds][String(p.id)]!==undefined)return;
+      setDailyBillingAmount(ds,p.id,Number(amts[ds][n]));
+    });
+  });
+  // 実際に来た順番（窓口表）
+  if(d.order){
+    Object.keys(d.order).forEach(function(ds){dayOrder[ds]=d.order[ds];});
+    localStorage.setItem(DAY_ORDER_KEY,JSON.stringify(dayOrder));
+  }
   saveSchedules();saveAttendFlags();clearFeeCache();
   document.getElementById('mergeModal').classList.remove('open');
   renderPatients();
@@ -3219,6 +3250,20 @@ function runMergeImport(text){
 }
 // リンク（…/#import=…）で開いたときも取り込めるようにする
 function checkImportHash(){
+  if(location.hash.indexOf('#importz=')===0){
+    // 圧縮（gzip）版のリンク
+    var hz=location.hash.slice(9);
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+    if(!window.DecompressionStream){alert('この端末ではリンクから取り込めません。ファイルで取り込んでください。');return;}
+    try{
+      var bin=atob(hz.replace(/-/g,'+').replace(/_/g,'/'));
+      var u8=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+      new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).text()
+        .then(function(t){setTimeout(function(){runMergeImport(t);},300);})
+        .catch(function(){alert('取り込み用のリンクが壊れています。');});
+    }catch(e){alert('取り込み用のリンクが壊れています。');}
+    return;
+  }
   if(location.hash.indexOf('#import=')===0){
     var h=location.hash;
     try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}

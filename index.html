@@ -442,10 +442,25 @@
   </div>
   <div class="pfilter-row">
     <button class="pfilter-btn active" id="pf-all" onclick="setPatientFilter('all')">すべて</button>
-    <button class="pfilter-btn" id="pf-discontinued" onclick="setPatientFilter('discontinued')">継続通院なし</button>
+    <button class="pfilter-btn" id="pf-renew" onclick="setPatientFilter('renew')">継続登録</button>
     <button class="pfilter-btn" id="pf-new" onclick="setPatientFilter('new')">新規</button>
   </div>
   <div id="pfilterNote" style="font-size:11px;color:var(--ink-light);margin-bottom:12px;line-height:1.5"></div>
+  <div id="renewPanel" class="sch-day-add" style="display:none">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+      <button type="button" class="limit-btn" onclick="renewChangeMonth(-1)">◀</button>
+      <div style="flex:1;text-align:center;font-size:18px;font-weight:700" id="renewMonthLabel"></div>
+      <button type="button" class="limit-btn" onclick="renewChangeMonth(1)">▶</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px">＋ この月に通院する人を登録</div>
+    <div class="sch-day-add-row">
+      <input type="text" id="renewInput" placeholder="番号 または 名前（例：22 1045 769）" oninput="onRenewInput()" onkeydown="if(event.key==='Enter')addRenew()">
+      <button onclick="addRenew()">登録</button>
+    </div>
+    <div class="sch-day-add-hint" id="renewHint"></div>
+    <div style="font-size:13px;font-weight:700;margin:10px 0 6px" id="renewCount"></div>
+    <div id="renewList" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
   <button class="btn-primary" style="margin-bottom:10px" onclick="openPatientModal()">＋ 新規患者を登録</button>
   <button class="btn-secondary" style="width:100%;margin-bottom:16px" onclick="cleanupOldRecords()">🧹 古いデータを整理（1年以上前の来院記録を削除）</button>
 
@@ -1491,10 +1506,12 @@ function renderHistory(){
 }
 
 // ===== 患者フィルター（表示を絞るだけ・データは変更しない） =====
-let patientFilter='all'; // 'all' | 'discontinued' | 'new'
+let patientFilter='all'; // 'all' | 'renew' | 'new'
 function setPatientFilter(f){
   patientFilter=f;
-  ['all','discontinued','new'].forEach(function(k){
+  document.getElementById('renewPanel').style.display=f==='renew'?'':'none';
+  if(f==='renew')renderRenew();
+  ['all','renew','new'].forEach(function(k){
     var b=document.getElementById('pf-'+k);
     if(b) b.className='pfilter-btn'+(k===f?' active':'');
   });
@@ -1521,6 +1538,70 @@ function visitDaysInMonth(p,y,m){
   ((schedules[ym]||{})[p.id]||[]).forEach(function(d){set[Number(d)]=1;});
   return Object.keys(set).length;
 }
+// ===== 継続登録：月ごとに「通院する人」（通院対象月）を番号・名前で登録 =====
+var renewY=new Date().getFullYear(),renewM=new Date().getMonth();
+function renewChangeMonth(d){var t=new Date(renewY,renewM+d,1);renewY=t.getFullYear();renewM=t.getMonth();renderRenew();renderPatients();}
+function renewFind(tok){
+  tok=String(tok||'').trim();
+  if(!tok)return [];
+  var ex=patients.filter(function(p){return String(p.num)===tok;});
+  if(ex.length||/^\d+$/.test(tok))return ex;
+  return patients.filter(function(p){return String(p.name).indexOf(tok)!==-1;});
+}
+function renewTokens(){
+  var raw=String(document.getElementById('renewInput').value||'').replace(/[０-９]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0xFEE0);});
+  return raw.replace(/番/g,' ').split(/[\s　,、，・。]+/).filter(Boolean).map(function(t){
+    return /^[〇零一二三四五六七八九十百千]+$/.test(t)?kanjiToNum(t):t;
+  });
+}
+function onRenewInput(){
+  var hint=document.getElementById('renewHint'),toks=renewTokens();
+  if(!toks.length){hint.innerHTML='';return;}
+  if(toks.length===1){
+    var r=renewFind(toks[0]);
+    if(!r.length){hint.innerHTML='<span style="color:var(--accent)">該当する患者がいません</span>';return;}
+    if(r.length===1){hint.innerHTML='→ <b style="color:var(--ink)">No.'+r[0].num+'　'+r[0].name+'</b>';return;}
+    hint.innerHTML=r.slice(0,8).map(function(p){return '<button type="button" style="margin:2px 4px 2px 0;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-size:13px;cursor:pointer" onclick="document.getElementById(\'renewInput\').value=\''+p.num+'\';onRenewInput()">No.'+p.num+' '+p.name+'</button>';}).join('');
+    return;
+  }
+  hint.textContent=toks.length+'件まとめて登録します';
+}
+function addRenew(){
+  var toks=renewTokens();
+  if(!toks.length){showToast('番号か名前を入れてください');return;}
+  var mo=renewM+1,ok=[],ng=[],dup=[];
+  toks.forEach(function(t){
+    var r=renewFind(t);
+    if(r.length!==1){ng.push(t);return;}
+    var p=r[0],k=String(p.id);
+    if(!attendFlags[k])attendFlags[k]=[];
+    if(attendFlags[k].indexOf(mo)!==-1){dup.push(p.num);return;}
+    attendFlags[k].push(mo);ok.push(p.num+' '+p.name);
+  });
+  saveAttendFlags();
+  document.getElementById('renewInput').value='';
+  document.getElementById('renewHint').innerHTML=(ok.length?'<span style="color:var(--success);font-weight:700">✓ 登録：'+ok.join('、')+'</span>':'')+
+    (dup.length?'<br>もう登録済み：'+dup.join('、'):'')+(ng.length?'<br><span style="color:var(--accent)">見つからない／候補が複数：'+ng.join('、')+'</span>':'');
+  renderRenew();renderPatients();
+  document.getElementById('renewInput').focus();
+}
+function removeRenew(pid){
+  var k=String(pid),mo=renewM+1;
+  if(!attendFlags[k])return;
+  attendFlags[k]=attendFlags[k].filter(function(x){return x!==mo;});
+  saveAttendFlags();renderRenew();renderPatients();
+}
+function renderRenew(){
+  document.getElementById('renewMonthLabel').textContent=renewY+'年'+(renewM+1)+'月';
+  var mo=renewM+1;
+  var list=patients.filter(function(p){return (attendFlags[String(p.id)]||[]).indexOf(mo)!==-1;}).sort(function(a,b){return Number(a.num)-Number(b.num);});
+  document.getElementById('renewCount').textContent=(renewM+1)+'月に通院登録済み：'+list.length+'名（×で外す）';
+  document.getElementById('renewList').innerHTML=list.map(function(p){
+    return '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:4px 6px 4px 10px;font-size:13px">'+
+      '<b>'+p.num+'</b> '+p.name+
+      '<button type="button" onclick="removeRenew('+p.id+')" style="border:none;background:none;color:var(--accent);font-size:16px;font-weight:700;cursor:pointer;padding:0 4px">×</button></span>';
+  }).join('');
+}
 // 指定年月より前に通院があったか（新規判定用）
 function hasVisitBeforeMonth(p,y,m){
   var curKey=y+'-'+String(m+1).padStart(2,'0');
@@ -1542,14 +1623,14 @@ function renderPatients(){
   let list=patients.filter(p=>!q||String(p.num).includes(q)||p.name.toLowerCase().includes(q)).sort((a,b)=>Number(a.num)-Number(b.num));
   // 継続通院なし／新規フィルター（基準月＝割振で表示中の月）
   const fy=schYear, fm=schMonth, fpm=prevMonthOf(fy,fm);
-  if(patientFilter==='discontinued'){
-    list=list.filter(p=>hasVisitInMonth(p,fpm.y,fpm.m) && !hasVisitInMonth(p,fy,fm));
+  if(patientFilter==='renew'){
+    list=list.filter(p=>(attendFlags[String(p.id)]||[]).indexOf(renewM+1)!==-1);
   }else if(patientFilter==='new'){
     list=list.filter(p=>hasVisitInMonth(p,fy,fm) && !hasVisitBeforeMonth(p,fy,fm));
   }
   const noteEl=document.getElementById('pfilterNote');
   if(noteEl){
-    if(patientFilter==='discontinued') noteEl.textContent='前月('+(fpm.m+1)+'月)通院あり → 当月('+(fm+1)+'月)通院なし：'+list.length+'名';
+    if(patientFilter==='renew') noteEl.textContent='';
     else if(patientFilter==='new') noteEl.textContent='当月('+(fm+1)+'月)からの新規（それ以前の通院なし）：'+list.length+'名';
     else noteEl.textContent='';
   }
@@ -3150,6 +3231,8 @@ function voiceHandle(text,field){
   if(isShown('sch-view-patient')&&num&&/追加|ついか|選/.test(t)){var pi=document.getElementById('schPatAddInput');if(pi){pi.value=num;pickSchPatAdd();}return;}
   // 入力欄に入れる
   if(field){voiceFill(field,text);return;}
+  // 患者タブの継続登録：言った番号・名前を登録
+  if(isShown('renewPanel')&&!field){var ri=document.getElementById('renewInput');ri.value=text;addRenew();return;}
   // 患者タブ：検索欄に入れる
   if(document.getElementById('page-patients').classList.contains('active')){var ps=document.getElementById('patientSearch');if(ps){voiceFill(ps,num&&/^\d+番?$/.test(t)?num:text);return;}}
   // カルテタブ：番号なら患者番号欄に

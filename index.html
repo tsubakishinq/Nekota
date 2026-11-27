@@ -260,6 +260,17 @@
   .sch-regen{background:none;border:1.5px solid var(--border);border-radius:7px;padding:5px 9px;font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;color:var(--ink-light);}
   .day-limit-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;}
   .default-limit-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+  .rsv-dow{text-align:center;font-size:11px;font-weight:700;padding:7px 0;color:var(--ink-light);}
+  .rsv-cell{min-height:58px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);padding:3px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+  .rsv-cell:nth-child(7n){border-right:none;}
+  .rsv-cell.sel{background:var(--accent-light);outline:2px solid var(--accent);outline-offset:-2px;}
+  .rsv-cell .dn{font-size:13px;font-weight:700;}
+  .rsv-cell .cnt{margin-top:4px;background:#2c3e6b;color:#fff;border-radius:10px;font-size:11px;font-weight:700;text-align:center;padding:1px 0;}
+  .rsv-item{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;}
+  .rsv-time{font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:#2c3e6b;min-width:62px;}
+  .rsv-name{flex:1;font-size:17px;font-weight:700;}
+  .rsv-memo{font-size:12px;color:var(--ink-light);font-weight:400;margin-top:2px;}
+  .rsv-del{border:1.5px solid #e6b0aa;background:#fdf2f0;color:var(--accent);border-radius:7px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;}
   .limit-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-size:13px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;color:var(--ink);font-weight:700;}
   .limit-btn:active{background:var(--border);}
   .over-limit{background:var(--accent-light);border-color:var(--accent);}
@@ -368,7 +379,7 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('input')">カルテ</div>
   <div class="tab" onclick="switchTab('summary')">集計</div>
-  <div class="tab" onclick="switchTab('history')">履歴</div>
+  <div class="tab" onclick="switchTab('reserve')">予約</div>
   <div class="tab" onclick="switchTab('patients')">患者</div>
   <div class="tab" onclick="switchTab('schedule')">割振</div>
 </div>
@@ -407,6 +418,22 @@
     <div class="amount" id="yearTotal">¥0</div>
   </div>
   <div class="month-grid" id="monthGrid"></div>
+</div>
+
+<!-- 予約 -->
+<div class="page" id="page-reserve" style="padding-bottom:110px">
+  <div class="sch-ctrl">
+    <button onclick="rsvChangeMonth(-1)">◀</button>
+    <span id="rsvMonthLabel"></span>
+    <button onclick="rsvChangeMonth(1)">▶</button>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg)">
+      <span class="rsv-dow" style="color:#e74c3c">日</span><span class="rsv-dow">月</span><span class="rsv-dow">火</span><span class="rsv-dow">水</span><span class="rsv-dow">木</span><span class="rsv-dow">金</span><span class="rsv-dow" style="color:#3498db">土</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr)" id="rsvCal"></div>
+  </div>
+  <div id="rsvDay"></div>
 </div>
 
 <!-- 履歴 -->
@@ -945,6 +972,9 @@ let patients =JSON.parse(localStorage.getItem(PAT_KEY)||'[]');
 })();
 let resets   =JSON.parse(localStorage.getItem(RST_KEY)||'{}');
 let appts    =JSON.parse(localStorage.getItem(APPT_KEY)||'[]');
+const RSV_KEY='sekkotsu_reservations';
+let reservations=JSON.parse(localStorage.getItem(RSV_KEY)||'[]'); // [{id,date:'YYYY-MM-DD',time:'HH:MM',pid,num,name,memo}]
+function saveRsv(){localStorage.setItem(RSV_KEY,JSON.stringify(reservations));}
 let karteEntries=JSON.parse(localStorage.getItem(KARTE_KEY)||'[]'); // {id, patientId, date, text}
 let billing  =JSON.parse(localStorage.getItem(BILLING_KEY)||'{}'); // {'YYYY-MM': {patientId: amount}} (旧形式・互換用)
 const DAILY_BILLING_KEY='sekkotsu_daily_billing';
@@ -1204,7 +1234,7 @@ function deleteKarteEntry(id){
 
 function switchTab(name){
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active',['input','summary','history','patients','schedule'][i]===name);
+    t.classList.toggle('active',['input','summary','reserve','patients','schedule'][i]===name);
   });
   document.querySelectorAll('.page').forEach(p=>{
     p.classList.toggle('active',p.id==='page-'+name);
@@ -1212,6 +1242,7 @@ function switchTab(name){
   if(name==='input')    renderKarteList();
   if(name==='summary')  renderSummary();
   if(name==='history')  renderHistory();
+  if(name==='reserve')  renderReserve();
   if(name==='patients') renderPatients();
   if(name==='schedule') renderSchedule();
 }
@@ -2851,6 +2882,7 @@ function backupData(){
     dailyBilling: JSON.parse(localStorage.getItem('sekkotsu_daily_billing') || '{}'),
     receChecks: JSON.parse(localStorage.getItem('sekkotsu_rece_checks') || '{}'),
     dayOrder: JSON.parse(localStorage.getItem('sekkotsu_day_order') || '{}'),
+    reservations: JSON.parse(localStorage.getItem('sekkotsu_reservations') || '[]'),
   };
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], {type:'application/json'});
@@ -2885,6 +2917,7 @@ function restoreData(event){
       localStorage.setItem('sekkotsu_daily_billing', JSON.stringify(data.dailyBilling || {}));
       localStorage.setItem('sekkotsu_rece_checks', JSON.stringify(data.receChecks || {}));
       localStorage.setItem('sekkotsu_day_order', JSON.stringify(data.dayOrder || {}));
+      localStorage.setItem('sekkotsu_reservations', JSON.stringify(data.reservations || []));
       // メモリ上のデータも更新
       records   = data.records   || [];
       patients  = data.patients  || [];
@@ -2899,6 +2932,7 @@ function restoreData(event){
       dailyBilling = data.dailyBilling || {};
       receChecks   = data.receChecks || {};
       dayOrder     = data.dayOrder || {};
+      reservations = data.reservations || [];
       showToast('✓ 復元しました！');
       renderToday();
       renderPatients();
@@ -3382,6 +3416,81 @@ function checkImportHash(){
 }
 checkImportHash();
 window.addEventListener('hashchange',checkImportHash);
+
+// ===== 予約（時間つき）：カレンダーで確認・追加・削除 =====
+var rsvY=new Date().getFullYear(),rsvM=new Date().getMonth(),rsvD=new Date().getDate();
+function rsvDs(y,m,d){return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');}
+function rsvChangeMonth(k){var t=new Date(rsvY,rsvM+k,1);rsvY=t.getFullYear();rsvM=t.getMonth();rsvD=1;renderReserve();}
+function rsvPick(d){rsvD=d;renderReserve();}
+function rsvEsc(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function renderReserve(){
+  document.getElementById('rsvMonthLabel').textContent=rsvY+'年'+(rsvM+1)+'月';
+  var dim=new Date(rsvY,rsvM+1,0).getDate(),first=new Date(rsvY,rsvM,1).getDay();
+  if(rsvD>dim)rsvD=dim;
+  var cnt={};
+  reservations.forEach(function(r){if(r.date.slice(0,7)===rsvDs(rsvY,rsvM,1).slice(0,7)){var d=Number(r.date.slice(8,10));cnt[d]=(cnt[d]||0)+1;}});
+  var t=new Date(),todayDs=rsvDs(t.getFullYear(),t.getMonth(),t.getDate());
+  var hols=getHolidays(rsvY,rsvM);
+  var html='';
+  for(var i=0;i<first;i++)html+='<div class="rsv-cell" style="background:#fafafa;cursor:default"></div>';
+  for(var d=1;d<=dim;d++){
+    var dow=new Date(rsvY,rsvM,d).getDay(),ds=rsvDs(rsvY,rsvM,d);
+    var off=dow===0||hols.indexOf(d)!==-1;
+    html+='<div class="rsv-cell'+(d===rsvD?' sel':'')+'" style="'+(off?'background:#f6f6f6;':'')+'" onclick="rsvPick('+d+')">'+
+      '<div class="dn" style="color:'+(dow===0?'#e74c3c':dow===6?'#3498db':ds===todayDs?'var(--accent)':'var(--ink)')+'">'+d+(ds===todayDs?'<span style="font-size:9px"> 今日</span>':'')+'</div>'+
+      (cnt[d]?'<div class="cnt">'+cnt[d]+'件</div>':'')+'</div>';
+  }
+  document.getElementById('rsvCal').innerHTML=html;
+  renderReserveDay();
+}
+function renderReserveDay(){
+  var ds=rsvDs(rsvY,rsvM,rsvD),w=['日','月','火','水','木','金','土'][new Date(rsvY,rsvM,rsvD).getDay()];
+  var list=reservations.filter(function(r){return r.date===ds;}).sort(function(a,b){return a.time<b.time?-1:a.time>b.time?1:0;});
+  var times='';
+  for(var h=8;h<=20;h++){['00','15','30','45'].forEach(function(mm){var v=String(h).padStart(2,'0')+':'+mm;times+='<option'+(v==='10:00'?' selected':'')+'>'+v+'</option>';});}
+  var html='<div style="font-size:17px;font-weight:700;margin:4px 0 10px">'+(rsvM+1)+'月'+rsvD+'日（'+w+'）の予約　<span style="color:var(--accent)">'+list.length+'件</span></div>';
+  html+=list.length?list.map(function(r){
+    return '<div class="rsv-item"><div class="rsv-time">'+rsvEsc(r.time)+'</div>'+
+      '<div class="rsv-name">'+(r.num?'<span style="font-family:DM Mono,monospace;color:var(--ink-light);font-size:14px">No.'+rsvEsc(r.num)+'</span> ':'')+rsvEsc(r.name)+
+      (r.memo?'<div class="rsv-memo">'+rsvEsc(r.memo)+'</div>':'')+'</div>'+
+      '<button class="rsv-del" onclick="rsvDelete('+r.id+')">削除</button></div>';
+  }).join(''):'<div class="empty-state" style="margin:10px 0 16px">この日の予約はありません</div>';
+  html+='<div class="sch-day-add" style="margin-top:12px">'+
+    '<div style="font-size:13px;font-weight:700;margin-bottom:8px">＋ この日に予約を入れる</div>'+
+    '<div class="sch-day-add-row" style="margin-bottom:8px"><select id="rsvTime" style="flex:0 0 96px;border:1.5px solid var(--border);border-radius:8px;padding:10px 6px;font-size:16px;background:var(--bg);color:var(--ink)">'+times+'</select>'+
+    '<input type="text" id="rsvWho" placeholder="患者番号 または 名前" oninput="onRsvWhoInput()"></div>'+
+    '<div class="sch-day-add-hint" id="rsvHint"></div>'+
+    '<div class="sch-day-add-row" style="margin-top:6px"><input type="text" id="rsvMemo" placeholder="メモ（任意：初診・電話あり など）"><button onclick="rsvAdd()">予約</button></div>'+
+    '</div>';
+  document.getElementById('rsvDay').innerHTML=html;
+}
+function onRsvWhoInput(){
+  var v=document.getElementById('rsvWho').value.trim(),hint=document.getElementById('rsvHint');
+  if(!v){hint.innerHTML='';return;}
+  var r=findSchDayPatient(v).list;
+  if(r.length===1)hint.innerHTML='→ <b style="color:var(--ink)">No.'+r[0].num+'　'+rsvEsc(r[0].name)+'</b>';
+  else if(r.length>1)hint.innerHTML=r.slice(0,8).map(function(p){return '<button type="button" style="margin:2px 4px 2px 0;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);font-size:13px;cursor:pointer" onclick="document.getElementById(\'rsvWho\').value=\''+p.num+'\';onRsvWhoInput()">No.'+p.num+' '+rsvEsc(p.name)+'</button>';}).join('');
+  else hint.textContent=/^\d+$/.test(v)?'名簿にない番号です':'名簿にない名前です（このまま予約できます：新しい方など）';
+}
+function rsvAdd(){
+  var who=document.getElementById('rsvWho').value.trim();
+  if(!who){showToast('患者番号か名前を入れてください');return;}
+  var r=findSchDayPatient(who).list,p=null;
+  if(r.length===1)p=r[0];
+  else if(r.length>1){showToast('候補から1人選んでください');return;}
+  else if(/^\d+$/.test(who)){showToast('その番号の患者は名簿にいません');return;}
+  var item={id:Date.now(),date:rsvDs(rsvY,rsvM,rsvD),time:document.getElementById('rsvTime').value,
+    pid:p?p.id:null,num:p?String(p.num):'',name:p?p.name:who,memo:document.getElementById('rsvMemo').value.trim()};
+  reservations.push(item);saveRsv();renderReserve();
+  showToast('✓ '+item.time+' '+item.name+' を予約しました');
+}
+function rsvDelete(id){
+  var r=reservations.find(function(x){return x.id===id;});
+  if(!r)return;
+  pageDialog(r.date.slice(5).replace('-','/')+' '+r.time+'　'+r.name+'\nの予約を削除しますか？','削除する',function(){
+    reservations=reservations.filter(function(x){return x.id!==id;});saveRsv();renderReserve();showToast('✓ 削除しました');
+  });
+}
 </script>
 <div id="printArea"></div>
 <button type="button" id="micFab" onclick="voiceStart()" aria-label="音声入力">🎤</button>
